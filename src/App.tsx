@@ -1,7 +1,14 @@
 import { makeStyles, Spinner, Toaster, tokens } from '@fluentui/react-components';
-import React, { PropsWithChildren, Suspense } from 'react';
+import React, { PropsWithChildren, Suspense, useEffect } from 'react';
 import { HotkeysProvider } from 'react-hotkeys-hook';
-import { createBrowserRouter, createRoutesFromElements, Outlet, Route, RouterProvider } from 'react-router-dom';
+import {
+    createBrowserRouter,
+    createRoutesFromElements,
+    Outlet,
+    Route,
+    RouterProvider,
+    useSearchParams,
+} from 'react-router-dom';
 import { DirtyProvider } from './DirtyProvider';
 import { useSceneFromUrl } from './file/share';
 import { FileOpenPage } from './FileOpenPage';
@@ -12,6 +19,7 @@ import { SiteHeader } from './SiteHeader';
 import { ThemeProvider } from './ThemeProvider';
 import { useFileLoaderDropTarget } from './useFileLoader';
 import { HotkeyScopes } from './useHotkeys';
+import { CollaborationProvider, useCollaboration } from './collaboration/CollaborationProvider';
 
 const useStyles = makeStyles({
     root: {
@@ -55,11 +63,32 @@ const BaseProviders: React.FC<PropsWithChildren> = ({ children }) => {
         <HotkeysProvider initiallyActiveScopes={[HotkeyScopes.Default, HotkeyScopes.AlwaysEnabled]}>
             <HelpProvider>
                 <SceneProvider initialScene={sceneFromUrl}>
-                    <DirtyProvider>{children}</DirtyProvider>
+                    <CollaborationProvider>
+                        <RoomParamsHandler>
+                            <DirtyProvider>{children}</DirtyProvider>
+                        </RoomParamsHandler>
+                    </CollaborationProvider>
                 </SceneProvider>
             </HelpProvider>
         </HotkeysProvider>
     );
+};
+
+// 处理URL中的房间参数
+const RoomParamsHandler: React.FC<PropsWithChildren> = ({ children }) => {
+    const [searchParams] = useSearchParams();
+    const { joinRoom } = useCollaboration();
+    const roomId = searchParams.get('room');
+
+    useEffect(() => {
+        if (roomId) {
+            joinRoom(roomId).catch((error) => {
+                console.error('自动加入房间失败:', error);
+            });
+        }
+    }, [roomId, joinRoom]);
+
+    return <>{children}</>;
 };
 
 const LoadingFallback: React.FC = () => {

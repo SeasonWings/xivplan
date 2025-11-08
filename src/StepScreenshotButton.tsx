@@ -208,11 +208,38 @@ const ScreenshotComponent: React.FC<ScreenshotComponentProps> = ({ scale, onScre
 async function copyToClipboard(stage: Konva.Stage, pixelRatio = 2) {
     const blob = (await stage.toBlob({ mimeType: 'image/png', pixelRatio })) as Blob;
 
-    await navigator.clipboard.write([
-        new ClipboardItem({
-            [blob.type]: blob,
-        }),
-    ]);
+    if (navigator.clipboard && window.isSecureContext) {
+        try {
+            await navigator.clipboard.write([
+                new ClipboardItem({
+                    [blob.type]: blob,
+                }),
+            ]);
+        } catch (err) {
+            console.error('复制图片失败:', err);
+            // 创建一个下载链接作为备用
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'xivplan-screenshot.png';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            throw new Error('无法复制到剪贴板，已下载图片文件');
+        }
+    } else {
+        // 创建一个下载链接作为备用
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'xivplan-screenshot.png';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        throw new Error('浏览器不支持剪贴板API，已下载图片文件');
+    }
 }
 
 const useStyles = makeStyles({

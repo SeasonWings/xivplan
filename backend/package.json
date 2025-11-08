@@ -1,0 +1,19 @@
+{
+  "name": "xivplan-server",
+  "version": "1.0.0",
+  "description": "Final Fantasy XIV Raid Planner WebSocket服务器",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "start:prod": "pm2 start server.js --name xivplan-server"
+  },
+  "dependencies": {
+    "ws": "^8.13.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.22"
+  },
+  "author": "",
+  "license": "MIT"
+}

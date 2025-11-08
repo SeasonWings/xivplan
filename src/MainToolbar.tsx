@@ -14,6 +14,7 @@ import {
     ArrowRedoRegular,
     ArrowUndoRegular,
     OpenRegular,
+    PeopleRegular,
     SaveEditRegular,
     SaveRegular,
 } from '@fluentui/react-icons';
@@ -39,7 +40,15 @@ const useStyles = makeStyles({
     },
 });
 
-export const MainToolbar: React.FC = () => {
+interface MainToolbarProps {
+    showCollaborationPanel?: boolean;
+    onToggleCollaborationPanel?: (show: boolean) => void;
+}
+
+export const MainToolbar: React.FC<MainToolbarProps> = ({
+    showCollaborationPanel = false,
+    onToggleCollaborationPanel,
+}) => {
     const classes = useStyles();
     const { t } = useTranslation();
     const toolbarNode = useContext(ToolbarContext);
@@ -91,6 +100,16 @@ export const MainToolbar: React.FC = () => {
                     <ShareDialogButton>{t('toolbar.share')}</ShareDialogButton>
 
                     <StepScreenshotButton>{t('toolbar.screenshot')}</StepScreenshotButton>
+
+                    <ToolbarDivider />
+
+                    <CollapsableToolbarButton
+                        icon={<PeopleRegular />}
+                        onClick={() => onToggleCollaborationPanel?.(!showCollaborationPanel)}
+                        className={showCollaborationPanel ? 'active' : undefined}
+                    >
+                        协作模式
+                    </CollapsableToolbarButton>
                 </Toolbar>
             </InPortal>
         </>

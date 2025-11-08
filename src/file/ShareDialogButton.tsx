@@ -49,8 +49,38 @@ const ShareDialogBody: React.FC = () => {
     const { t } = useTranslation();
 
     const copyToClipboard = async () => {
-        await navigator.clipboard.writeText(url);
-        dispatchToast(<CopySuccessToast />, { intent: 'success' });
+        if (navigator.clipboard && window.isSecureContext) {
+            try {
+                await navigator.clipboard.writeText(url);
+                dispatchToast(<CopySuccessToast />, { intent: 'success' });
+            } catch (err) {
+                console.error('复制失败:', err);
+                fallbackCopyTextToClipboard(url);
+            }
+        } else {
+            fallbackCopyTextToClipboard(url);
+        }
+    };
+
+    // 备用复制方法
+    const fallbackCopyTextToClipboard = (text: string) => {
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        try {
+            document.execCommand('copy');
+            dispatchToast(<CopySuccessToast />, { intent: 'success' });
+        } catch (err) {
+            console.error('备用复制方法也失败了:', err);
+            alert('复制失败，请手动复制链接');
+        } finally {
+            document.body.removeChild(textArea);
+        }
     };
 
     return (

@@ -112,7 +112,7 @@ export const SiteHeader: React.FC<HTMLAttributes<HTMLElement>> = ({ className, .
                 {t('header.help')}
             </Link>
             <AboutDialog className={classes.link} />
-            <ExternalLink className={classes.link} href="https://github.com/mogworks/xivplan" noIcon>
+            <ExternalLink className={classes.link} href="https://github.com/SeasonWings/xivplan" noIcon>
                 {t('header.github')}
             </ExternalLink>
             <div className={classes.buttonGroup}>
