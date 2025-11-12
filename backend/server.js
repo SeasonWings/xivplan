@@ -61,6 +61,7 @@ class Room {
         this.sceneData = null;
         this.lastUpdated = Date.now();
         this.allowGuestEdit = true; // 默认允许访客编辑
+        this.userEditPermissions = new Map(); // 用户编辑权限映射
     }
 
     addClient(client) {
@@ -72,6 +73,9 @@ class Room {
             this.hostId = client.userId;
             console.log(`User ${client.userId} (${client.userName}) set as host for room ${this.id}`);
         }
+
+        // 设置用户编辑权限：房主默认有编辑权限，其他用户默认没有编辑权限
+        this.userEditPermissions.set(client.userId, client.userId === this.hostId);
 
         // 向新加入的客户端发送当前房间的场景数据
         if (this.sceneData) {
@@ -88,16 +92,22 @@ class Room {
             JSON.stringify({
                 type: 'host_info',
                 hostId: this.hostId,
-                allowGuestEdit: this.allowGuestEdit,
             }),
         );
+
+        // 发送用户权限列表给新加入的客户端
+        this.sendUserPermissions(client);
 
         // 广播用户加入事件
         this.broadcast(
             JSON.stringify({
                 type: 'user_joined',
                 userId: client.userId,
-                users: Array.from(this.clients).map((c) => ({ id: c.userId, name: c.userName })),
+                users: Array.from(this.clients).map((c) => ({
+                    id: c.userId,
+                    name: c.userName,
+                    canEdit: this.userEditPermissions.get(c.userId) || false,
+                })),
             }),
             client,
         );
@@ -112,14 +122,21 @@ class Room {
             const newHost = Array.from(this.clients)[0];
             this.hostId = newHost.userId;
 
+            // 更新新房主的编辑权限为true
+            this.userEditPermissions.set(this.hostId, true);
+
             // 广播房主变更事件
             this.broadcast(
                 JSON.stringify({
                     type: 'host_changed',
                     hostId: this.hostId,
-                    allowGuestEdit: this.allowGuestEdit,
                 }),
             );
+
+            // 重新广播用户权限列表
+            this.clients.forEach((client) => {
+                this.sendUserPermissions(client);
+            });
         }
 
         // 广播用户离开事件
@@ -127,7 +144,11 @@ class Room {
             JSON.stringify({
                 type: 'user_left',
                 userId: client.userId,
-                users: Array.from(this.clients).map((c) => ({ id: c.userId, name: c.userName })),
+                users: Array.from(this.clients).map((c) => ({
+                    id: c.userId,
+                    name: c.userName,
+                    canEdit: this.userEditPermissions.get(c.userId) || false,
+                })),
             }),
         );
 
@@ -145,7 +166,55 @@ class Room {
         }
     }
 
+    // 发送用户权限列表给指定客户端
+    sendUserPermissions(client) {
+        const permissions = {};
+        this.userEditPermissions.forEach((canEdit, userId) => {
+            permissions[userId] = canEdit;
+        });
+
+        client.send(
+            JSON.stringify({
+                type: 'user_permissions',
+                permissions: permissions,
+            }),
+        );
+    }
+
+    // 设置用户编辑权限
+    setUserEditPermission(userId, canEdit) {
+        // 房主权限不能被修改
+        if (userId === this.hostId) {
+            return false;
+        }
+
+        this.userEditPermissions.set(userId, canEdit);
+
+        // 广播权限变更
+        this.broadcast(
+            JSON.stringify({
+                type: 'user_permission_changed',
+                userId: userId,
+                canEdit: canEdit,
+            }),
+        );
+
+        return true;
+    }
+
     updateScene(data, sender) {
+        // 检查发送者是否有编辑权限
+        if (!this.userEditPermissions.get(sender.userId)) {
+            // 发送错误消息给发送者
+            sender.send(
+                JSON.stringify({
+                    type: 'error',
+                    message: '您没有权限编辑场景',
+                }),
+            );
+            return;
+        }
+
         this.sceneData = data;
         this.lastUpdated = Date.now();
 
@@ -189,6 +258,11 @@ wss.on('connection', (ws) => {
             const data = JSON.parse(message);
 
             switch (data.type) {
+                case 'ping':
+                    // 收到客户端心跳，回复pong
+                    ws.send(JSON.stringify({ type: 'pong' }));
+                    break;
+
                 case 'join_room':
                     const roomId = data.roomId || generateId();
                     let room = rooms.get(roomId);
@@ -238,9 +312,8 @@ wss.on('connection', (ws) => {
                     if (ws.roomId) {
                         const room = rooms.get(ws.roomId);
                         if (room) {
-                            // 验证权限：只有房主或允许访客编辑时才能更新场景
-                            const isHost = ws.userId === room.hostId;
-                            if (isHost || room.allowGuestEdit) {
+                            // 验证权限：检查用户是否有编辑权限
+                            if (room.userEditPermissions.get(ws.userId)) {
                                 room.updateScene(data.scene, ws);
                             } else {
                                 console.log(`场景更新拒绝: 用户 ${ws.userId} 无权限编辑场景`);
@@ -272,6 +345,7 @@ wss.on('connection', (ws) => {
                                         users: Array.from(room.clients).map((c) => ({
                                             id: c.userId,
                                             name: c.userName,
+                                            canEdit: room.userEditPermissions.get(c.userId) || false,
                                         })),
                                     }),
                                 );
@@ -319,26 +393,32 @@ wss.on('connection', (ws) => {
                                 room.hostId = data.newHostId;
                                 console.log(`房主权限从 ${oldHostId} 成功移交给 ${data.newHostId}，房间: ${ws.roomId}`);
 
+                                // 更新新房主的编辑权限为true
+                                room.userEditPermissions.set(room.hostId, true);
+
                                 // 同时发送host_changed和host_info事件，确保所有客户端都能正确更新房主状态
                                 const hostChangedMessage = JSON.stringify({
                                     type: 'host_changed',
                                     hostId: room.hostId,
                                     oldHostId: oldHostId,
                                     roomId: ws.roomId,
-                                    allowGuestEdit: room.allowGuestEdit,
                                 });
 
                                 const hostInfoMessage = JSON.stringify({
                                     type: 'host_info',
                                     hostId: room.hostId,
                                     roomId: ws.roomId,
-                                    allowGuestEdit: room.allowGuestEdit,
                                 });
 
                                 // 确保广播到所有客户端
                                 console.log(`向房间内所有用户(${room.clients.size}人)广播房主变更事件`);
                                 room.broadcast(hostChangedMessage);
                                 room.broadcast(hostInfoMessage);
+
+                                // 重新广播用户权限列表
+                                room.clients.forEach((client) => {
+                                    room.sendUserPermissions(client);
+                                });
                             }
                         }
                     } else {
@@ -346,29 +426,32 @@ wss.on('connection', (ws) => {
                     }
                     break;
 
-                // 处理设置访客编辑权限
-                case 'set_guest_edit':
+                // 处理设置用户编辑权限
+                case 'set_user_edit_permission':
                     if (ws.roomId) {
                         const room = rooms.get(ws.roomId);
                         if (room && ws.userId === room.hostId) {
-                            const allowEdit = Boolean(data.allowEdit);
-                            room.allowGuestEdit = allowEdit;
-                            console.log(`设置访客编辑权限: 房间=${room.id}, 允许编辑=${allowEdit}`);
+                            const result = room.setUserEditPermission(data.userId, Boolean(data.canEdit));
+                            console.log(
+                                `设置用户编辑权限: 房间=${room.id}, 用户=${data.userId}, 允许编辑=${Boolean(data.canEdit)}`,
+                            );
 
-                            // 广播编辑权限变更事件
-                            const permissionMessage = JSON.stringify({
-                                type: 'guest_edit_permission_changed',
-                                allowGuestEdit: allowEdit,
-                                roomId: room.id,
-                            });
-                            room.broadcast(permissionMessage);
+                            if (!result) {
+                                // 发送错误消息给请求者
+                                ws.send(
+                                    JSON.stringify({
+                                        type: 'error',
+                                        message: '无法修改房主的编辑权限',
+                                    }),
+                                );
+                            }
                         } else {
                             console.log(`设置编辑权限拒绝: 用户 ${ws.userId} 不是房主`);
                             // 发送错误消息给请求者
                             ws.send(
                                 JSON.stringify({
                                     type: 'error',
-                                    message: '只有房主可以设置访客编辑权限',
+                                    message: '只有房主可以设置用户编辑权限',
                                 }),
                             );
                         }

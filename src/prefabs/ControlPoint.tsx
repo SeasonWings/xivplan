@@ -8,6 +8,7 @@ import { getCanvasCoord, rotateCoord } from '../coord';
 import { ControlsPortal } from '../render/Portals';
 import { useStage } from '../render/stage';
 import { Handle } from './Handle';
+import { useEditActivity } from '../EditActivityContext';
 
 export const CONTROL_POINT_BORDER_COLOR = '#00a1ff';
 
@@ -96,6 +97,7 @@ export function createControlPointManager<T extends Vector2d, S, P = unknown>(
         const stage = useStage();
         const [transform, setTransform] = useState<TransformState>();
         const groupRef = useRef<Konva.Group>(null);
+        const { startEditActivity, endEditActivity } = useEditActivity();
 
         const pointerPos = transform ? getHandleCenter(transform) : undefined;
 
@@ -136,6 +138,7 @@ export function createControlPointManager<T extends Vector2d, S, P = unknown>(
                 const handleId = getHandleId(config.handleFunc(object, {}, props), i);
 
                 onActive?.(true);
+                startEditActivity(); // 标记开始编辑活动
                 setTransform({ pointerPos, handleOffset, handleId });
             };
         };
@@ -154,6 +157,7 @@ export function createControlPointManager<T extends Vector2d, S, P = unknown>(
                 e.stopPropagation();
 
                 onActive?.(false);
+                endEditActivity(); // 标记结束编辑活动
                 setTransform(undefined);
 
                 const pointerPos = getHandleCenter({ ...transform, pointerPos: getPointerPos() });

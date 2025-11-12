@@ -14,6 +14,7 @@ import { selectNewObjects, selectNone, useSelection } from '../selection';
 import { useDrawConfig } from '../useDrawConfig';
 import { useEditMode } from '../useEditMode';
 import { useStage } from './stage';
+import { useEditActivity } from '../EditActivityContext';
 
 const SIMPLIFY_THRESHOLD = 2.0;
 const SIMPLIFY_HIGH_QUALITY = true;
@@ -69,6 +70,7 @@ const DrawTargetLayer: React.FC = () => {
     const { scene, dispatch } = useScene();
     const [, setSelection] = useSelection();
     const [, setDefaultCursor] = useDefaultCursor();
+    const { startEditActivity, endEditActivity } = useEditActivity();
     const stage = useStage();
 
     useLayoutEffect(() => {
@@ -90,6 +92,7 @@ const DrawTargetLayer: React.FC = () => {
         if (pos) {
             setIsDrawing(true);
             setPoints([pos]);
+            startEditActivity(); // 标记开始编辑活动
         }
     };
 
@@ -116,6 +119,7 @@ const DrawTargetLayer: React.FC = () => {
             dispatch({ type: 'add', object });
             setSelection(selectNewObjects(scene, 1));
         }
+        endEditActivity(); // 标记结束编辑活动
     };
 
     const linePoints = convertPoints(scene, points);

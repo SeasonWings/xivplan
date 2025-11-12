@@ -19,6 +19,7 @@ import { useEditMode } from '../useEditMode';
 import { vecSub } from '../vector';
 import { SelectableObject } from './SelectableObject';
 import { TetherTarget } from './TetherTarget';
+import { useEditActivity } from '../EditActivityContext';
 
 export interface DraggableObjectProps {
     object: MoveableObject & UnknownObject;
@@ -30,6 +31,7 @@ export const DraggableObject: React.FC<DraggableObjectProps> = ({ object, childr
     const { scene, step, dispatch } = useScene();
     const [selection, setSelection] = useSelection();
     const [dragSelection, setDragSelection] = useDragSelection();
+    const { startEditActivity, endEditActivity } = useEditActivity();
     const center = getCanvasCoord(scene, object);
 
     const isDraggable = !object.pinned && editMode === EditMode.Normal;
@@ -47,8 +49,9 @@ export const DraggableObject: React.FC<DraggableObjectProps> = ({ object, childr
         }
 
         setDragSelection(newSelection);
+        startEditActivity(); // 标记开始编辑活动
 
-        updatePosition(scene, step, object, dragSelection, e, dispatch);
+        updatePosition(scene, step, object, newSelection, e, dispatch);
     };
 
     const handleDragMove = (e: KonvaEventObject<DragEvent>) => {
@@ -60,6 +63,7 @@ export const DraggableObject: React.FC<DraggableObjectProps> = ({ object, childr
         dispatch({ type: 'commit' });
 
         setDragSelection(selectNone());
+        endEditActivity(); // 标记结束编辑活动
     };
 
     // TODO: Konva moves the shape immediately before calling the dragMove event,

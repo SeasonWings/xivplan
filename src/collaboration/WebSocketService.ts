@@ -11,9 +11,12 @@ class WebSocketService {
     private userId: string = '';
     private userName: string = '';
     private roomId: string = '';
-    private connectedUsers: Array<{ id: string; name: string }> = [];
+    private connectedUsers: Array<{ id: string; name: string; canEdit?: boolean }> = [];
+    private heartbeatInterval = 5000; // 心跳间隔5秒
+    private heartbeatTimer: NodeJS.Timeout | null = null;
+    private lastHeartbeatResponse: number = 0;
+    private debugMode = false; // 控制是否打印调试日志
 
-    // 初始化WebSocket连接
     private currentUrl: string = 'ws://localhost:8680';
 
     connect(serverUrl: string = 'ws://localhost:8680'): Promise<void> {
@@ -36,10 +39,11 @@ class WebSocketService {
                 this.ws = new WebSocket(serverUrl);
 
                 this.ws.onopen = () => {
-                    console.log('WebSocket连接已建立');
+                    this.log('WebSocket连接已建立');
                     this.isConnecting = false;
                     this.reconnectAttempts = 0;
                     this.trigger('connected');
+                    this.startHeartbeat(); // 启动心跳
                     resolve();
                 };
 
@@ -48,20 +52,21 @@ class WebSocketService {
                         const data = JSON.parse(event.data);
                         this.handleMessage(data);
                     } catch (error) {
-                        console.error('解析WebSocket消息失败:', error);
+                        this.error('解析WebSocket消息失败:', error);
                     }
                 };
 
                 this.ws.onerror = (error) => {
-                    console.error('WebSocket错误:', error);
+                    this.error('WebSocket错误:', error);
                     this.isConnecting = false;
                     reject(error);
                 };
 
                 // 连接关闭时的处理
                 this.ws.onclose = (event) => {
-                    console.log(`WebSocket连接关闭: ${event.code} ${event.reason}`);
+                    this.log(`WebSocket连接关闭: ${event.code} ${event.reason}`);
                     this.isConnecting = false;
+                    this.stopHeartbeat(); // 停止心跳
                     this.trigger('disconnected');
 
                     // 只有在非正常关闭的情况下才尝试重连
@@ -87,6 +92,8 @@ class WebSocketService {
             this.reconnectTimer = null;
         }
 
+        this.stopHeartbeat(); // 停止心跳
+
         if (this.ws) {
             // 使用正常关闭代码
             this.ws.close(1000, 'Client disconnecting');
@@ -95,6 +102,50 @@ class WebSocketService {
 
         this.isConnecting = false;
         this.reconnectAttempts = 0;
+    }
+
+    // 启动心跳
+    private startHeartbeat(): void {
+        this.stopHeartbeat(); // 先清除现有的心跳定时器
+        this.lastHeartbeatResponse = Date.now();
+
+        this.heartbeatTimer = setInterval(() => {
+            this.sendHeartbeat();
+        }, this.heartbeatInterval);
+
+        this.log('心跳保活机制已启动，间隔:', this.heartbeatInterval, 'ms');
+    }
+
+    // 停止心跳
+    private stopHeartbeat(): void {
+        if (this.heartbeatTimer) {
+            clearInterval(this.heartbeatTimer);
+            this.heartbeatTimer = null;
+            this.log('心跳保活机制已停止');
+        }
+    }
+
+    // 发送心跳包
+    private sendHeartbeat(): void {
+        if (this.ws?.readyState === WebSocket.OPEN) {
+            // 检查是否长时间未收到响应，可能连接已断开
+            const currentTime = Date.now();
+            const timeSinceLastResponse = currentTime - this.lastHeartbeatResponse;
+
+            // 如果超过1.5倍心跳间隔未收到响应，认为连接异常
+            if (timeSinceLastResponse > this.heartbeatInterval * 1.5) {
+                this.log('长时间未收到心跳响应，可能连接已断开，尝试重连');
+                this.disconnect();
+                this.connect(this.currentUrl).catch((error) => {
+                    this.error('心跳重连失败:', error);
+                });
+                return;
+            }
+
+            // 发送ping消息
+            this.ws.send(JSON.stringify({ type: 'ping' }));
+            this.log('发送心跳包');
+        }
     }
 
     // 尝试重连
@@ -107,22 +158,32 @@ class WebSocketService {
                 this.maxReconnectDelay,
             );
 
-            console.log(
-                `尝试重新连接... (第 ${this.reconnectAttempts}/${this.maxReconnectAttempts} 次，延迟 ${delay}ms)`,
-            );
+            this.log(`尝试重新连接... (第 ${this.reconnectAttempts}/${this.maxReconnectAttempts} 次，延迟 ${delay}ms)`);
 
             this.reconnectTimer = setTimeout(() => {
                 if (!this.isConnecting && !this.ws?.OPEN) {
                     this.connect(this.currentUrl).catch((error) => {
-                        console.error('重连失败:', error);
+                        this.error('重连失败:', error);
                     });
                 }
                 this.reconnectTimer = null;
             }, delay);
         } else {
-            console.error('达到最大重连次数，停止重连');
+            this.error('达到最大重连次数，停止重连');
             this.trigger('disconnected');
         }
+    }
+
+    // 日志打印方法，受debugMode控制
+    private log(...args: any[]): void {
+        if (this.debugMode) {
+            console.log(...args);
+        }
+    }
+
+    // 错误日志打印方法，不受debugMode控制
+    private error(...args: any[]): void {
+        console.error(...args);
     }
 
     // 处理接收到的消息
@@ -168,9 +229,26 @@ class WebSocketService {
                 this.trigger('host_changed', data);
                 break;
 
+            case 'pong':
+                // 接收到服务器的心跳响应
+                this.lastHeartbeatResponse = Date.now();
+                this.log('收到服务器心跳响应');
+                break;
+
             case 'guest_edit_permission_changed':
                 // 触发访客编辑权限变更事件
                 this.trigger('guest_edit_permission_changed', data);
+                break;
+
+            case 'user_permission_changed':
+                // 处理用户权限变更事件
+                this.log(`收到用户权限变更: userId=${data.userId}, canEdit=${data.canEdit}`);
+                // 更新connectedUsers数组中的用户权限
+                this.connectedUsers = this.connectedUsers.map((user) =>
+                    user.id === data.userId ? { ...user, canEdit: data.canEdit } : user,
+                );
+                // 触发用户列表更新事件
+                this.trigger('users_updated', this.connectedUsers);
                 break;
 
             case 'chat_message':
@@ -205,13 +283,21 @@ class WebSocketService {
     // 加入房间
     joinRoom(roomId?: string): void {
         this.send('join_room', { roomId });
+
+        // 延迟一小段时间后刷新用户列表，确保成功加入房间后获取最新的用户信息
+        setTimeout(() => {
+            this.refreshUsersList();
+        }, 500);
     }
 
     // 更新场景数据
-    updateScene(scene: any, isHost: boolean, allowGuestEdit: boolean): void {
-        // 只有房主或允许访客编辑时才能发送场景更新
-        if (isHost || allowGuestEdit) {
+    updateScene(scene: any, isHost: boolean): void {
+        // 只有房主或用户有编辑权限时才能发送场景更新
+        const currentUser = this.connectedUsers.find((user) => user.id === this.userId);
+        if (isHost || (currentUser && currentUser.canEdit)) {
             this.send('update_scene', { scene });
+        } else {
+            console.warn('没有编辑权限，无法发送场景更新');
         }
     }
 
@@ -230,9 +316,25 @@ class WebSocketService {
         this.send('transfer_host', { newHostId });
     }
 
-    // 设置访客编辑权限
-    setGuestEdit(allowEdit: boolean): void {
-        this.send('set_guest_edit', { allowEdit });
+    // 设置用户编辑权限
+    setUserEditPermission(userId: string, canEdit: boolean): void {
+        console.log(`发送设置用户编辑权限消息: userId=${userId}, canEdit=${canEdit}`);
+        this.send('set_user_edit_permission', { userId, canEdit });
+
+        // 延迟一小段时间后刷新用户列表，确保服务器已经处理了权限变更
+        setTimeout(() => {
+            this.refreshUsersList();
+        }, 300);
+    }
+
+    // 主动刷新用户列表
+    refreshUsersList(): void {
+        // 发送刷新用户列表请求到服务器
+        this.send('refresh_users_list');
+
+        // 同时更新本地用户列表状态，确保UI及时反映最新变化
+        this.trigger('users_updated', this.connectedUsers);
+        console.log('主动刷新用户列表');
     }
 
     // 添加事件监听器
@@ -274,7 +376,7 @@ class WebSocketService {
         userId: string;
         userName: string;
         roomId: string;
-        connectedUsers: Array<{ id: string; name: string }>;
+        connectedUsers: Array<{ id: string; name: string; canEdit?: boolean }>;
     } {
         return {
             connected: this.ws?.readyState === WebSocket.OPEN,

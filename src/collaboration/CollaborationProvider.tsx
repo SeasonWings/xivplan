@@ -1,11 +1,14 @@
-import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
-import { useLoadScene, useScene } from '../SceneProvider';
-import { webSocketService } from './WebSocketService';
+import React, { createContext, ReactNode, useContext, useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { MessageToast } from '../MessageToast';
+import { useLoadScene, useScene } from '../SceneProvider';
+import { useEditActivity } from '../EditActivityContext';
+import { webSocketService } from './WebSocketService';
 
 interface User {
     id: string;
     name: string;
+    canEdit?: boolean;
 }
 
 interface CollaborationContextType {
@@ -16,19 +19,20 @@ interface CollaborationContextType {
     connectedUsers: User[];
     isHost: boolean;
     hostId: string; // 房主ID
-    allowGuestEdit: boolean; // 访客是否可以编辑
     joinRoom: (roomId?: string) => Promise<void>;
     leaveRoom: () => void;
     changeUserName: (name: string) => void;
     sendChatMessage: (message: string) => void;
     transferHost: (newHostId: string) => void;
-    setGuestEdit: (allowEdit: boolean) => void; // 设置访客编辑权限
+    setUserEditPermission: (userId: string, canEdit: boolean) => void; // 设置用户编辑权限
     chatMessages: Array<{
         userId: string;
         userName: string;
         message: string;
         timestamp: number;
     }>;
+    enableUpdateDelay: boolean; // 是否启用更新延时
+    setEnableUpdateDelay: (enabled: boolean) => void; // 设置是否启用更新延时
 }
 
 const CollaborationContext = createContext<CollaborationContextType | undefined>(undefined);
@@ -46,13 +50,31 @@ interface CollaborationProviderProps {
     serverUrl?: string;
 }
 
+// localStorage中的用户名键名
+const USER_NAME_STORAGE_KEY = 'xivplan_user_name';
+
+// 辅助函数：从localStorage获取用户名
+const getSavedUserName = (): string => {
+    try {
+        return localStorage.getItem(USER_NAME_STORAGE_KEY) || '';
+    } catch (error) {
+        console.error('读取保存的用户名失败:', error);
+        return '';
+    }
+};
+
 export const CollaborationProvider: React.FC<CollaborationProviderProps> = ({
     children,
     serverUrl = 'ws://localhost:8680',
 }) => {
+    const { scene, stepIndex, dispatch } = useScene();
+    const loadScene = useLoadScene();
+    const [searchParams] = useSearchParams();
+
     const [connected, setConnected] = useState(false);
     const [userId, setUserId] = useState('');
-    const [userName, setUserName] = useState('');
+    // 初始化时直接从localStorage读取用户名
+    const [userName, setUserName] = useState(getSavedUserName());
     const [roomId, setRoomId] = useState('');
     const [connectedUsers, setConnectedUsers] = useState<User[]>([]);
     const [chatMessages, setChatMessages] = useState<
@@ -65,11 +87,24 @@ export const CollaborationProvider: React.FC<CollaborationProviderProps> = ({
     >([]);
     const [isHost, setIsHost] = useState(false);
     const [hostId, setHostId] = useState(''); // 存储房主ID
-    const [allowGuestEdit, setAllowGuestEdit] = useState(true); // 默认允许访客编辑
-    const [error, setError] = useState<string | null>(null);
+    // 使用EditActivityContext中的isActiveEdit状态
+    const { isActiveEdit, setActiveEdit } = useEditActivity();
 
-    const { scene } = useScene();
-    const loadScene = useLoadScene();
+    const [error, setError] = useState<string | null>(null);
+    // 场景更新计数器，用于实现每5次更新才发送一次请求
+    // Removed unused updateCounter state
+    // 控制是否启用场景更新延时功能
+    const [enableUpdateDelay, setEnableUpdateDelay] = useState(false);
+    // 使用useRef存储定时器引用，避免触发不必要的重渲染
+    const updateTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+    // 组件加载时再次确认localStorage中的用户名
+    useEffect(() => {
+        const savedName = getSavedUserName();
+        if (savedName && savedName !== userName) {
+            setUserName(savedName);
+        }
+    }, []);
 
     // 连接到WebSocket服务器
     useEffect(() => {
@@ -77,6 +112,24 @@ export const CollaborationProvider: React.FC<CollaborationProviderProps> = ({
             try {
                 await webSocketService.connect(serverUrl);
                 setConnected(true);
+
+                // 连接成功后，如果已有保存的用户名，立即发送到服务器
+                const savedName = getSavedUserName();
+                if (savedName) {
+                    setTimeout(() => {
+                        webSocketService.setUserName(savedName);
+                    }, 100); // 短暂延迟确保连接完全建立
+                }
+
+                // 检查URL中是否有房间参数，如果有则加入房间
+                const roomIdFromUrl = searchParams.get('room');
+                if (roomIdFromUrl) {
+                    setTimeout(() => {
+                        joinRoom(roomIdFromUrl).catch((error) => {
+                            console.error('自动加入房间失败:', error);
+                        });
+                    }, 200); // 确保连接和用户名设置完成后再加入房间
+                }
             } catch (error) {
                 console.error('连接WebSocket服务器失败:', error);
                 setConnected(false);
@@ -88,7 +141,22 @@ export const CollaborationProvider: React.FC<CollaborationProviderProps> = ({
         // 注册事件监听器
         const handleUserInfo = (data: any) => {
             setUserId(data.userId);
-            setUserName(data.userName);
+
+            // 获取保存的用户名
+            const savedName = getSavedUserName();
+
+            // 如果有保存的用户名，优先使用它
+            if (savedName) {
+                // 如果当前userName和保存的用户名不同，更新它
+                if (savedName !== userName) {
+                    setUserName(savedName);
+                }
+                // 确保服务器也使用这个用户名
+                webSocketService.setUserName(savedName);
+            } else if (data.userName && !userName) {
+                // 如果没有保存的用户名，但服务器提供了一个，且当前没有用户名，则使用服务器的
+                setUserName(data.userName);
+            }
         };
 
         const handleRoomJoined = (data: any) => {
@@ -148,11 +216,6 @@ export const CollaborationProvider: React.FC<CollaborationProviderProps> = ({
             );
             // 首先更新hostId状态
             setHostId(data.hostId);
-            // 更新访客编辑权限
-            if (typeof data.allowGuestEdit !== 'undefined') {
-                setAllowGuestEdit(data.allowGuestEdit);
-                console.log(`handleHostChanged - 更新访客编辑权限: ${data.allowGuestEdit}`);
-            }
             // 然后检查userId是否存在，更新isHost状态
             if (userId) {
                 const isNowHost = data.hostId === userId;
@@ -180,19 +243,9 @@ export const CollaborationProvider: React.FC<CollaborationProviderProps> = ({
             } else {
                 console.log('handleHostInfo - userId尚未获取，无法设置房主状态');
             }
-            // 更新访客编辑权限
-            if (typeof data.allowGuestEdit !== 'undefined') {
-                setAllowGuestEdit(data.allowGuestEdit);
-                console.log(`handleHostInfo - 更新访客编辑权限: ${data.allowGuestEdit}`);
-            }
         };
 
-        const handleGuestEditPermissionChanged = (data: any) => {
-            console.log(
-                `handleGuestEditPermissionChanged - 访客编辑权限变更: allowGuestEdit=${data.allowGuestEdit}, 房间=${data.roomId}`,
-            );
-            setAllowGuestEdit(data.allowGuestEdit);
-        };
+        // 移除访客编辑权限变更处理，使用用户级权限
 
         // 定义错误处理回调函数
         const handleError = (message: string) => {
@@ -204,24 +257,40 @@ export const CollaborationProvider: React.FC<CollaborationProviderProps> = ({
         // 注册房主相关事件监听器
         webSocketService.on('host_changed', handleHostChanged);
         webSocketService.on('host_info', handleHostInfo);
-        webSocketService.on('guest_edit_permission_changed', handleGuestEditPermissionChanged);
+
         webSocketService.on('error', handleError);
 
         // 清理函数
         return () => {
             webSocketService.off('host_changed', handleHostChanged);
             webSocketService.off('host_info', handleHostInfo);
-            webSocketService.off('guest_edit_permission_changed', handleGuestEditPermissionChanged);
+
             webSocketService.off('error', handleError);
         };
     }, [userId]); // 依赖于userId，确保函数获取最新的userId值
+
+    // 已经从useScene获取了scene、stepIndex和dispatch
 
     // 单独处理scene_update事件中对userId的依赖
     useEffect(() => {
         const handleSceneUpdate = ({ data, senderId }: { data: any; senderId: string }) => {
             // 如果更新不是由当前用户发起的，则更新场景
             if (senderId !== userId) {
+                console.log(`[协作] 收到来自用户 ${senderId} 的场景更新，设置isActiveEdit=false`);
+                setActiveEdit(false); // 设置为非主动编辑
+                // 保存当前选中的stepIndex
+                const currentStepIndex = stepIndex;
+                // 加载更新的场景
                 loadScene(data);
+                // 恢复原来选中的stepIndex
+                dispatch({ type: 'setStep', index: currentStepIndex });
+                // 定期重置为不活动状态
+                setTimeout(() => {
+                    console.log('[编辑活动] 结束编辑操作');
+                    setActiveEdit(false);
+                }, 500);
+            } else {
+                console.log(`[协作] 收到自己(${userId})发送的场景更新，忽略`);
             }
         };
 
@@ -232,19 +301,36 @@ export const CollaborationProvider: React.FC<CollaborationProviderProps> = ({
         return () => {
             webSocketService.off('scene_update', handleSceneUpdate);
         };
-    }, [userId, loadScene]);
+    }, [userId, loadScene, stepIndex, dispatch]);
 
     // 场景更新时发送到服务器
     useEffect(() => {
-        if (connected && roomId && scene) {
-            // 使用防抖来限制发送频率
-            const timer = setTimeout(() => {
-                webSocketService.updateScene(scene, isHost, allowGuestEdit);
-            }, 100);
+        if (connected && roomId && scene && isActiveEdit) {
+            // 如果有未完成的定时器，先清除
+            if (updateTimerRef.current) {
+                clearTimeout(updateTimerRef.current);
+            }
 
-            return () => clearTimeout(timer);
+            if (enableUpdateDelay) {
+                // 如果启用了延时，设置定时器
+                updateTimerRef.current = setTimeout(() => {
+                    webSocketService.updateScene(scene, isHost);
+                    // 清除定时器引用
+                    updateTimerRef.current = null;
+                }, 500); // 1秒延时
+            } else {
+                // 不启用延时，直接发送
+                webSocketService.updateScene(scene, isHost);
+            }
         }
-    }, [scene, connected, roomId, isHost, allowGuestEdit]);
+
+        // 清理函数：清除定时器
+        return () => {
+            if (updateTimerRef.current) {
+                clearTimeout(updateTimerRef.current);
+            }
+        };
+    }, [scene, connected, roomId, isHost, isActiveEdit, enableUpdateDelay]);
 
     // 加入房间
     const joinRoom = async (roomId?: string) => {
@@ -295,7 +381,13 @@ export const CollaborationProvider: React.FC<CollaborationProviderProps> = ({
         setConnectedUsers([]);
         setChatMessages([]);
         setIsHost(false);
-        setAllowGuestEdit(true); // 重置为默认值
+        // 清除定时器
+        if (updateTimerRef.current) {
+            clearTimeout(updateTimerRef.current);
+            updateTimerRef.current = null;
+        }
+        // 重置延时设置
+        setEnableUpdateDelay(false);
         // 这里可以添加离开房间的逻辑，例如重新连接WebSocket
     };
 
@@ -304,6 +396,12 @@ export const CollaborationProvider: React.FC<CollaborationProviderProps> = ({
         if (name.trim()) {
             webSocketService.setUserName(name);
             setUserName(name);
+            // 保存用户名到localStorage
+            try {
+                localStorage.setItem(USER_NAME_STORAGE_KEY, name);
+            } catch (error) {
+                console.error('保存用户名失败:', error);
+            }
         }
     };
 
@@ -318,9 +416,16 @@ export const CollaborationProvider: React.FC<CollaborationProviderProps> = ({
         webSocketService.transferHost(newHostId);
     };
 
-    // 设置访客编辑权限
-    const setGuestEdit = (allowEdit: boolean) => {
-        webSocketService.setGuestEdit(allowEdit);
+    // 设置用户编辑权限
+    const setUserEditPermission = (userId: string, canEdit: boolean) => {
+        webSocketService.setUserEditPermission(userId, canEdit);
+    };
+
+    // 控制是否启用更新延时（只有房主可以修改）
+    const handleSetEnableUpdateDelay = (enabled: boolean) => {
+        if (isHost) {
+            setEnableUpdateDelay(enabled);
+        }
     };
 
     const value = {
@@ -331,14 +436,15 @@ export const CollaborationProvider: React.FC<CollaborationProviderProps> = ({
         connectedUsers,
         isHost,
         hostId,
-        allowGuestEdit,
         joinRoom,
         leaveRoom,
         changeUserName,
         sendChatMessage,
         transferHost,
-        setGuestEdit,
+        setUserEditPermission,
         chatMessages,
+        enableUpdateDelay,
+        setEnableUpdateDelay: handleSetEnableUpdateDelay,
     };
 
     return (

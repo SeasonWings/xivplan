@@ -4,9 +4,11 @@ import React, { PropsWithChildren, RefAttributes, useContext, useState } from 'r
 import { Layer, Stage } from 'react-konva';
 import { DefaultCursorProvider } from '../DefaultCursorProvider';
 import { getDropAction } from '../DropHandler';
+import { useEditActivity } from '../EditActivityContext';
 import { SceneHotkeyHandler } from '../HotkeyHandler';
 import { EditorState, SceneAction, SceneContext, useCurrentStep, useScene } from '../SceneProvider';
 import { SelectionContext, SelectionState, SpotlightContext } from '../SelectionContext';
+import { useCollaboration } from '../collaboration/CollaborationProvider';
 import { getCanvasSize, getSceneCoord } from '../coord';
 import { Scene } from '../scene';
 import { selectNewObjects, selectNone, useSelection } from '../selection';
@@ -24,6 +26,15 @@ export const SceneRenderer: React.FC = () => {
     const [, setSelection] = useContext(SelectionContext);
     const size = getCanvasSize(scene);
     const [stage, stageRef] = useState<Konva.Stage | null>(null);
+    const { startEditActivity, endEditActivity } = useEditActivity();
+    const [lastUpdateTime, setLastUpdateTime] = useState(0);
+
+    // 使用协作上下文获取用户权限信息
+    const collaboration = useCollaboration();
+    const hasEditPermission =
+        collaboration?.isHost ||
+        collaboration?.connectedUsers?.find((user) => user.id === collaboration.userId)?.canEdit ||
+        false;
 
     const onClickStage = (e: KonvaEventObject<MouseEvent>) => {
         // Clicking on nothing (with no modifier keys held) should cancel selection.
@@ -32,11 +43,35 @@ export const SceneRenderer: React.FC = () => {
         }
     };
 
+    const onMouseMoveStage = (e: KonvaEventObject<MouseEvent>) => {
+        if (!hasEditPermission) return;
+
+        const now = Date.now();
+        // 每50ms更新一次画布
+        if (now - lastUpdateTime >= 200) {
+            console.log('更新画布');
+            startEditActivity(); // 标记开始编辑活动，确保触发场景更新
+            setLastUpdateTime(now);
+        }
+    };
+
+    // 重置计时当鼠标离开画布
+    const onMouseLeaveStage = () => {
+        setLastUpdateTime(0);
+        endEditActivity(); // 标记结束编辑活动
+    };
+
     // console.log(scene);
 
     return (
         <DropTarget stage={stage}>
-            <Stage {...size} ref={stageRef} onClick={onClickStage}>
+            <Stage
+                {...size}
+                ref={stageRef}
+                onClick={onClickStage}
+                onMouseMove={onMouseMoveStage}
+                onMouseLeave={onMouseLeaveStage}
+            >
                 <StageContext value={stage}>
                     <DefaultCursorProvider>
                         <SceneContents />
@@ -164,6 +199,7 @@ const DropTarget: React.FC<DropTargetProps> = ({ stage, children }) => {
     const { scene, dispatch } = useScene();
     const [, setSelection] = useSelection();
     const [dragObject, setDragObject] = usePanelDrag();
+    const { startEditActivity } = useEditActivity();
 
     const onDrop = (e: React.DragEvent) => {
         e.preventDefault();
@@ -185,6 +221,7 @@ const DropTarget: React.FC<DropTargetProps> = ({ stage, children }) => {
 
         const action = getDropAction(dragObject, getSceneCoord(scene, position));
         if (action) {
+            startEditActivity(); // 开始编辑活动，确保触发场景更新
             dispatch(action);
             setSelection(selectNewObjects(scene, 1));
         }

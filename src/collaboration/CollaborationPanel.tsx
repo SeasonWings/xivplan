@@ -1,9 +1,11 @@
 import { Button, Input, Switch } from '@fluentui/react-components';
 import React, { useEffect, useRef, useState } from 'react';
+import { useEditActivity } from '../EditActivityContext';
 import { InfoField } from '../InfoField';
 import { useCollaboration } from './CollaborationProvider';
 
 const CollaborationPanel: React.FC = () => {
+    const { startEditActivity } = useEditActivity();
     const {
         connected,
         userId,
@@ -12,13 +14,12 @@ const CollaborationPanel: React.FC = () => {
         connectedUsers,
         isHost,
         hostId, // 获取房主ID
-        allowGuestEdit,
         joinRoom,
         leaveRoom,
         changeUserName,
         sendChatMessage,
         transferHost,
-        setGuestEdit,
+        setUserEditPermission,
         chatMessages,
     } = useCollaboration();
 
@@ -26,6 +27,11 @@ const CollaborationPanel: React.FC = () => {
     const [newRoomId, setNewRoomId] = useState('');
     const [nameInput, setNameInput] = useState(userName);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+
+    // 当userName变化时，同步更新nameInput
+    useEffect(() => {
+        setNameInput(userName);
+    }, [userName]);
 
     // 自动滚动到最新消息
     useEffect(() => {
@@ -114,7 +120,7 @@ const CollaborationPanel: React.FC = () => {
         <div
             className="collaboration-panel"
             style={{
-                width: '280px',
+                width: '380px',
                 height: '100%',
                 borderRight: '1px solid #ccc',
                 backgroundColor: '#f5f5f5',
@@ -205,26 +211,35 @@ const CollaborationPanel: React.FC = () => {
                             {isHost ? '你是房间主机' : '你是房间访客'}
                         </div>
                         {isHost && (
-                            <div
-                                style={{
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    alignItems: 'center',
-                                    justifyContent: 'space-between',
-                                }}
-                            >
-                                <div
-                                    style={{
-                                        marginTop: '10px',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'space-between',
-                                    }}
-                                >
-                                    <span style={{ fontSize: '14px' }}>允许访客编辑</span>
-                                    <Switch checked={allowGuestEdit} onChange={() => setGuestEdit(!allowGuestEdit)} />
-                                </div>
-                                <span style={{ fontSize: '11px' }}>开启后过快操作可能会导致操作不同步,请窒息!(X)</span>
+                            <div style={{ marginTop: '10px' }}>
+                                <span style={{ fontSize: '14px', marginBottom: '5px', display: 'block' }}>
+                                    支持在用户列表独立编辑用户绘图权限
+                                </span>
+                                <span style={{ fontSize: '11px', color: '#666' }}>
+                                    开启后网络原因可能会导致操作不同步，请谨慎操作
+                                </span>
+
+                                {/* 更新延时控制 */}
+                                {/* <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #eee' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '5px' }}>
+                                        <span style={{ fontSize: '14px' }}>启用场景更新延时</span>
+                                        <Switch 
+                                            checked={enableUpdateDelay} 
+                                            onChange={(event) => {
+                                                setEnableUpdateDelay(event.target.checked);
+                                            }} 
+                                            aria-label="启用场景更新延时"
+                                            style={{ 
+                                                cursor: 'pointer',
+                                                width: '44px',
+                                                height: '24px'
+                                            }}
+                                        />
+                                    </div>
+                                    <span style={{ fontSize: '11px', color: '#666' }}>
+                                        {enableUpdateDelay ? '已开启 - 场景更新将延迟1秒发送' : '未开启 - 场景更新将立即发送'}
+                                    </span>
+                                </div> */}
                             </div>
                         )}
                     </div>
@@ -258,7 +273,7 @@ const CollaborationPanel: React.FC = () => {
                 }}
             >
                 <InfoField label={`在线用户 (${connectedUsers.length})`}>
-                    <div style={{ maxHeight: '120px', overflowY: 'auto', fontSize: '14px' }}>
+                    <div style={{ maxHeight: '200px', overflowY: 'auto', fontSize: '14px' }}>
                         {connectedUsers.map((user) => (
                             <div
                                 key={user.id}
@@ -281,21 +296,58 @@ const CollaborationPanel: React.FC = () => {
                                                 (房主)
                                             </span>
                                         )}
+                                        {/* 显示编辑权限标识 */}
+                                        {user.canEdit && user.id !== hostId && (
+                                            <span style={{ color: '#722ed1', marginLeft: '5px', fontSize: '12px' }}>
+                                                (可编辑)
+                                            </span>
+                                        )}
                                     </div>
-                                    {/* 只有当前用户是房主，并且不是自己时才显示移交按钮 */}
-                                    {isHost && user.id !== userId && (
-                                        <Button
-                                            size="small"
-                                            onClick={() => {
-                                                if (window.confirm(`确定要将房主权限移交给 ${user.name} 吗？`)) {
-                                                    transferHost(user.id);
-                                                }
-                                            }}
-                                            style={{ fontSize: '12px', padding: '2px 8px' }}
-                                        >
-                                            移交房主
-                                        </Button>
-                                    )}
+                                    <div
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '5px',
+                                            marginLeft: 'auto',
+                                        }}
+                                    >
+                                        {/* 编辑权限开关 - 只有房主可以控制，房主始终有编辑权限 */}
+                                        {isHost && user.id !== userId && (
+                                            <div style={{ padding: '2px' }}>
+                                                <Switch
+                                                    checked={user.canEdit || false}
+                                                    onChange={(event) => {
+                                                        console.log(
+                                                            `设置用户编辑权限: userId=${user.id}, canEdit=${event.target.checked}`,
+                                                        );
+                                                        setUserEditPermission(user.id, event.target.checked);
+                                                        // 触发场景更新
+                                                        startEditActivity();
+                                                    }}
+                                                    aria-label={`设置${user.name}的编辑权限`}
+                                                    style={{
+                                                        cursor: 'pointer',
+                                                        width: '44px',
+                                                        height: '24px',
+                                                    }}
+                                                />
+                                            </div>
+                                        )}
+                                        {/* 只有当前用户是房主，并且不是自己时才显示移交按钮 */}
+                                        {isHost && user.id !== userId && (
+                                            <Button
+                                                size="small"
+                                                onClick={() => {
+                                                    if (window.confirm(`确定要将房主权限移交给 ${user.name} 吗？`)) {
+                                                        transferHost(user.id);
+                                                    }
+                                                }}
+                                                style={{ fontSize: '12px', padding: '2px 8px', minWidth: '50px' }}
+                                            >
+                                                移交房主
+                                            </Button>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         ))}
