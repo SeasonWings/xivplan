@@ -31,14 +31,14 @@ pnpm install
 
 ```bash
 # 在backend目录中运行
-node server.js
+npm run dev
 ```
 
-默认情况下，服务器会在3000端口启动。你可以通过环境变量更改端口：
+默认情况下，服务器会在8680端口启动。你可以通过环境变量更改端口：
 
 ```bash
 # 在backend目录中运行
-PORT=8080 node server.js
+PORT=8680 node server.js
 ```
 
 ### 3. 服务器配置（可选）
