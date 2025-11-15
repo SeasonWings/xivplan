@@ -1,8 +1,8 @@
 import React, { createContext, ReactNode, useContext, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useEditActivity } from '../EditActivityContext';
 import { MessageToast } from '../MessageToast';
 import { useLoadScene, useScene } from '../SceneProvider';
-import { useEditActivity } from '../EditActivityContext';
 import { webSocketService } from './WebSocketService';
 
 interface User {
@@ -65,7 +65,7 @@ const getSavedUserName = (): string => {
 
 export const CollaborationProvider: React.FC<CollaborationProviderProps> = ({
     children,
-    serverUrl = 'ws://localhost:8680',
+    serverUrl = 'ws://hk.mapleshuzuko.site:8680',
 }) => {
     const { scene, stepIndex, dispatch } = useScene();
     const loadScene = useLoadScene();
@@ -97,6 +97,7 @@ export const CollaborationProvider: React.FC<CollaborationProviderProps> = ({
     const [enableUpdateDelay, setEnableUpdateDelay] = useState(false);
     // 使用useRef存储定时器引用，避免触发不必要的重渲染
     const updateTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const lastUpdateTimeRef = useRef<number>(Date.now());
 
     // 组件加载时再次确认localStorage中的用户名
     useEffect(() => {
@@ -303,24 +304,26 @@ export const CollaborationProvider: React.FC<CollaborationProviderProps> = ({
         };
     }, [userId, loadScene, stepIndex, dispatch]);
 
-    // 场景更新时发送到服务器
     useEffect(() => {
         if (connected && roomId && scene && isActiveEdit) {
-            // 如果有未完成的定时器，先清除
-            if (updateTimerRef.current) {
-                clearTimeout(updateTimerRef.current);
-            }
-
-            if (enableUpdateDelay) {
-                // 如果启用了延时，设置定时器
-                updateTimerRef.current = setTimeout(() => {
-                    webSocketService.updateScene(scene, isHost);
-                    // 清除定时器引用
-                    updateTimerRef.current = null;
-                }, 500); // 1秒延时
-            } else {
-                // 不启用延时，直接发送
+            // if (enableUpdateDelay) {
+            //     const currentTime = Date.now();
+            //     const timeSinceLastUpdate = currentTime - lastUpdateTimeRef.current;
+            //     // 如果达到5次更新或者时间间隔超过200ms，发送场景数据
+            //     if (timeSinceLastUpdate > 100) {
+            //         webSocketService.updateScene(scene, isHost);
+            //         lastUpdateTimeRef.current = currentTime; // 更新时间戳
+            //     }
+            // } else {
+            //     // 不启用延时，直接发送
+            //     webSocketService.updateScene(scene, isHost);
+            // }
+            const currentTime = Date.now();
+            const timeSinceLastUpdate = currentTime - lastUpdateTimeRef.current;
+            // 如果达到5次更新或者时间间隔超过200ms，发送场景数据
+            if (timeSinceLastUpdate > 150) {
                 webSocketService.updateScene(scene, isHost);
+                lastUpdateTimeRef.current = currentTime; // 更新时间戳
             }
         }
 

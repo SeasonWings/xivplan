@@ -21,6 +21,8 @@ const CollaborationPanel: React.FC = () => {
         transferHost,
         setUserEditPermission,
         chatMessages,
+        // enableUpdateDelay,
+        // setEnableUpdateDelay,
     } = useCollaboration();
 
     const [newMessage, setNewMessage] = useState('');
@@ -221,23 +223,32 @@ const CollaborationPanel: React.FC = () => {
 
                                 {/* 更新延时控制 */}
                                 {/* <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #eee' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '5px' }}>
+                                    <div
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'space-between',
+                                            marginBottom: '5px',
+                                        }}
+                                    >
                                         <span style={{ fontSize: '14px' }}>启用场景更新延时</span>
-                                        <Switch 
-                                            checked={enableUpdateDelay} 
+                                        <Switch
+                                            checked={enableUpdateDelay}
                                             onChange={(event) => {
                                                 setEnableUpdateDelay(event.target.checked);
-                                            }} 
+                                            }}
                                             aria-label="启用场景更新延时"
-                                            style={{ 
+                                            style={{
                                                 cursor: 'pointer',
                                                 width: '44px',
-                                                height: '24px'
+                                                height: '24px',
                                             }}
                                         />
                                     </div>
                                     <span style={{ fontSize: '11px', color: '#666' }}>
-                                        {enableUpdateDelay ? '已开启 - 场景更新将延迟1秒发送' : '未开启 - 场景更新将立即发送'}
+                                        {enableUpdateDelay
+                                            ? '已开启 - 场景更新将延迟1秒发送'
+                                            : '未开启 - 场景更新将立即发送'}
                                     </span>
                                 </div> */}
                             </div>
