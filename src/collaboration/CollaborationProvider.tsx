@@ -65,7 +65,7 @@ const getSavedUserName = (): string => {
 
 export const CollaborationProvider: React.FC<CollaborationProviderProps> = ({
     children,
-    serverUrl = 'ws://hk.mapleshuzuko.site:8680',
+    serverUrl = 'ws://ws.xivplan.mapleshuzuko.site',
 }) => {
     const { scene, stepIndex, dispatch } = useScene();
     const loadScene = useLoadScene();
@@ -321,7 +321,7 @@ export const CollaborationProvider: React.FC<CollaborationProviderProps> = ({
             const currentTime = Date.now();
             const timeSinceLastUpdate = currentTime - lastUpdateTimeRef.current;
             // 如果达到5次更新或者时间间隔超过200ms，发送场景数据
-            if (timeSinceLastUpdate > 150) {
+            if (timeSinceLastUpdate > 50) {
                 webSocketService.updateScene(scene, isHost);
                 lastUpdateTimeRef.current = currentTime; // 更新时间戳
             }

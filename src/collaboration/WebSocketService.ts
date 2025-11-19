@@ -17,9 +17,10 @@ class WebSocketService {
     private lastHeartbeatResponse: number = 0;
     private debugMode = false; // 控制是否打印调试日志
 
-    private currentUrl: string = 'ws://hk.mapleshuzuko.site:8680';
+    // enter your WebSocketUrl
+    private currentUrl: string = 'ws://ws.xivplan.mapleshuzuko.site';
 
-    connect(serverUrl: string = 'ws://hk.mapleshuzuko.site:8680'): Promise<void> {
+    connect(serverUrl: string = 'ws://ws.xivplan.mapleshuzuko.site'): Promise<void> {
         return new Promise((resolve, reject) => {
             // 清除任何现有的重连定时器
             if (this.reconnectTimer) {
