@@ -1,7 +1,7 @@
 import { ColorSwatchProps, Theme, webDarkTheme, webLightTheme } from '@fluentui/react-components';
-import { useTranslation } from 'react-i18next';
 import { ShapeConfig } from 'konva/lib/Shape';
 import { CSSProperties, useContext } from 'react';
+import { useTranslation } from 'react-i18next';
 import { DarkModeContext } from './ThemeContext';
 import { cssPropertiesToStyleString, themeToCssProperties, themeToCssVars, themeToTokensObject } from './themeUtil';
 
@@ -221,8 +221,8 @@ const lightTheme: Theme = {
     colorSubtleBackgroundHover: '#d8d2c2',
     colorSubtleBackgroundSelected: '#cec9b9',
     colorNeutralBackground1: '#eee8d5',
-    colorNeutralBackground2: '#f2ebd9',
-    colorNeutralBackground3: '#fdf6e3',
+    colorNeutralBackground2: '#eee8d5',
+    colorNeutralBackground3: '#eee8d5',
     colorNeutralBackground1Hover: '#d8d2c2',
     colorNeutralBackground1Pressed: '#fdf6e3',
     colorNeutralBackground1Selected: '#cec9b9',

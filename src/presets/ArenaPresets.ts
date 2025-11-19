@@ -18,17 +18,21 @@ export const ARENA_PRESETS: Record<string, Record<string, ArenaPreset[]>> = {
         Criterion: ARENA_PRESETS_CRITERION,
         Trials: ARENA_PRESETS_TRIALS,
     },
-    Raids: {
-        Eden: ARENA_PRESETS_RAID_EDEN,
-        Pandæmonium: ARENA_PRESETS_RAID_PANDAEMONIUM,
-        Arcadion: ARENA_PRESETS_RAID_ARCADION,
+    大型任务: {
+        伊甸希望乐园: ARENA_PRESETS_RAID_EDEN,
+        万魔殿: ARENA_PRESETS_RAID_PANDAEMONIUM,
+        阿卡狄亚登天斗技场: ARENA_PRESETS_RAID_ARCADION,
     },
-    Ultimate: {
-        'Unending Coil': ARENA_PRESETS_ULTIMATE_UCOB,
-        "The Weapon's Refrain": ARENA_PRESETS_ULTIMATE_UWU,
-        'The Epic of Alexander': ARENA_PRESETS_ULTIMATE_TEA,
-        "Dragonsong's Reprise": ARENA_PRESETS_ULTIMATE_DSU,
-        'The Omega Protocol': ARENA_PRESETS_ULTIMATE_TOP,
-        'Futures Rewritten': ARENA_PRESETS_ULTIMATE_FRU,
+    绝境战: {
+        巴哈姆特绝境战: ARENA_PRESETS_ULTIMATE_UCOB,
+        究极神兵绝境战: ARENA_PRESETS_ULTIMATE_UWU,
+        亚历山大绝境战: ARENA_PRESETS_ULTIMATE_TEA,
+        幻想龙诗绝境战: ARENA_PRESETS_ULTIMATE_DSU,
+        欧米茄绝境验证战: ARENA_PRESETS_ULTIMATE_TOP,
+        光暗未来绝境战: ARENA_PRESETS_ULTIMATE_FRU,
     },
+    // '噩梦': {
+    //     '伏凶夔牛岛': ARENA_PRESETS_ULTIMATE_UCOB,
+    //     '炼狱逐夔影': ARENA_PRESETS_ULTIMATE_UCOB
+    // },
 };

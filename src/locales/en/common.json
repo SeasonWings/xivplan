@@ -90,7 +90,8 @@
     "save": "Save",
     "saveAs": "Save as",
     "download": "Download",
-    "saveAsEllipsis": "Save as..."
+    "saveAsEllipsis": "Save as...",
+    "collaboration": "collaboration"
   },
   "actions": {
     "apply": "Apply",

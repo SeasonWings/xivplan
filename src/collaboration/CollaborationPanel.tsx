@@ -1,4 +1,4 @@
-import { Button, Input, Switch } from '@fluentui/react-components';
+import { Button, Input, Switch, makeStyles, shorthands, tokens } from '@fluentui/react-components';
 import React, { useEffect, useRef, useState } from 'react';
 import { useEditActivity } from '../EditActivityContext';
 import { InfoField } from '../InfoField';
@@ -118,58 +118,27 @@ const CollaborationPanel: React.FC = () => {
         }
     };
 
+    const classes = useStyles();
+
     return (
-        <div
-            className="collaboration-panel"
-            style={{
-                width: '380px',
-                height: '100%',
-                borderRight: '1px solid #ccc',
-                backgroundColor: '#f5f5f5',
-                display: 'flex',
-                flexDirection: 'column',
-                overflow: 'hidden',
-            }}
-        >
+        <div className={classes.root}>
             {/* 连接状态 */}
-            <div
-                style={{
-                    padding: '10px',
-                    borderBottom: '1px solid #ccc',
-                    backgroundColor: connected ? '#e6f7ff' : '#fff2e8',
-                    display: 'flex',
-                    alignItems: 'center',
-                }}
-            >
-                <div
-                    style={{
-                        width: '8px',
-                        height: '8px',
-                        borderRadius: '50%',
-                        backgroundColor: connected ? '#52c41a' : '#faad14',
-                        marginRight: '8px',
-                    }}
-                ></div>
+            <div className={connected ? classes.statusConnected : classes.statusDisconnected}>
+                <div className={connected ? classes.dotConnected : classes.dotDisconnected}></div>
                 <span>{connected ? '已连接' : '连接中...'}</span>
             </div>
 
             {/* 用户信息 */}
-            <div
-                style={{
-                    padding: '10px',
-                    borderBottom: '1px solid #ccc',
-                    backgroundColor: '#fff',
-                }}
-            >
+            <div className={classes.section}>
                 <div style={{ marginBottom: '8px' }}>
                     <InfoField label="用户名">
-                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <div className={classes.row}>
                             <Input
                                 type="text"
                                 value={nameInput}
                                 onChange={(e) => setNameInput(e.target.value)}
                                 onBlur={handleNameChange}
-                                style={{ flex: 1, marginRight: '5px' }}
+                                className={classes.input}
                             />
                         </div>
                     </InfoField>
@@ -177,31 +146,20 @@ const CollaborationPanel: React.FC = () => {
             </div>
 
             {/* 房间管理 */}
-            <div
-                style={{
-                    padding: '10px',
-                    borderBottom: '1px solid #ccc',
-                    backgroundColor: '#fff',
-                }}
-            >
+            <div className={classes.section}>
                 {roomId ? (
                     <div>
                         <div style={{ marginBottom: '10px' }}>
                             <InfoField label="房间ID">
-                                <div style={{ display: 'flex', alignItems: 'center' }}>
-                                    <Input
-                                        type="text"
-                                        value={roomId}
-                                        readOnly
-                                        style={{ flex: 1, marginRight: '5px', backgroundColor: '#f5f5f5' }}
-                                    />
+                                <div className={classes.row}>
+                                    <Input type="text" value={roomId} readOnly className={classes.inputReadOnly} />
                                     <Button onClick={copyRoomLink} title="复制房间链接">
                                         复制
                                     </Button>
                                 </div>
                             </InfoField>
                         </div>
-                        <div style={{ display: 'flex', gap: '5px' }}>
+                        <div className={classes.actionsRow}>
                             <Button onClick={createNewRoom} style={{ flex: 1 }}>
                                 创建新房间
                             </Button>
@@ -209,15 +167,11 @@ const CollaborationPanel: React.FC = () => {
                                 离开房间
                             </Button>
                         </div>
-                        <div style={{ marginTop: '5px', fontSize: '12px', color: '#666' }}>
-                            {isHost ? '你是房间主机' : '你是房间访客'}
-                        </div>
+                        <div className={classes.helperText}>{isHost ? '你是房间主机' : '你是房间访客'}</div>
                         {isHost && (
                             <div style={{ marginTop: '10px' }}>
-                                <span style={{ fontSize: '14px', marginBottom: '5px', display: 'block' }}>
-                                    支持在用户列表独立编辑用户绘图权限
-                                </span>
-                                <span style={{ fontSize: '11px', color: '#666' }}>
+                                <span className={classes.subtitle}>支持在用户列表独立编辑用户绘图权限</span>
+                                <span className={classes.smallText}>
                                     开启后网络原因可能会导致操作不同步，请谨慎操作
                                 </span>
 
@@ -276,55 +230,28 @@ const CollaborationPanel: React.FC = () => {
             </div>
 
             {/* 在线用户 */}
-            <div
-                style={{
-                    padding: '10px',
-                    borderBottom: '1px solid #ccc',
-                    backgroundColor: '#fff',
-                }}
-            >
+            <div className={classes.section}>
                 <InfoField label={`在线用户 (${connectedUsers.length})`}>
-                    <div style={{ maxHeight: '200px', overflowY: 'auto', fontSize: '14px' }}>
+                    <div className={classes.userList}>
                         {connectedUsers.map((user) => (
-                            <div
-                                key={user.id}
-                                style={{
-                                    padding: '5px',
-                                    marginBottom: '3px',
-                                    borderRadius: '3px',
-                                    backgroundColor: user.id === userName ? '#e6f7ff' : '#f5f5f5',
-                                }}
-                            >
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                            <div key={user.id} className={user.id === userName ? classes.userSelf : classes.userItem}>
+                                <div className={classes.userRow}>
+                                    <div className={classes.row}>
                                         {user.name}
-                                        {user.id === userId && (
-                                            <span style={{ color: '#1890ff', marginLeft: '5px' }}>(你)</span>
-                                        )}
+                                        {user.id === userId && <span className={classes.tagSelf}>(你)</span>}
                                         {/* 显示房主标识，基于hostId判断 */}
                                         {hostId && user.id === hostId && (
-                                            <span style={{ color: '#52c41a', marginLeft: '5px', fontSize: '12px' }}>
-                                                (房主)
-                                            </span>
+                                            <span className={classes.tagHost}>(房主)</span>
                                         )}
                                         {/* 显示编辑权限标识 */}
                                         {user.canEdit && user.id !== hostId && (
-                                            <span style={{ color: '#722ed1', marginLeft: '5px', fontSize: '12px' }}>
-                                                (可编辑)
-                                            </span>
+                                            <span className={classes.tagEdit}>(可编辑)</span>
                                         )}
                                     </div>
-                                    <div
-                                        style={{
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: '5px',
-                                            marginLeft: 'auto',
-                                        }}
-                                    >
+                                    <div className={classes.userActions}>
                                         {/* 编辑权限开关 - 只有房主可以控制，房主始终有编辑权限 */}
                                         {isHost && user.id !== userId && (
-                                            <div style={{ padding: '2px' }}>
+                                            <div className={classes.switchWrapper}>
                                                 <Switch
                                                     checked={user.canEdit || false}
                                                     onChange={(event) => {
@@ -336,11 +263,6 @@ const CollaborationPanel: React.FC = () => {
                                                         startEditActivity();
                                                     }}
                                                     aria-label={`设置${user.name}的编辑权限`}
-                                                    style={{
-                                                        cursor: 'pointer',
-                                                        width: '44px',
-                                                        height: '24px',
-                                                    }}
                                                 />
                                             </div>
                                         )}
@@ -353,7 +275,7 @@ const CollaborationPanel: React.FC = () => {
                                                         transferHost(user.id);
                                                     }
                                                 }}
-                                                style={{ fontSize: '12px', padding: '2px 8px', minWidth: '50px' }}
+                                                className={classes.transferButton}
                                             >
                                                 移交房主
                                             </Button>
@@ -367,22 +289,15 @@ const CollaborationPanel: React.FC = () => {
             </div>
 
             {/* 聊天区域 */}
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                <div style={{ padding: '10px 10px 0 10px', fontSize: '14px', fontWeight: 'bold' }}>聊天</div>
-                <div
-                    style={{
-                        flex: 1,
-                        padding: '10px',
-                        overflowY: 'auto',
-                        backgroundColor: '#fff',
-                    }}
-                >
+            <div className={classes.chatWrapper}>
+                <div className={classes.chatHeader}>聊天</div>
+                <div className={classes.chatMessages}>
                     {chatMessages.length === 0 ? (
-                        <div style={{ color: '#999', textAlign: 'center', padding: '20px' }}>暂无消息</div>
+                        <div className={classes.empty}>暂无消息</div>
                     ) : (
                         chatMessages.map((msg, index) => (
                             <div key={index} style={{ marginBottom: '10px' }}>
-                                <div style={{ fontSize: '12px', color: '#666', marginBottom: '2px' }}>
+                                <div className={classes.messageMeta}>
                                     {msg.userName} {new Date(msg.timestamp).toLocaleTimeString()}
                                 </div>
                                 <div style={{ fontSize: '14px', wordBreak: 'break-word' }}>{msg.message}</div>
@@ -391,21 +306,14 @@ const CollaborationPanel: React.FC = () => {
                     )}
                     <div ref={messagesEndRef} />
                 </div>
-                <form
-                    onSubmit={handleSendMessage}
-                    style={{
-                        padding: '10px',
-                        borderTop: '1px solid #ccc',
-                        backgroundColor: '#fff',
-                    }}
-                >
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                <form onSubmit={handleSendMessage} className={classes.chatForm}>
+                    <div className={classes.row}>
                         <Input
                             type="text"
                             value={newMessage}
                             onChange={(e) => setNewMessage(e.target.value)}
                             placeholder="输入消息..."
-                            style={{ flex: 1, marginRight: '5px' }}
+                            className={classes.input}
                             disabled={!roomId}
                         />
                         <Button type="submit" disabled={!roomId || !newMessage.trim()}>
@@ -419,3 +327,159 @@ const CollaborationPanel: React.FC = () => {
 };
 
 export default CollaborationPanel;
+
+const useStyles = makeStyles({
+    root: {
+        width: '380px',
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+        backgroundColor: tokens.colorNeutralBackground2,
+        boxShadow: tokens.shadow16,
+        ...shorthands.borderLeft('1px', 'solid', tokens.colorNeutralStroke1),
+    },
+    row: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: tokens.spacingHorizontalXS,
+    },
+    statusConnected: {
+        padding: tokens.spacingHorizontalS,
+        ...shorthands.borderBottom('1px', 'solid', tokens.colorNeutralStroke1),
+        backgroundColor: tokens.colorNeutralBackground3,
+        display: 'flex',
+        alignItems: 'center',
+        gap: tokens.spacingHorizontalXS,
+    },
+    statusDisconnected: {
+        padding: tokens.spacingHorizontalS,
+        ...shorthands.borderBottom('1px', 'solid', tokens.colorNeutralStroke1),
+        backgroundColor: tokens.colorNeutralBackground2,
+        display: 'flex',
+        alignItems: 'center',
+        gap: tokens.spacingHorizontalXS,
+    },
+    dotConnected: {
+        width: '8px',
+        height: '8px',
+        borderRadius: '50%',
+        backgroundColor: '#52c41a',
+    },
+    dotDisconnected: {
+        width: '8px',
+        height: '8px',
+        borderRadius: '50%',
+        backgroundColor: '#faad14',
+    },
+    section: {
+        padding: tokens.spacingHorizontalS,
+        ...shorthands.borderBottom('1px', 'solid', tokens.colorNeutralStroke1),
+        backgroundColor: tokens.colorNeutralBackground1,
+    },
+    input: {
+        flex: 1,
+    },
+    inputReadOnly: {
+        flex: 1,
+    },
+    actionsRow: {
+        display: 'flex',
+        gap: tokens.spacingHorizontalXS,
+    },
+    helperText: {
+        marginTop: '5px',
+        fontSize: '12px',
+        color: tokens.colorNeutralForeground3,
+    },
+    subtitle: {
+        fontSize: '14px',
+        marginBottom: '5px',
+        display: 'block',
+    },
+    smallText: {
+        fontSize: '11px',
+        color: tokens.colorNeutralForeground3,
+    },
+    userList: {
+        maxHeight: '200px',
+        overflowY: 'auto',
+        fontSize: '14px',
+    },
+    userItem: {
+        padding: '5px',
+        marginBottom: '3px',
+        borderRadius: tokens.borderRadiusSmall,
+        backgroundColor: tokens.colorNeutralBackground2,
+    },
+    userSelf: {
+        padding: '5px',
+        marginBottom: '3px',
+        borderRadius: tokens.borderRadiusSmall,
+        backgroundColor: tokens.colorNeutralBackground3,
+    },
+    userRow: {
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    tagSelf: {
+        color: tokens.colorBrandForeground1,
+        marginLeft: '5px',
+    },
+    tagHost: {
+        color: '#52c41a',
+        marginLeft: '5px',
+        fontSize: '12px',
+    },
+    tagEdit: {
+        color: '#722ed1',
+        marginLeft: '5px',
+        fontSize: '12px',
+    },
+    userActions: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: tokens.spacingHorizontalXS,
+        marginLeft: 'auto',
+    },
+    switchWrapper: {
+        padding: '2px',
+    },
+    transferButton: {
+        fontSize: '12px',
+        padding: '2px 8px',
+        minWidth: '50px',
+    },
+    chatWrapper: {
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+    },
+    chatHeader: {
+        padding: '10px 10px 0 10px',
+        fontSize: '14px',
+        fontWeight: 600,
+    },
+    chatMessages: {
+        flex: 1,
+        padding: tokens.spacingHorizontalS,
+        overflowY: 'auto',
+        backgroundColor: tokens.colorNeutralBackground1,
+    },
+    empty: {
+        color: tokens.colorNeutralForeground3,
+        textAlign: 'center',
+        padding: '20px',
+    },
+    messageMeta: {
+        fontSize: '12px',
+        color: tokens.colorNeutralForeground3,
+        marginBottom: '2px',
+    },
+    chatForm: {
+        padding: tokens.spacingHorizontalS,
+        ...shorthands.borderTop('1px', 'solid', tokens.colorNeutralStroke1),
+        backgroundColor: tokens.colorNeutralBackground1,
+    },
+});

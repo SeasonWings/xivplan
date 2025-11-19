@@ -90,7 +90,8 @@
     "save": "保存",
     "saveAs": "另存为",
     "download": "下载",
-    "saveAsEllipsis": "另存为..."
+    "saveAsEllipsis": "另存为...",
+    "collaboration": "协作"
   },
   "actions": {
     "apply": "应用",

@@ -108,7 +108,7 @@ export const MainToolbar: React.FC<MainToolbarProps> = ({
                         onClick={() => onToggleCollaborationPanel?.(!showCollaborationPanel)}
                         className={showCollaborationPanel ? 'active' : undefined}
                     >
-                        协作模式
+                        {t('toolbar.collaboration')}
                     </CollapsableToolbarButton>
                 </Toolbar>
             </InPortal>
