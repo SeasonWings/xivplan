@@ -17,6 +17,7 @@ import {
     PartyDragoon,
     PartyGunbreaker,
     PartyHealer,
+    PartyLingLingxi,
     PartyMachinist,
     PartyMagicRanged,
     PartyMelee,
@@ -37,6 +38,7 @@ import {
     PartyViper,
     PartyWarrior,
     PartyWhiteMage,
+    PartyXiLingxi,
 } from '../prefabs/Party';
 import {
     TetherClose,
@@ -69,6 +71,7 @@ import { ZoneTower } from '../prefabs/zone/ZoneTower';
 import { ZoneTriangle } from '../prefabs/zone/ZoneTriangle';
 import { useControlStyles } from '../useControlStyles';
 import { ObjectGroup, Section } from './Section';
+import { StatusShangDeath } from '../prefabs/Status.tsx';
 
 export const PrefabsPanel: React.FC = () => {
     const controlClasses = useControlStyles();
@@ -102,6 +105,7 @@ export const PrefabsPanel: React.FC = () => {
                     <ZonePolygon />
                     <ZoneTower />
                     <ZoneEye />
+                    <StatusShangDeath />
                 </ObjectGroup>
             </Section>
 
@@ -122,57 +126,65 @@ export const PrefabsPanel: React.FC = () => {
                 </ObjectGroup>
             </Section>
             <Section title={t('prefabs.party')}>
-                <ObjectGroup>
-                    <PartySupport />
-                    <PartyTank />
-                    <PartyHealer />
-                    <PartyDps />
-                    <PartyAny />
-                </ObjectGroup>
+                <Section title={t('prefabs.FF14')}>
+                    <ObjectGroup>
+                        <PartySupport />
+                        <PartyTank />
+                        <PartyHealer />
+                        <PartyDps />
+                        <PartyAny />
+                    </ObjectGroup>
 
-                <ObjectGroup>
-                    <PartyMelee />
-                    <PartyRanged />
-                    <PartyMagicRanged />
-                    <PartyPhysicalRanged />
-                </ObjectGroup>
+                    <ObjectGroup>
+                        <PartyMelee />
+                        <PartyRanged />
+                        <PartyMagicRanged />
+                        <PartyPhysicalRanged />
+                    </ObjectGroup>
 
-                <ObjectGroup>
-                    <PartyPaladin />
-                    <PartyWarrior />
-                    <PartyDarkKnight />
-                    <PartyGunbreaker />
-                </ObjectGroup>
+                    <ObjectGroup>
+                        <PartyPaladin />
+                        <PartyWarrior />
+                        <PartyDarkKnight />
+                        <PartyGunbreaker />
+                    </ObjectGroup>
 
-                <ObjectGroup>
-                    <PartyWhiteMage />
-                    <PartyScholar />
-                    <PartyAstrologian />
-                    <PartySage />
-                </ObjectGroup>
+                    <ObjectGroup>
+                        <PartyWhiteMage />
+                        <PartyScholar />
+                        <PartyAstrologian />
+                        <PartySage />
+                    </ObjectGroup>
 
-                <ObjectGroup>
-                    <PartyMonk />
-                    <PartyDragoon />
-                    <PartySamurai />
-                    <PartyReaper />
-                    <PartyNinja />
-                    <PartyViper />
-                </ObjectGroup>
+                    <ObjectGroup>
+                        <PartyMonk />
+                        <PartyDragoon />
+                        <PartySamurai />
+                        <PartyReaper />
+                        <PartyNinja />
+                        <PartyViper />
+                    </ObjectGroup>
 
-                <ObjectGroup>
-                    <PartyBlueMage />
-                    <PartyBlackMage />
-                    <PartySummoner />
-                    <PartyRedMage />
-                    <PartyPictomancer />
-                </ObjectGroup>
+                    <ObjectGroup>
+                        <PartyBlueMage />
+                        <PartyBlackMage />
+                        <PartySummoner />
+                        <PartyRedMage />
+                        <PartyPictomancer />
+                    </ObjectGroup>
 
-                <ObjectGroup>
-                    <PartyBard />
-                    <PartyMachinist />
-                    <PartyDancer />
-                </ObjectGroup>
+                    <ObjectGroup>
+                        <PartyBard />
+                        <PartyMachinist />
+                        <PartyDancer />
+                    </ObjectGroup>
+                </Section>
+                <Section title={t('prefabs.ZXSJ')}>
+                    <ObjectGroup>
+                        <PartyLingLingxi />
+                        <PartyXiLingxi />
+                    </ObjectGroup>
+                </Section>
             </Section>
 
             <Section title={t('prefabs.enemies')}>

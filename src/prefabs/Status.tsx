@@ -60,3 +60,6 @@ export const StatusUltimateCircle = makeIcon('statusIcons.circle', 'ultimate/cir
 export const StatusUltimateCross = makeIcon('statusIcons.cross', 'ultimate/cross.png');
 export const StatusUltimateSquare = makeIcon('statusIcons.square', 'ultimate/square.png');
 export const StatusUltimateTriangle = makeIcon('statusIcons.triangle', 'ultimate/triangle.png');
+
+// ZXSJ
+export const StatusShangDeath = makeIcon('statusIcons.shang', 'zxsj/shang.png');

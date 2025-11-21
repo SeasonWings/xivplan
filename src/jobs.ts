@@ -35,6 +35,9 @@ export enum Job {
     RedMage,
     Pictomancer,
     BlueMage,
+    // 诛仙世界
+    LINGLINGXI,
+    XILINGXI,
 }
 
 const JOBS: Record<Job, JobProps> = {
@@ -69,6 +72,9 @@ const JOBS: Record<Job, JobProps> = {
     [Job.RedMage]: { defaultNameKey: 'jobs.redMage', icon: 'RDM.png' },
     [Job.Pictomancer]: { defaultNameKey: 'jobs.pictomancer', icon: 'PCT.png' },
     [Job.BlueMage]: { defaultNameKey: 'jobs.blueMage', icon: 'BLU.png' },
+    // ZXSJ
+    [Job.LINGLINGXI]: { defaultNameKey: 'jobs.linglingxi', icon: 'zxsj/lingxi_d.png' },
+    [Job.XILINGXI]: { defaultNameKey: 'jobs.xilingxi', icon: 'zxsj/lingxi_h.png' },
 };
 
 export function getJob(job: Job): JobProps {

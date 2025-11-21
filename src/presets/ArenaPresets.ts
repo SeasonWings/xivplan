@@ -11,6 +11,7 @@ import { ARENA_PRESETS_ULTIMATE_TEA } from './ultimate/TEA';
 import { ARENA_PRESETS_ULTIMATE_TOP } from './ultimate/TOP';
 import { ARENA_PRESETS_ULTIMATE_UCOB } from './ultimate/UCOB';
 import { ARENA_PRESETS_ULTIMATE_UWU } from './ultimate/UWU';
+import { ARENA_PRESETS_NIGHTMARE_FXKND } from './nightmare/fxknd';
 
 export const ARENA_PRESETS: Record<string, Record<string, ArenaPreset[]>> = {
     '': {
@@ -31,8 +32,8 @@ export const ARENA_PRESETS: Record<string, Record<string, ArenaPreset[]>> = {
         欧米茄绝境验证战: ARENA_PRESETS_ULTIMATE_TOP,
         光暗未来绝境战: ARENA_PRESETS_ULTIMATE_FRU,
     },
-    // '噩梦': {
-    //     '伏凶夔牛岛': ARENA_PRESETS_ULTIMATE_UCOB,
-    //     '炼狱逐夔影': ARENA_PRESETS_ULTIMATE_UCOB
-    // },
+    噩梦: {
+        伏凶夔牛岛: ARENA_PRESETS_NIGHTMARE_FXKND,
+        // '炼狱逐夔影': ARENA_PRESETS_ULTIMATE_UCOB
+    },
 };

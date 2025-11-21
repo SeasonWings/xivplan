@@ -328,12 +328,15 @@
     "accelerationBomb3": "Acceleration Bomb 3",
     "edenYellow": "Yellow marker",
     "edenOrange": "Orange marker",
-    "edenBlue": "Blue marker"
+    "edenBlue": "Blue marker",
+    "shang": "shang"
   },
   "prefabs": {
     "zones": "Zones",
     "waymarks": "Waymarks",
     "party": "Party",
+    "FF14": "FINAL FANTASY XIV",
+    "ZXSJ": "World of Jade Dynasty",
     "enemies": "Enemies",
     "tethers": "Tethers",
     "tethersHelp": {
@@ -465,7 +468,9 @@
     "summoner": "Summoner",
     "redMage": "Red Mage",
     "pictomancer": "Pictomancer",
-    "blueMage": "Blue Mage"
+    "blueMage": "Blue Mage",
+    "linglingxi": "linglingxi",
+    "xilingxi": "xilingxi"
   },
   "spin": {
     "increment": "Increment value",

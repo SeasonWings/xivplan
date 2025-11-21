@@ -144,3 +144,6 @@ export const PartyRedMage = makeIcon(Job.RedMage);
 export const PartyPictomancer = makeIcon(Job.Pictomancer);
 
 export const PartyBlueMage = makeIcon(Job.BlueMage);
+
+export const PartyLingLingxi = makeIcon(Job.LINGLINGXI);
+export const PartyXiLingxi = makeIcon(Job.XILINGXI);
