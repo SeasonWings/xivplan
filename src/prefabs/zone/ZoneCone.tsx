@@ -67,7 +67,7 @@ registerDropHandler<ConeZone>(ObjectType.Cone, (object, position) => {
             radius: DEFAULT_RADIUS,
             coneAngle: DEFAULT_ANGLE,
             rotation: 0,
-            native: true,
+            native: false,
             ...object,
             ...position,
         },

@@ -87,25 +87,28 @@ export const PrefabsPanel: React.FC = () => {
                     <ZoneLine />
                     <ZoneDonut />
                     <ZoneCircle />
+                    <ZoneArc />
+                    <ZoneCone />
+                    <ZonePolygon />
+                    <ZoneStarburst />
+                </ObjectGroup>
 
+                <ObjectGroup>
                     <ZoneKnockback />
                     <ZoneProximity />
                     <ZoneLineStack />
                     <ZoneStack />
-                    <ZoneArc />
-                    <ZoneCone />
-
                     <ZoneLineKnockback />
                     <ZoneLineKnockAway />
                     <ZoneExaflare />
-                    <ZoneStarburst />
-                    <ZoneRotateClockwise />
-                    <ZoneRotateCounterClockwise />
+                </ObjectGroup>
 
-                    <ZonePolygon />
+                <ObjectGroup>
                     <ZoneTower />
                     <ZoneEye />
                     <StatusShangDeath />
+                    <ZoneRotateClockwise />
+                    <ZoneRotateCounterClockwise />
                 </ObjectGroup>
             </Section>
 

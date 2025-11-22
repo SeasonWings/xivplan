@@ -61,7 +61,7 @@ registerDropHandler<RectangleZone>(ObjectType.Rect, (object, position) => {
             width: DEFAULT_SIZE,
             height: DEFAULT_SIZE,
             rotation: 0,
-            native: true,
+            native: false,
             ...object,
             ...position,
         },
@@ -270,7 +270,7 @@ const RectangleControlPoints = createControlPointManager<RectangleZone, Rectangl
         ];
     },
     getRotation: getRotation,
-    getCenterOffset: getCenterOffset,
+    // getCenterOffset: getCenterOffset,
     stateFunc: (object, handle) => {
         const width = getWidth(object, handle);
         const height = getHeight(object, handle);

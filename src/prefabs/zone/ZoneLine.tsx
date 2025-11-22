@@ -64,7 +64,7 @@ registerDropHandler<LineZone>(ObjectType.Line, (object, position) => {
             width: DEFAULT_WIDTH,
             length: DEFAULT_LENGTH,
             rotation: 0,
-            native: true,
+            native: false,
             ...object,
             ...position,
         },
@@ -186,9 +186,20 @@ interface LineRendererProps extends RendererProps<LineZone> {
     rotation: number;
     isDragging?: boolean;
     isResizing?: boolean;
+    scene: any;
 }
 
-const LineRenderer: React.FC<LineRendererProps> = ({ object, length, width, rotation, isDragging, isResizing }) => {
+const LineRenderer: React.FC<LineRendererProps> = ({
+    object,
+    length,
+    width,
+    rotation,
+    isDragging,
+    isResizing,
+    scene,
+}) => {
+    // 使用可选链操作符和空值合并操作符，安全地获取场地宽度
+    const arenaWidth = scene?.arena?.width ?? 999;
     const highlightProps = useHighlightProps(object);
 
     // 若 object 没有 native 字段，说明是原版数据，则：
@@ -196,6 +207,7 @@ const LineRenderer: React.FC<LineRendererProps> = ({ object, length, width, rota
     //   - 否则如果是实心，则应用原生样式
     const isNative = object.native ?? object.hollow !== true;
     const isHollow = !isNative && (object.hollow ?? false);
+    const isInverted = object.inverted ?? false;
 
     const style = getZoneStyle(object.color, object.opacity, Math.min(length, width), isHollow);
     const nativeStyle = {
@@ -208,12 +220,14 @@ const LineRenderer: React.FC<LineRendererProps> = ({ object, length, width, rota
         outlineOpacity: object.outlineOpacity,
     };
 
-    const x = -width / 2;
-    const y = -length;
+    // 确定高亮区域的参数
     const highlightOffset = style.strokeWidth;
     const highlightWidth = width + highlightOffset;
     const highlightLength = length + highlightOffset;
+    const x = -width / 2;
+    const y = -length;
 
+    // 创建一个足够大的画布尺寸作为两侧区域的
     return (
         <Group rotation={rotation}>
             {highlightProps && (
@@ -228,7 +242,41 @@ const LineRenderer: React.FC<LineRendererProps> = ({ object, length, width, rota
                 />
             )}
             <HideGroup>
-                {isNative ? (
+                {isInverted ? (
+                    // 反转模式：渲染两侧区域（除了直线范围外的部分）
+                    isNative ? (
+                        // 对于原生样式，只渲染左右两侧
+                        <>
+                            {/* 左侧区域 - 精确定位在中心线左侧 */}
+                            <AoeRect
+                                offsetX={-width / 2 - 1}
+                                offsetY={length + 1.5}
+                                width={arenaWidth * 1.5 - width / 2}
+                                height={length + 3}
+                                freeze={isResizing}
+                                {...nativeStyle}
+                            />
+                            {/* 右侧区域 - 精确定位在中心线右侧 */}
+                            <AoeRect
+                                offsetX={arenaWidth * 1.5}
+                                offsetY={length + 1.5}
+                                width={arenaWidth * 1.5 - width / 2}
+                                height={length + 3}
+                                freeze={isResizing}
+                                {...nativeStyle}
+                            />
+                        </>
+                    ) : (
+                        // 对于普通样式，只渲染左右两侧
+                        <>
+                            {/* 左侧区域 - 精确定位在中心线左侧 */}
+                            <Rect x={width / 2 + 2} y={-length} width={9999 - width / 2} height={length} {...style} />
+                            {/* 右侧区域 - 精确定位在中心线右侧 */}
+                            <Rect x={-9999 - 2} y={-length} width={9999 - width / 2} height={length} {...style} />
+                        </>
+                    )
+                ) : // 正常模式：渲染直线范围
+                isNative ? (
                     <AoeRect
                         offsetX={-x}
                         offsetY={-y}
@@ -238,7 +286,7 @@ const LineRenderer: React.FC<LineRendererProps> = ({ object, length, width, rota
                         {...nativeStyle}
                     />
                 ) : (
-                    <Rect offsetX={-x} offsetY={-y} width={width} height={length} {...style} />
+                    <Rect x={x} y={y} width={width} height={length} {...style} />
                 )}
 
                 {isDragging && <Circle radius={CENTER_DOT_RADIUS} fill={style.stroke} />}
@@ -252,7 +300,7 @@ function stateChanged(object: LineZone, state: LineState) {
 }
 
 const LineContainer: React.FC<RendererProps<LineZone>> = ({ object }) => {
-    const { dispatch } = useScene();
+    const { scene, dispatch } = useScene();
     const showResizer = useShowResizer(object);
     const [resizing, setResizing] = useState(false);
     const dragging = useIsDragging(object);
@@ -282,6 +330,7 @@ const LineContainer: React.FC<RendererProps<LineZone>> = ({ object }) => {
                             object={object}
                             isDragging={dragging || resizing}
                             isResizing={resizing}
+                            scene={scene}
                             {...props}
                         />
                     )}

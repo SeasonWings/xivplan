@@ -50,7 +50,7 @@ registerDropHandler<DonutZone>(ObjectType.Donut, (object, position) => {
             opacity: DEFAULT_AOE_OPACITY,
             innerRadius: DEFAULT_INNER_RADIUS,
             radius: DEFAULT_OUTER_RADIUS,
-            native: true,
+            native: false,
             ...object,
             ...position,
         },

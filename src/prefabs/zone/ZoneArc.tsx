@@ -69,7 +69,7 @@ registerDropHandler<ArcZone>(ObjectType.Arc, (object, position) => {
             innerRadius: DEFAULT_INNER_RADIUS,
             coneAngle: DEFAULT_ANGLE,
             rotation: 0,
-            native: true,
+            native: false,
             ...object,
             ...position,
         },

@@ -297,6 +297,7 @@ export const isDonutZone = makeObjectTest<DonutZone>(ObjectType.Donut);
 export interface LineProps extends MoveableObject, ColoredObject, ZoneStyleObject, RotateableObject {
     readonly length: number;
     readonly width: number;
+    readonly inverted?: boolean;
 }
 
 export interface LineZone extends LineProps, BaseObject {

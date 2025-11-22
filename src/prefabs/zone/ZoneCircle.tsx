@@ -48,7 +48,7 @@ registerDropHandler<CircleZone>(ObjectType.Circle, (object, position) => {
             color: DEFAULT_AOE_COLOR,
             opacity: DEFAULT_AOE_OPACITY,
             radius: DEFAULT_RADIUS,
-            native: true,
+            native: false,
             ...object,
             ...position,
         },
