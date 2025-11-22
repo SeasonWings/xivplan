@@ -255,7 +255,19 @@
     "fourPlayers": "Four players",
     "lookTowards": "Look towards",
     "lookAway": "Look away",
-    "variant": "Variant"
+    "variant": "Variant",
+    "show": "Show",
+    "hide": "Hide",
+    "native": "Native"
+  },
+  "aoe": {
+    "globalOpacity": "Global opacity",
+    "baseColor": "Base color",
+    "baseOpacity": "Base opacity",
+    "innerGlowColor": "Inner glow color",
+    "innerGlowOpacity": "Inner glow opacity",
+    "outlineColor": "Outline color",
+    "outlineOpacity": "Outline opacity"
   },
   "colors": {
     "invalidColor": "Invalid color",
