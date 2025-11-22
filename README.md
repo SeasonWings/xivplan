@@ -1,8 +1,13 @@
-# Final Fantasy XIV Raid Planner
+# Final Fantasy XIV（Maybe） Raid Planner
 
 https://xivplan.netlify.app/
 
-This is a tool for quickly diagramming raid strategies for Final Fantasy XIV, inspired by [RaidPlan.io](https://raidplan.io).
+This is a tool for quickly diagramming raid strategies for Final Fantasy XIV, inspired by [RaidPlan.io](https://raidplan.io).  
+
+本项目是对@SPJP xivplan项目的Fork&二开,会不定期更新一些自己认为有趣的点子，包括但不限于协作和优化我用起来不爽的东西，由于本人是前忠实狒批&现忠实诛批所以项目里可能(一定)会出现部分FF14无关(诛仙世界相关)内容,介意麻烦别用,感谢理解并支持！  
+
+项目个人线上环境： http://xivplan.mapleshuzuko.site(别打我,打了直接跑路_(:3 」∠ )_)
+
 
 ## Usage
 

@@ -14,6 +14,10 @@ const ICON_CHOICES = [
     [Job.Monk, Job.Dragoon, Job.Samurai, Job.Reaper, Job.Ninja, Job.Viper],
     [Job.BlackMage, Job.Summoner, Job.RedMage, Job.Pictomancer, Job.BlueMage],
     [Job.Bard, Job.Machinist, Job.Dancer],
+    // ZXSJ
+    [Job.FenXiangGu, Job.GuiWangZong, Job.HeHuanZong, Job.LingXiGe, Job.QingYunMen],
+    [Job.FenXiangYan, Job.GuiWangSha, Job.HeHuanYing, Job.LingXiLing, Job.QingYunLei],
+    [Job.FenXiangZhou, Job.GuiWangGang, Job.HeHuanYue, Job.LingXiXi, Job.QingYunJian],
 ].map((row) => row.map((job) => getJob(job)));
 
 export const PartyIconControl: React.FC<PropertiesControlProps<PartyObject>> = ({ objects }) => {

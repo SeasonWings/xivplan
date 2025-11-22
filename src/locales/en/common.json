@@ -484,8 +484,21 @@
     "redMage": "Red Mage",
     "pictomancer": "Pictomancer",
     "blueMage": "Blue Mage",
-    "linglingxi": "linglingxi",
-    "xilingxi": "xilingxi"
+    "FenXiangGu": "FenXiangGu",
+    "GuiWangZong": "GuiWangZong",
+    "HeHuanZong": "HeHuanZong",
+    "LingXiGe": "LingXiGe",
+    "QingYunMen": "QingYunMen",
+    "LingXiLing": "LingXiLing",
+    "LingXiXi": "LingXiXi",
+    "FenXiangYan": "FenXiangYan",
+    "FenXiangZhou": "FenXiangZhou",
+    "GuiWangGang": "GuiWangGang",
+    "GuiWangSha": "GuiWangSha",
+    "HeHuanYue": "HeHuanYue",
+    "HeHuanYing": "HeHuanYing",
+    "QingYunLei": "QingYunLei",
+    "QingYunJian": "QingYunJian"
   },
   "spin": {
     "increment": "Increment value",

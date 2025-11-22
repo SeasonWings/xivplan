@@ -145,5 +145,19 @@ export const PartyPictomancer = makeIcon(Job.Pictomancer);
 
 export const PartyBlueMage = makeIcon(Job.BlueMage);
 
-export const PartyLingLingxi = makeIcon(Job.LINGLINGXI);
-export const PartyXiLingxi = makeIcon(Job.XILINGXI);
+export const PartyFenXiangGu = makeIcon(Job.FenXiangGu);
+export const PartyGuiWangZong = makeIcon(Job.GuiWangZong);
+export const PartyHeHuanZong = makeIcon(Job.HeHuanZong);
+export const PartyLingXiGe = makeIcon(Job.LingXiGe);
+export const PartyQingYunMen = makeIcon(Job.QingYunMen);
+
+export const PartyLingXiLing = makeIcon(Job.LingXiLing);
+export const PartyLingXiXi = makeIcon(Job.LingXiXi);
+export const PartyFenXiangYan = makeIcon(Job.FenXiangYan);
+export const PartyFenXiangZhou = makeIcon(Job.FenXiangZhou);
+export const PartyGuiWangGang = makeIcon(Job.GuiWangGang);
+export const PartyGuiWangSha = makeIcon(Job.GuiWangSha);
+export const PartyHeHuanYue = makeIcon(Job.HeHuanYue);
+export const PartyHeHuanYing = makeIcon(Job.HeHuanYing);
+export const PartyQingYunLei = makeIcon(Job.QingYunLei);
+export const PartyQingYunJian = makeIcon(Job.QingYunJian);

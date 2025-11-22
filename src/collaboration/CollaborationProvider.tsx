@@ -65,7 +65,7 @@ const getSavedUserName = (): string => {
 
 export const CollaborationProvider: React.FC<CollaborationProviderProps> = ({
     children,
-    serverUrl = 'ws://ws.xivplan.mapleshuzuko.site',
+    serverUrl = 'ws://you.re.backend.server',
 }) => {
     const { scene, stepIndex, dispatch } = useScene();
     const loadScene = useLoadScene();

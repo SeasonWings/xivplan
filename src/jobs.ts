@@ -36,8 +36,22 @@ export enum Job {
     Pictomancer,
     BlueMage,
     // 诛仙世界
-    LINGLINGXI,
-    XILINGXI,
+    FenXiangGu,
+    GuiWangZong,
+    HeHuanZong,
+    LingXiGe,
+    QingYunMen,
+
+    LingXiLing,
+    LingXiXi,
+    FenXiangYan,
+    FenXiangZhou,
+    GuiWangGang,
+    GuiWangSha,
+    HeHuanYue,
+    HeHuanYing,
+    QingYunLei,
+    QingYunJian,
 }
 
 const JOBS: Record<Job, JobProps> = {
@@ -73,8 +87,22 @@ const JOBS: Record<Job, JobProps> = {
     [Job.Pictomancer]: { defaultNameKey: 'jobs.pictomancer', icon: 'PCT.png' },
     [Job.BlueMage]: { defaultNameKey: 'jobs.blueMage', icon: 'BLU.png' },
     // ZXSJ
-    [Job.LINGLINGXI]: { defaultNameKey: 'jobs.linglingxi', icon: 'zxsj/lingxi_d.png' },
-    [Job.XILINGXI]: { defaultNameKey: 'jobs.xilingxi', icon: 'zxsj/lingxi_h.png' },
+    [Job.FenXiangGu]: { defaultNameKey: 'jobs.FenXiangGu', icon: 'zxsj/jobs/fenxianggu.png' },
+    [Job.GuiWangZong]: { defaultNameKey: 'jobs.GuiWangZong', icon: 'zxsj/jobs/guiwangzong.png' },
+    [Job.HeHuanZong]: { defaultNameKey: 'jobs.HeHuanZong', icon: 'zxsj/jobs/hehuanzong.png' },
+    [Job.LingXiGe]: { defaultNameKey: 'jobs.LingXiGe', icon: 'zxsj/jobs/lingxige.png' },
+    [Job.QingYunMen]: { defaultNameKey: 'jobs.QingYunMen', icon: 'zxsj/jobs/qingyunmen.png' },
+
+    [Job.LingXiLing]: { defaultNameKey: 'jobs.LingXiLing', icon: 'zxsj/lingxi_ling.png' },
+    [Job.LingXiXi]: { defaultNameKey: 'jobs.LingXiXi', icon: 'zxsj/lingxi_xi.png' },
+    [Job.FenXiangYan]: { defaultNameKey: 'jobs.FenXiangYan', icon: 'zxsj/fenxiang_yan.png' },
+    [Job.FenXiangZhou]: { defaultNameKey: 'jobs.FenXiangZhou', icon: 'zxsj/fenxiang_zhou.png' },
+    [Job.GuiWangGang]: { defaultNameKey: 'jobs.GuiWangGang', icon: 'zxsj/guiwang_gang.png' },
+    [Job.GuiWangSha]: { defaultNameKey: 'jobs.GuiWangSha', icon: 'zxsj/guiwang_sha.png' },
+    [Job.HeHuanYue]: { defaultNameKey: 'jobs.HeHuanYue', icon: 'zxsj/hehuan_yue.png' },
+    [Job.HeHuanYing]: { defaultNameKey: 'jobs.HeHuanYing', icon: 'zxsj/hehuan_ying.png' },
+    [Job.QingYunLei]: { defaultNameKey: 'jobs.QingYunLei', icon: 'zxsj/qingyun_lei.png' },
+    [Job.QingYunJian]: { defaultNameKey: 'jobs.QingYunJian', icon: 'zxsj/qingyun_jian.png' },
 };
 
 export function getJob(job: Job): JobProps {

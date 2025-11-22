@@ -15,9 +15,13 @@ import {
     PartyDarkKnight,
     PartyDps,
     PartyDragoon,
+    PartyFenXiangGu,
+    PartyGuiWangZong,
     PartyGunbreaker,
     PartyHealer,
-    PartyLingLingxi,
+    PartyHeHuanZong,
+    PartyLingXiLing,
+    PartyLingXiGe,
     PartyMachinist,
     PartyMagicRanged,
     PartyMelee,
@@ -26,6 +30,7 @@ import {
     PartyPaladin,
     PartyPhysicalRanged,
     PartyPictomancer,
+    PartyQingYunMen,
     PartyRanged,
     PartyReaper,
     PartyRedMage,
@@ -38,7 +43,15 @@ import {
     PartyViper,
     PartyWarrior,
     PartyWhiteMage,
-    PartyXiLingxi,
+    PartyLingXiXi,
+    PartyFenXiangYan,
+    PartyFenXiangZhou,
+    PartyGuiWangGang,
+    PartyGuiWangSha,
+    PartyHeHuanYing,
+    PartyHeHuanYue,
+    PartyQingYunJian,
+    PartyQingYunLei,
 } from '../prefabs/Party';
 import {
     TetherClose,
@@ -184,8 +197,25 @@ export const PrefabsPanel: React.FC = () => {
                 </Section>
                 <Section title={t('prefabs.ZXSJ')}>
                     <ObjectGroup>
-                        <PartyLingLingxi />
-                        <PartyXiLingxi />
+                        <PartyFenXiangGu />
+                        <PartyGuiWangZong />
+                        <PartyHeHuanZong />
+                        <PartyLingXiGe />
+                        <PartyQingYunMen />
+                    </ObjectGroup>
+                    <ObjectGroup>
+                        <PartyFenXiangYan />
+                        <PartyGuiWangSha />
+                        <PartyHeHuanYing />
+                        <PartyLingXiLing />
+                        <PartyQingYunLei />
+                    </ObjectGroup>
+                    <ObjectGroup>
+                        <PartyFenXiangZhou />
+                        <PartyGuiWangGang />
+                        <PartyHeHuanYue />
+                        <PartyLingXiXi />
+                        <PartyQingYunJian />
                     </ObjectGroup>
                 </Section>
             </Section>

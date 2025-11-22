@@ -484,8 +484,21 @@
     "redMage": "赤魔法师",
     "pictomancer": "绘灵法师",
     "blueMage": "青魔法师",
-    "linglingxi": "灵灵汐",
-    "xilingxi": "汐灵汐"
+    "FenXiangGu": "焚香谷",
+    "GuiWangZong": "鬼王宗",
+    "HeHuanZong": "合欢宗",
+    "LingXiGe": "灵汐阁",
+    "QingYunMen": "青云门",
+    "LingXiLing": "灵灵汐",
+    "LingXiXi": "汐灵汐",
+    "FenXiangYan": "炎焚香",
+    "FenXiangZhou": "咒焚香",
+    "GuiWangGang": "罡鬼王",
+    "GuiWangSha": "煞鬼王",
+    "HeHuanYue": "月合欢",
+    "HeHuanYing": "影合欢",
+    "QingYunLei": "雷青云",
+    "QingYunJian": "剑青云"
   },
   "spin": {
     "increment": "增加数值",
