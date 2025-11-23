@@ -63,10 +63,7 @@ const getSavedUserName = (): string => {
     }
 };
 
-export const CollaborationProvider: React.FC<CollaborationProviderProps> = ({
-    children,
-    serverUrl = 'ws://you.re.backend.server',
-}) => {
+export const CollaborationProvider: React.FC<CollaborationProviderProps> = ({ children, serverUrl }) => {
     const { scene, stepIndex, dispatch } = useScene();
     const loadScene = useLoadScene();
     const [searchParams] = useSearchParams();

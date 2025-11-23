@@ -1,4 +1,6 @@
 // WebSocket服务用于管理与服务器的实时通信
+import { config } from '../config';
+
 class WebSocketService {
     private ws: WebSocket | null = null;
     private reconnectAttempts = 0;
@@ -17,10 +19,24 @@ class WebSocketService {
     private lastHeartbeatResponse: number = 0;
     private debugMode = false; // 控制是否打印调试日志
 
-    // enter your WebSocketUrl
-    private currentUrl: string = 'ws://you.re.backend.server';
+    // 根据页面协议自动生成WebSocket URL
+    private getWebSocketUrl(): string {
+        // 获取当前页面的协议
+        const protocol = window.location.protocol;
+        // 根据页面协议选择WebSocket协议
+        const isHttps = protocol === 'https:';
+        const wsProtocol = isHttps ? 'wss:' : 'ws:';
 
-    connect(serverUrl: string = 'ws://you.re.backend.server'): Promise<void> {
+        // 根据当前协议选择对应的配置
+        const wsConfig = config.websocket;
+
+        // 构造完整URL
+        return `${wsProtocol}//${wsConfig.baseUrl}`;
+    }
+
+    private currentUrl: string = '';
+
+    connect(serverUrl?: string): Promise<void> {
         return new Promise((resolve, reject) => {
             // 清除任何现有的重连定时器
             if (this.reconnectTimer) {
@@ -34,10 +50,11 @@ class WebSocketService {
             }
 
             this.isConnecting = true;
-            this.currentUrl = serverUrl;
+            // 如果提供了serverUrl，则直接使用，否则根据配置生成URL
+            this.currentUrl = serverUrl || this.getWebSocketUrl();
 
             try {
-                this.ws = new WebSocket(serverUrl);
+                this.ws = new WebSocket(this.currentUrl);
 
                 this.ws.onopen = () => {
                     this.log('WebSocket连接已建立');
