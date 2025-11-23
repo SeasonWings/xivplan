@@ -255,9 +255,6 @@ const CollaborationPanel: React.FC = () => {
                                                 <Switch
                                                     checked={user.canEdit || false}
                                                     onChange={(event) => {
-                                                        console.log(
-                                                            `设置用户编辑权限: userId=${user.id}, canEdit=${event.target.checked}`,
-                                                        );
                                                         setUserEditPermission(user.id, event.target.checked);
                                                         // 触发场景更新
                                                         startEditActivity();

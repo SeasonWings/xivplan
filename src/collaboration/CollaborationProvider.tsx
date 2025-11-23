@@ -111,13 +111,13 @@ export const CollaborationProvider: React.FC<CollaborationProviderProps> = ({ ch
                 await webSocketService.connect(serverUrl);
                 setConnected(true);
 
-                // 连接成功后，如果已有保存的用户名，立即发送到服务器
+                // 连接成功后，立即发送用户名到服务器
+                // 获取保存的用户名
                 const savedName = getSavedUserName();
-                if (savedName) {
-                    setTimeout(() => {
-                        webSocketService.setUserName(savedName);
-                    }, 100); // 短暂延迟确保连接完全建立
-                }
+                // 无论是否有保存的用户名，都发起一次set_user_name请求
+                setTimeout(() => {
+                    webSocketService.setUserName(savedName || '');
+                }, 1000); // 短暂延迟确保连接完全建立
 
                 // 检查URL中是否有房间参数，如果有则加入房间
                 const roomIdFromUrl = searchParams.get('room');
@@ -209,37 +209,29 @@ export const CollaborationProvider: React.FC<CollaborationProviderProps> = ({ ch
     useEffect(() => {
         const handleHostChanged = (data: any) => {
             // 更新房主ID和当前用户的房主状态
-            console.log(
-                `handleHostChanged - 房主变更事件: 新hostId=${data.hostId}, 原hostId=${data.oldHostId}, 房间=${data.roomId}, 当前userId=${userId}`,
-            );
             // 首先更新hostId状态
             setHostId(data.hostId);
             // 然后检查userId是否存在，更新isHost状态
             if (userId) {
                 const isNowHost = data.hostId === userId;
                 setIsHost(isNowHost);
-                console.log(`handleHostChanged - 用户 ${userId} 房主状态更新为: ${isNowHost}`);
                 if (isNowHost) {
-                    console.log(`handleHostChanged - 恭喜！您现在是房主了！`);
+                    // 用户成为房主
                 }
             } else {
-                console.log('handleHostChanged - userId尚未获取，无法设置房主状态');
+                // userId尚未获取，无法设置房主状态
             }
         };
 
         const handleHostInfo = (data: any) => {
-            console.log(
-                `handleHostInfo - 收到房主信息事件: hostId=${data.hostId}, 房间=${data.roomId}, 当前userId=${userId}`,
-            );
             // 检查userId是否存在
             if (userId) {
                 // 更新hostId和isHost状态
                 setHostId(data.hostId);
                 const isNowHost = data.hostId === userId;
                 setIsHost(isNowHost);
-                console.log(`handleHostInfo - 用户 ${userId} 房主状态更新为: ${isNowHost}`);
             } else {
-                console.log('handleHostInfo - userId尚未获取，无法设置房主状态');
+                // userId尚未获取，无法设置房主状态
             }
         };
 
@@ -274,7 +266,6 @@ export const CollaborationProvider: React.FC<CollaborationProviderProps> = ({ ch
         const handleSceneUpdate = ({ data, senderId }: { data: any; senderId: string }) => {
             // 如果更新不是由当前用户发起的，则更新场景
             if (senderId !== userId) {
-                console.log(`[协作] 收到来自用户 ${senderId} 的场景更新，设置isActiveEdit=false`);
                 setActiveEdit(false); // 设置为非主动编辑
                 // 保存当前选中的stepIndex
                 const currentStepIndex = stepIndex;
@@ -284,11 +275,10 @@ export const CollaborationProvider: React.FC<CollaborationProviderProps> = ({ ch
                 dispatch({ type: 'setStep', index: currentStepIndex });
                 // 定期重置为不活动状态
                 setTimeout(() => {
-                    console.log('[编辑活动] 结束编辑操作');
                     setActiveEdit(false);
                 }, 500);
             } else {
-                console.log(`[协作] 收到自己(${userId})发送的场景更新，忽略`);
+                // 忽略自己发送的场景更新
             }
         };
 
@@ -352,13 +342,11 @@ export const CollaborationProvider: React.FC<CollaborationProviderProps> = ({ ch
 
         // 临时添加一个特定的host_info监听器，确保我们能捕获到加入房间后的房主信息
         const tempHostInfoHandler = (data: any) => {
-            console.log(`joinRoom - 接收到房主信息: hostId=${data.hostId}, 当前userId=${userId}`);
             setHostId(data.hostId);
             if (userId) {
                 setIsHost(data.hostId === userId);
-                console.log(`joinRoom - 设置房主状态: ${data.hostId === userId}`);
             } else {
-                console.log('joinRoom - userId尚未获取，无法设置房主状态');
+                // userId尚未获取，无法设置房主状态
             }
         };
 
@@ -368,10 +356,30 @@ export const CollaborationProvider: React.FC<CollaborationProviderProps> = ({ ch
         // 发送加入房间请求
         webSocketService.joinRoom(roomId);
 
+        // 显式刷新用户列表
+        webSocketService.refreshUsersList();
+
+        // 添加重试机制，确保用户列表能够正确加载
+        let retryCount = 0;
+        const maxRetries = 3;
+        const retryInterval = 500; // 毫秒
+
+        const retryRefreshUsers = () => {
+            if (retryCount < maxRetries) {
+                retryCount++;
+                webSocketService.refreshUsersList();
+
+                // 设置下一次重试
+                setTimeout(retryRefreshUsers, retryInterval);
+            }
+        };
+
+        // 第一次重试延迟1秒，给服务器一些时间处理加入请求
+        setTimeout(retryRefreshUsers, 1000);
+
         // 3秒后移除临时监听器，避免重复处理
         setTimeout(() => {
             webSocketService.off('host_info', tempHostInfoHandler);
-            console.log('joinRoom - 临时host_info监听器已移除');
         }, 3000);
     };
 

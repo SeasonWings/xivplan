@@ -27,13 +27,11 @@ export const EditActivityProvider: React.FC<EditActivityProviderProps> = ({ chil
 
     // 开始编辑活动
     const startEditActivity = useCallback(() => {
-        console.log('[编辑活动] 开始编辑操作');
         setActiveEdit(true);
     }, []);
 
     // 结束编辑活动
     const endEditActivity = useCallback(() => {
-        console.log('[编辑活动] 结束编辑操作');
         setActiveEdit(false);
     }, []);
 

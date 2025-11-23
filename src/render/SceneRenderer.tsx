@@ -49,7 +49,6 @@ export const SceneRenderer: React.FC = () => {
         const now = Date.now();
         // 每50ms更新一次画布
         if (now - lastUpdateTime >= 200) {
-            console.log('更新画布');
             startEditActivity(); // 标记开始编辑活动，确保触发场景更新
             setLastUpdateTime(now);
         }
@@ -60,8 +59,6 @@ export const SceneRenderer: React.FC = () => {
         setLastUpdateTime(0);
         endEditActivity(); // 标记结束编辑活动
     };
-
-    // console.log(scene);
 
     return (
         <DropTarget stage={stage}>

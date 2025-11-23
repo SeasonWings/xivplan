@@ -17,7 +17,6 @@ class WebSocketService {
     private heartbeatInterval = 5000; // 心跳间隔5秒
     private heartbeatTimer: NodeJS.Timeout | null = null;
     private lastHeartbeatResponse: number = 0;
-    private debugMode = false; // 控制是否打印调试日志
 
     // 根据页面协议自动生成WebSocket URL
     private getWebSocketUrl(): string {
@@ -194,9 +193,9 @@ class WebSocketService {
 
     // 日志打印方法，受debugMode控制
     private log(...args: any[]): void {
-        if (this.debugMode) {
-            console.log(...args);
-        }
+        //  if (this.debugMode) {
+        //     console.log(...args);
+        // }
     }
 
     // 错误日志打印方法，不受debugMode控制
@@ -302,10 +301,8 @@ class WebSocketService {
     joinRoom(roomId?: string): void {
         this.send('join_room', { roomId });
 
-        // 延迟一小段时间后刷新用户列表，确保成功加入房间后获取最新的用户信息
-        setTimeout(() => {
-            this.refreshUsersList();
-        }, 500);
+        // 立即刷新用户列表，确保在用户通过链接加入房间后能尽快获取到当前房间的用户信息
+        this.refreshUsersList();
     }
 
     // 更新场景数据
@@ -336,7 +333,6 @@ class WebSocketService {
 
     // 设置用户编辑权限
     setUserEditPermission(userId: string, canEdit: boolean): void {
-        console.log(`发送设置用户编辑权限消息: userId=${userId}, canEdit=${canEdit}`);
         this.send('set_user_edit_permission', { userId, canEdit });
 
         // 延迟一小段时间后刷新用户列表，确保服务器已经处理了权限变更
@@ -347,12 +343,21 @@ class WebSocketService {
 
     // 主动刷新用户列表
     refreshUsersList(): void {
-        // 发送刷新用户列表请求到服务器
-        this.send('refresh_users_list');
-
+        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+            // 添加请求ID以便追踪响应
+            const requestId = Date.now();
+            this.send('refresh_users_list', { request_id: requestId });
+        } else {
+            console.error('WebSocket未连接，无法刷新用户列表');
+            // 尝试重新连接
+            if (!this.isConnecting && this.ws?.readyState !== WebSocket.OPEN) {
+                this.connect(this.currentUrl).catch((error) => {
+                    this.error('刷新用户列表时重连失败:', error);
+                });
+            }
+        }
         // 同时更新本地用户列表状态，确保UI及时反映最新变化
         this.trigger('users_updated', this.connectedUsers);
-        console.log('主动刷新用户列表');
     }
 
     // 添加事件监听器
