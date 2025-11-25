@@ -184,7 +184,9 @@
     "addNew": "添加新步骤",
     "deleteStep": "删除步骤 {{n}}",
     "reorder": "重新排序步骤",
-    "reorderInstructions": "拖拽以重新排序步骤，然后点击「应用」保存更改。"
+    "reorderInstructions": "拖拽以重新排序步骤，然后点击「应用」保存更改。",
+    "editStepName": "编辑步骤名称",
+    "stepNamePlaceholder": "为此步骤输入名称（可选）"
   },
   "toasts": {
     "error": "错误",

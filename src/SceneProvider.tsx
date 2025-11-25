@@ -123,6 +123,12 @@ export interface AddStepAction {
     after?: number;
 }
 
+export interface UpdateStepNameAction {
+    type: 'updateStepName';
+    index: number;
+    name: string | undefined;
+}
+
 export interface RemoveStepAction {
     type: 'removeStep';
     index: number;
@@ -133,7 +139,13 @@ export interface ReorderStepsAction {
     order: number[];
 }
 
-export type StepAction = SetStepAction | IncrementStepAction | AddStepAction | RemoveStepAction | ReorderStepsAction;
+export type StepAction =
+    | SetStepAction
+    | IncrementStepAction
+    | AddStepAction
+    | RemoveStepAction
+    | ReorderStepsAction
+    | UpdateStepNameAction;
 
 // TODO: the source should be separate from the undo history
 export interface SetSourceAction {
@@ -320,6 +332,7 @@ function addStep(state: Readonly<EditorState>, after: number): EditorState {
     const copy = copyObjects(state.scene, getCurrentStep(state).objects);
     const { objects, nextId } = assignObjectIds(state.scene, copy);
 
+    // 创建新步骤时不设置默认名称，只有在用户明确设置时才会有自定义名称
     const newStep: SceneStep = { objects };
 
     const steps = state.scene.steps.slice();
@@ -353,6 +366,15 @@ function removeStep(state: Readonly<EditorState>, index: number): EditorState {
             steps: newSteps,
         },
         currentStep,
+    };
+}
+
+function updateStepName(state: Readonly<EditorState>, index: number, name: string | undefined): EditorState {
+    const steps = state.scene.steps.map((step, i) => (i === index ? { ...step, name } : step));
+
+    return {
+        ...state,
+        scene: { ...state.scene, steps },
     };
 }
 
@@ -551,10 +573,10 @@ function sceneReducer(state: Readonly<EditorState>, action: SceneAction): Editor
 
         case 'addStep':
             return addStep(state, action.after ?? state.currentStep);
-
         case 'removeStep':
             return removeStep(state, action.index);
-
+        case 'updateStepName':
+            return updateStepName(state, action.index, action.name);
         case 'reoderSteps':
             return reoderSteps(state, action.order);
 

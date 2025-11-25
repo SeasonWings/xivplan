@@ -30,7 +30,7 @@ import {
     typographyStyles,
 } from '@fluentui/react-components';
 import { AddFilled, ArrowSwapRegular, DeleteFilled, DeleteRegular, bundleIcon } from '@fluentui/react-icons';
-import React, { HTMLAttributes, RefAttributes, useState } from 'react';
+import React, { HTMLAttributes, RefAttributes, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { HotkeyBlockingDialogBody } from './HotkeyBlockingDialogBody';
 import { useScene } from './SceneProvider';
@@ -60,9 +60,9 @@ export const StepSelect: React.FC = () => {
                     selectedValue={stepIndex}
                     onTabSelect={handleTabSelect}
                 >
-                    {steps.map((i) => (
-                        <StepButton key={i} index={i} />
-                    ))}
+                    {steps.map((i) => {
+                        return <StepButton key={i} index={i} />;
+                    })}
                 </TabList>
             </div>
             <div className={classes.actions}>
@@ -76,8 +76,9 @@ export const StepSelect: React.FC = () => {
 
 const PREVIEW_SIZE = 180;
 
-function getStepText(index: number) {
-    return (index + 1).toString();
+function getStepText(index: number, name?: string) {
+    // 如果有自定义名称，显示自定义名称，否则显示步骤编号
+    return name || (index + 1).toString();
 }
 
 interface StepButtonProps {
@@ -87,14 +88,81 @@ interface StepButtonProps {
 const StepButton: React.FC<StepButtonProps> = ({ index }) => {
     const classes = useStyles();
     const { t } = useTranslation();
-    const stepText = getStepText(index);
+    const { scene, dispatch } = useScene();
+    const [editDialogOpen, setEditDialogOpen] = useState(false);
+    const [tempName, setTempName] = useState('');
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    // 获取当前步骤的名称
+    const step = scene.steps[index];
+    const stepText = getStepText(index, step?.name);
+
+    // 打开编辑对话框
+    const handleOpenEditDialog = () => {
+        setTempName(step?.name || '');
+        setEditDialogOpen(true);
+    };
+
+    // 保存步骤名称
+    const handleSaveName = () => {
+        // 去除首尾空格，空字符串视为undefined（不设置名称）
+        const trimmedName = tempName.trim();
+        dispatch({
+            type: 'updateStepName',
+            index,
+            name: trimmedName || undefined,
+        });
+        setEditDialogOpen(false);
+    };
+
+    // 处理Tab的右键点击
+    const handleContextMenu = (e: React.MouseEvent) => {
+        e.preventDefault();
+        handleOpenEditDialog();
+    };
+
+    // 处理Tab的双击
+    const handleDoubleClick = () => {
+        handleOpenEditDialog();
+    };
 
     return (
-        <Tooltip content={t('steps.step', { n: stepText })} relationship="label" withArrow>
-            <Tab value={index}>
-                <div className={classes.tab}>{stepText}</div>
-            </Tab>
-        </Tooltip>
+        <>
+            <Tooltip content={t('steps.step', { n: stepText })} relationship="label" withArrow>
+                <Tab value={index} onContextMenu={handleContextMenu} onDoubleClick={handleDoubleClick}>
+                    <div className={classes.tab}>{stepText}</div>
+                </Tab>
+            </Tooltip>
+
+            {/* 步骤名称编辑对话框 */}
+            <Dialog open={editDialogOpen} onOpenChange={(e, data) => setEditDialogOpen(data.open)}>
+                <DialogSurface>
+                    <DialogTitle>{t('steps.editStepName')}</DialogTitle>
+                    <DialogContent>
+                        <input
+                            ref={inputRef}
+                            type="text"
+                            value={tempName}
+                            onChange={(e) => setTempName(e.target.value)}
+                            placeholder={t('steps.stepNamePlaceholder')}
+                            className={classes.nameInput}
+                            autoFocus
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    handleSaveName();
+                                } else if (e.key === 'Escape') {
+                                    setEditDialogOpen(false);
+                                }
+                            }}
+                        />
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={handleSaveName}>{t('actions.apply')}</Button>
+                        <Button onClick={() => setEditDialogOpen(false)}>{t('actions.cancel')}</Button>
+                    </DialogActions>
+                </DialogSurface>
+            </Dialog>
+        </>
     );
 };
 
@@ -114,7 +182,8 @@ const DeleteIcon = bundleIcon(DeleteFilled, DeleteRegular);
 const RemoveStepButton: React.FC = () => {
     const { scene, stepIndex, dispatch } = useScene();
     const { t } = useTranslation();
-    const stepText = getStepText(stepIndex);
+    const currentStep = scene.steps[stepIndex];
+    const stepText = getStepText(stepIndex, currentStep?.name);
 
     return (
         <Tooltip content={t('steps.deleteStep', { n: stepText })} relationship="label" withArrow>
@@ -273,20 +342,87 @@ const ReorderableStepItem: React.FC<StepItemProps> = ({ scene, step }) => {
 const StepItem: React.FC<StepItemProps> = ({ ref, scene, step, className, ...props }) => {
     const classes = useStyles();
     const { t } = useTranslation();
-    const stepText = t('steps.step', { n: getStepText(step.index) });
+    const { dispatch } = useScene();
+    const [editDialogOpen, setEditDialogOpen] = useState(false);
+    const [tempName, setTempName] = useState('');
+
+    // 获取当前步骤的名称
+    const stepData = scene.steps[step.index];
+    const stepText = t('steps.step', { n: getStepText(step.index, stepData?.name) });
+
+    // 处理步骤名称编辑
+    const handleOpenEditDialog = () => {
+        setTempName(stepData?.name || '');
+        setEditDialogOpen(true);
+    };
+
+    const handleSaveName = () => {
+        const trimmedName = tempName.trim();
+        dispatch({
+            type: 'updateStepName',
+            index: step.index,
+            name: trimmedName || undefined,
+        });
+        setEditDialogOpen(false);
+    };
+
+    const handleContextMenu = (e: React.MouseEvent) => {
+        e.preventDefault();
+        handleOpenEditDialog();
+    };
+
+    const handleDoubleClick = () => {
+        handleOpenEditDialog();
+    };
 
     return (
-        <div ref={ref} className={mergeClasses(classes.stepItem, className)} {...props}>
-            <div className={classes.stepHeader}>{stepText}</div>
-            <ScenePreview
-                scene={scene}
-                stepIndex={step.index}
-                width={PREVIEW_SIZE}
-                height={PREVIEW_SIZE}
-                backgroundColor="transparent"
-                simple
-            />
-        </div>
+        <>
+            <div
+                ref={ref}
+                className={mergeClasses(classes.stepItem, className)}
+                {...props}
+                onContextMenu={handleContextMenu}
+                onDoubleClick={handleDoubleClick}
+            >
+                <div className={mergeClasses(classes.stepHeader, classes.clickableStepHeader)}>{stepText}</div>
+                <ScenePreview
+                    scene={scene}
+                    stepIndex={step.index}
+                    width={PREVIEW_SIZE}
+                    height={PREVIEW_SIZE}
+                    backgroundColor="transparent"
+                    simple
+                />
+            </div>
+
+            {/* 步骤名称编辑对话框 */}
+            <Dialog open={editDialogOpen} onOpenChange={(e, data) => setEditDialogOpen(data.open)}>
+                <DialogSurface>
+                    <DialogTitle>{t('steps.editStepName')}</DialogTitle>
+                    <DialogContent>
+                        <input
+                            type="text"
+                            value={tempName}
+                            onChange={(e) => setTempName(e.target.value)}
+                            placeholder={t('steps.stepNamePlaceholder')}
+                            className={classes.nameInput}
+                            autoFocus
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    handleSaveName();
+                                } else if (e.key === 'Escape') {
+                                    setEditDialogOpen(false);
+                                }
+                            }}
+                        />
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={handleSaveName}>{t('actions.apply')}</Button>
+                        <Button onClick={() => setEditDialogOpen(false)}>{t('actions.cancel')}</Button>
+                    </DialogActions>
+                </DialogSurface>
+            </Dialog>
+        </>
     );
 };
 
@@ -319,6 +455,17 @@ const useStyles = makeStyles({
     },
     tab: {
         minWidth: '16px',
+        userSelect: 'none',
+        cursor: 'context-menu',
+    },
+    nameInput: {
+        width: '88%',
+        padding: '8px',
+        margin: '20px',
+        border: `1px solid ${tokens.colorNeutralStroke1}`,
+        borderRadius: tokens.borderRadiusMedium,
+        fontSize: '14px',
+        outline: 'none',
     },
 
     dialogSurface: {
@@ -375,6 +522,13 @@ const useStyles = makeStyles({
         paddingInlineStart: tokens.spacingHorizontalS,
         paddingInlineEnd: tokens.spacingHorizontalS,
         ...typographyStyles.body2,
+    },
+
+    clickableStepHeader: {
+        cursor: 'pointer',
+        '&:hover': {
+            textDecoration: 'underline',
+        },
     },
 
     dragging: {

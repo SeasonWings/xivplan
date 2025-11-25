@@ -184,7 +184,9 @@
     "addNew": "Add new step",
     "deleteStep": "Delete step {{n}}",
     "reorder": "Reorder steps",
-    "reorderInstructions": "Drag and drop to reorder steps, then click Apply to save your changes."
+    "reorderInstructions": "Drag and drop to reorder steps, then click Apply to save your changes.",
+    "editStepName": "Edit Step Name",
+    "stepNamePlaceholder": "Enter a name for this step (optional)"
   },
   "toasts": {
     "error": "Error",
