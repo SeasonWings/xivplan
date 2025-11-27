@@ -92,7 +92,6 @@ export const KeyframePanel: React.FC = () => {
     const { t } = useTranslation();
     const { animation, addKeyframe, removeKeyframe, updateKeyframeName, updateKeyframeTime, jumpToKeyframe } =
         useAnimation();
-    const [newKeyframeTime] = useState<string>('0');
     const [keyframeName, setKeyframeName] = useState<string>('');
     const [editingRowId, setEditingRowId] = useState<string | null>(null);
     const [editingName, setEditingName] = useState<string>('');
@@ -100,14 +99,16 @@ export const KeyframePanel: React.FC = () => {
     const [editingTime, setEditingTime] = useState<string>('');
 
     const handleAddKeyframe = useCallback(() => {
-        const time = parseFloat(newKeyframeTime);
-        if (isNaN(time) || time < 0) {
-            return;
+        // 计算默认时间: 当前最大时间 + 100ms
+        let defaultTime = 0;
+        if (animation && animation.keyframes.length > 0) {
+            const maxTime = Math.max(...animation.keyframes.map((kf) => kf.time));
+            defaultTime = maxTime + 100;
         }
 
-        addKeyframe(time, keyframeName || undefined);
+        addKeyframe(defaultTime, keyframeName || undefined);
         setKeyframeName(''); // 清空名称输入
-    }, [newKeyframeTime, keyframeName, addKeyframe]);
+    }, [animation, keyframeName, addKeyframe]);
 
     const handleRemoveKeyframe = useCallback(
         (time: number, name: string | undefined, objectCount: number) => {
@@ -199,20 +200,6 @@ export const KeyframePanel: React.FC = () => {
                     {t('animation.keyframes', '关键帧')} ({rows.length} {t('animation.frames', '帧')})
                 </div>
                 <div className={classes.toolbar}>
-                    {/*<Input*/}
-                    {/*    type="text"*/}
-                    {/*    value={keyframeName}*/}
-                    {/*    onChange={(e, data) => setKeyframeName(data.value)}*/}
-                    {/*    placeholder={t('animation.keyframeNamePlaceholder', '帧名称 (可选)')}*/}
-                    {/*    className={classes.timeInput}*/}
-                    {/*/>*/}
-                    {/*<Input*/}
-                    {/*    type="number"*/}
-                    {/*    value={newKeyframeTime}*/}
-                    {/*    onChange={(e, data) => setNewKeyframeTime(data.value)}*/}
-                    {/*    placeholder={t('animation.timeMs', '时间 (ms)')}*/}
-                    {/*    className={classes.timeInput}*/}
-                    {/*/>*/}
                     <Tooltip content={t('animation.addKeyframe', '添加关键帧')} relationship="label">
                         <Button icon={<Add24Regular />} onClick={handleAddKeyframe} appearance="primary" />
                     </Tooltip>
