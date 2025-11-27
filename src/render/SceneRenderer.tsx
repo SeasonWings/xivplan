@@ -76,7 +76,7 @@ export const SceneRenderer: React.FC = () => {
                     setIsSelecting(true);
                     isSelectingRef.current = true;
                     setSelectionBox({ x: pos.x, y: pos.y, width: 0, height: 0 });
-                }, 50);
+                }, 0);
             }
         }
     };
