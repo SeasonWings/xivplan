@@ -1,4 +1,6 @@
 import type { NativeStyle } from './lib/aoe/nativeStyle';
+import type { Animation } from './animation/animationTypes';
+
 export enum ArenaShape {
     None = 'none',
     Rectangle = 'rectangle',
@@ -499,6 +501,7 @@ export interface Scene {
     readonly nextId: number;
     readonly arena: Arena;
     readonly steps: SceneStep[];
+    readonly animation?: Animation;
 }
 
 export const NO_GRID: NoGrid = {

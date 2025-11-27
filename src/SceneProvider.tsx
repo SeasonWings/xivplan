@@ -1,6 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import * as React from 'react';
 import { createContext, Dispatch, PropsWithChildren, SetStateAction, useContext, useState } from 'react';
+import { Animation } from './animation/animationTypes';
 import { copyObjects } from './copy';
 import {
     Arena,
@@ -65,6 +66,11 @@ export interface SetArenaBackgroundOpacityAction {
     value: number;
 }
 
+export interface SetAnimationAction {
+    type: 'setAnimation';
+    value: Animation | undefined;
+}
+
 export type ArenaAction =
     | SetArenaAction
     | SetArenaShapeAction
@@ -74,7 +80,8 @@ export type ArenaAction =
     | SetArenaGridAction
     | SetArenaTicksActions
     | SetArenaBackgroundAction
-    | SetArenaBackgroundOpacityAction;
+    | SetArenaBackgroundOpacityAction
+    | SetAnimationAction;
 
 export interface ObjectUpdateAction {
     type: 'update';
@@ -395,6 +402,7 @@ function updateStep(scene: Readonly<Scene>, index: number, step: SceneStep): Sce
         nextId: scene.nextId,
         arena: scene.arena,
         steps: [...scene.steps],
+        animation: scene.animation, // 保留 animation 字段
     };
     result.steps[index] = step;
     return result;
@@ -425,10 +433,13 @@ function addObjects(
         }
     }
 
+    // 先更新 step,然后更新 nextId,保留 animation
+    const updatedScene = updateStep(state.scene, state.currentStep, { objects: newObjects });
+
     return {
         ...state,
         scene: {
-            ...updateStep(state.scene, state.currentStep, { objects: newObjects }),
+            ...updatedScene,
             nextId,
         },
     };
@@ -549,8 +560,12 @@ function updateObjects(state: Readonly<EditorState>, values: readonly SceneObjec
 
 function updateArena(state: Readonly<EditorState>, arena: Arena): EditorState {
     return {
-        scene: { ...state.scene, arena },
-        currentStep: state.currentStep,
+        ...state,
+        scene: {
+            ...state.scene,
+            arena,
+            // animation 已经通过 ...state.scene 自动保留
+        },
     };
 }
 
@@ -606,6 +621,15 @@ function sceneReducer(state: Readonly<EditorState>, action: SceneAction): Editor
 
         case 'arenaBackgroundOpacity':
             return updateArena(state, { ...state.scene.arena, backgroundOpacity: action.value });
+
+        case 'setAnimation':
+            return {
+                ...state,
+                scene: {
+                    ...state.scene,
+                    animation: action.value,
+                },
+            };
 
         case 'add':
             return addObjects(state, action.object);

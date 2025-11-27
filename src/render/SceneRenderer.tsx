@@ -2,11 +2,12 @@ import Konva from 'konva';
 import { KonvaEventObject } from 'konva/lib/Node';
 import React, { PropsWithChildren, RefAttributes, useContext, useState } from 'react';
 import { Layer, Stage } from 'react-konva';
+import { useAnimation } from '../animation/AnimationContext';
 import { DefaultCursorProvider } from '../DefaultCursorProvider';
 import { getDropAction } from '../DropHandler';
 import { useEditActivity } from '../EditActivityContext';
 import { SceneHotkeyHandler } from '../HotkeyHandler';
-import { EditorState, SceneAction, SceneContext, useCurrentStep, useScene } from '../SceneProvider';
+import { EditorState, SceneAction, SceneContext, useScene } from '../SceneProvider';
 import { SelectionContext, SelectionState, SpotlightContext } from '../SelectionContext';
 import { useCollaboration } from '../collaboration/CollaborationProvider';
 import { getCanvasSize, getSceneCoord } from '../coord';
@@ -43,7 +44,7 @@ export const SceneRenderer: React.FC = () => {
         }
     };
 
-    const onMouseMoveStage = (e: KonvaEventObject<MouseEvent>) => {
+    const onMouseMoveStage = () => {
         if (!hasEditPermission) return;
 
         const now = Date.now();
@@ -162,7 +163,10 @@ interface SceneContentsProps {
 const SceneContents: React.FC<SceneContentsProps> = ({ listening, simple, backgroundColor }) => {
     listening = listening ?? true;
 
-    const step = useCurrentStep();
+    const { getAnimatedObjects } = useAnimation();
+
+    // 如果有动画正在播放，使用动画后的对象，否则使用原始对象
+    const objects = getAnimatedObjects();
 
     return (
         <>
@@ -170,13 +174,13 @@ const SceneContents: React.FC<SceneContentsProps> = ({ listening, simple, backgr
 
             <Layer name={LayerName.Ground} listening={listening}>
                 <ArenaRenderer backgroundColor={backgroundColor} simple={simple} />
-                <ObjectRenderer objects={step.objects} layer={LayerName.Ground} />
+                <ObjectRenderer objects={objects} layer={LayerName.Ground} />
             </Layer>
             <Layer name={LayerName.Default} listening={listening}>
-                <ObjectRenderer objects={step.objects} layer={LayerName.Default} />
+                <ObjectRenderer objects={objects} layer={LayerName.Default} />
             </Layer>
             <Layer name={LayerName.Foreground} listening={listening}>
-                <ObjectRenderer objects={step.objects} layer={LayerName.Foreground} />
+                <ObjectRenderer objects={objects} layer={LayerName.Foreground} />
 
                 <TetherEditRenderer />
             </Layer>

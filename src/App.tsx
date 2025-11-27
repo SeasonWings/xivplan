@@ -2,6 +2,7 @@ import { makeStyles, Spinner, Toaster, tokens } from '@fluentui/react-components
 import React, { PropsWithChildren, Suspense } from 'react';
 import { HotkeysProvider } from 'react-hotkeys-hook';
 import { createBrowserRouter, createRoutesFromElements, Outlet, Route, RouterProvider } from 'react-router-dom';
+import { AnimationProvider } from './animation/AnimationContext';
 import { CollaborationProvider } from './collaboration/CollaborationProvider';
 import { DirtyProvider } from './DirtyProvider';
 import { EditActivityProvider } from './EditActivityContext';
@@ -59,7 +60,9 @@ const BaseProviders: React.FC<PropsWithChildren> = ({ children }) => {
                 <SceneProvider initialScene={sceneFromUrl}>
                     <EditActivityProvider>
                         <CollaborationProvider>
-                            <DirtyProvider>{children}</DirtyProvider>
+                            <AnimationProvider>
+                                <DirtyProvider>{children}</DirtyProvider>
+                            </AnimationProvider>
                         </CollaborationProvider>
                     </EditActivityProvider>
                 </SceneProvider>
