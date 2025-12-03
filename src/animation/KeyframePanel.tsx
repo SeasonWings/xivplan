@@ -16,12 +16,7 @@ import {
     tokens,
     Tooltip,
 } from '@fluentui/react-components';
-import {
-    Add24Regular,
-    Delete24Regular,
-    // Edit24Regular,
-    MoreVertical24Regular,
-} from '@fluentui/react-icons';
+import { Add24Regular, Delete24Regular, Edit24Regular, MoreVertical24Regular } from '@fluentui/react-icons';
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAnimation } from './AnimationContext';
@@ -90,13 +85,21 @@ interface KeyframeRowData {
 export const KeyframePanel: React.FC = () => {
     const classes = useStyles();
     const { t } = useTranslation();
-    const { animation, addKeyframe, removeKeyframe, updateKeyframeName, updateKeyframeTime, jumpToKeyframe } =
-        useAnimation();
+    const {
+        animation,
+        addKeyframe,
+        removeKeyframe,
+        updateKeyframeName,
+        updateKeyframeTime,
+        updateKeyframeObjects,
+        jumpToKeyframe,
+    } = useAnimation();
     const [keyframeName, setKeyframeName] = useState<string>('');
     const [editingRowId, setEditingRowId] = useState<string | null>(null);
     const [editingName, setEditingName] = useState<string>('');
     const [editingTimeRowId, setEditingTimeRowId] = useState<string | null>(null);
     const [editingTime, setEditingTime] = useState<string>('');
+    const [editingKeyframe, setEditingKeyframe] = useState<{ time: number; name: string | undefined } | null>(null);
 
     const handleAddKeyframe = useCallback(() => {
         // 计算默认时间: 当前最大时间 + 100ms
@@ -172,6 +175,35 @@ export const KeyframePanel: React.FC = () => {
         setEditingTime('');
     }, []);
 
+    // 开始编辑关键帧对象
+    const handleStartEditKeyframe = useCallback(
+        (time: number, name: string | undefined) => {
+            // 跳转到该关键帧，让画布显示关键帧状态
+            jumpToKeyframe(time);
+            // 记录当前正在编辑的关键帧
+            setEditingKeyframe({ time, name });
+        },
+        [jumpToKeyframe],
+    );
+
+    // 保存关键帧编辑
+    const handleSaveEditKeyframe = useCallback(() => {
+        if (editingKeyframe) {
+            // 将当前画布状态更新到关键帧
+            updateKeyframeObjects(editingKeyframe.time, editingKeyframe.name);
+            setEditingKeyframe(null);
+        }
+    }, [editingKeyframe, updateKeyframeObjects]);
+
+    // 取消关键帧编辑
+    const handleCancelEditKeyframe = useCallback(() => {
+        if (editingKeyframe) {
+            // 重新跳转到关键帧，恢复原始状态
+            jumpToKeyframe(editingKeyframe.time);
+            setEditingKeyframe(null);
+        }
+    }, [editingKeyframe, jumpToKeyframe]);
+
     const getKeyframeRows = (): KeyframeRowData[] => {
         if (!animation) {
             return [];
@@ -200,9 +232,24 @@ export const KeyframePanel: React.FC = () => {
                     {t('animation.keyframes', '关键帧')} ({rows.length} {t('animation.frames', '帧')})
                 </div>
                 <div className={classes.toolbar}>
-                    <Tooltip content={t('animation.addKeyframe', '添加关键帧')} relationship="label">
-                        <Button icon={<Add24Regular />} onClick={handleAddKeyframe} appearance="primary" />
-                    </Tooltip>
+                    {editingKeyframe ? (
+                        <>
+                            <Tooltip content={t('animation.saveEdit', '保存编辑')} relationship="label">
+                                <Button onClick={handleSaveEditKeyframe} appearance="primary">
+                                    {t('animation.saveEdit', '保存编辑')}
+                                </Button>
+                            </Tooltip>
+                            <Tooltip content={t('animation.cancelEdit', '取消编辑')} relationship="label">
+                                <Button onClick={handleCancelEditKeyframe} appearance="secondary">
+                                    {t('animation.cancelEdit', '取消')}
+                                </Button>
+                            </Tooltip>
+                        </>
+                    ) : (
+                        <Tooltip content={t('animation.addKeyframe', '添加关键帧')} relationship="label">
+                            <Button icon={<Add24Regular />} onClick={handleAddKeyframe} appearance="primary" />
+                        </Tooltip>
+                    )}
                 </div>
             </div>
 
@@ -287,17 +334,19 @@ export const KeyframePanel: React.FC = () => {
                                                     <MenuItem onClick={() => handleJumpToKeyframe(row.time)}>
                                                         {t('animation.seekTo', '跳转到此帧')}
                                                     </MenuItem>
-                                                    {/*<MenuItem*/}
-                                                    {/*    onClick={() => handleStartEdit(row.id, row.name)}*/}
-                                                    {/*    icon={<Edit24Regular />}*/}
-                                                    {/*>*/}
-                                                    {/*    {t('animation.rename', '重命名')}*/}
-                                                    {/*</MenuItem>*/}
+                                                    <MenuItem
+                                                        onClick={() => handleStartEditKeyframe(row.time, row.name)}
+                                                        icon={<Edit24Regular />}
+                                                        disabled={editingKeyframe !== null}
+                                                    >
+                                                        {t('animation.editKeyframe', '编辑此帧')}
+                                                    </MenuItem>
                                                     <MenuItem
                                                         onClick={() =>
                                                             handleRemoveKeyframe(row.time, row.name, row.objectCount)
                                                         }
                                                         icon={<Delete24Regular />}
+                                                        disabled={editingKeyframe !== null}
                                                     >
                                                         {t('animation.delete', '删除')}
                                                     </MenuItem>

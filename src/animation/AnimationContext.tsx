@@ -28,6 +28,8 @@ interface AnimationContextValue {
     updateKeyframeName: (time: number, oldName: string | undefined, newName: string) => void;
     /** 更新关键帧时间 */
     updateKeyframeTime: (oldTime: number, name: string | undefined, newTime: number) => void;
+    /** 更新关键帧对象(将当前画布状态更新到指定关键帧) */
+    updateKeyframeObjects: (time: number, name: string | undefined) => void;
     /** 跳转到关键帧并应用其对象状态到画布 */
     jumpToKeyframe: (time: number) => void;
     /** 获取应用动画后的对象 */
@@ -307,6 +309,33 @@ export const AnimationProvider: React.FC<PropsWithChildren> = ({ children }) => 
         [animation, setAnimation],
     );
 
+    // 更新关键帧对象(将当前画布状态更新到指定关键帧)
+    const updateKeyframeObjects = useCallback(
+        (time: number, name: string | undefined) => {
+            if (!animation) {
+                return;
+            }
+
+            // 查找并更新关键帧的对象列表
+            const keyframes = animation.keyframes.map((kf) => {
+                const timeMatch = Math.abs(kf.time - time) < 10; // 10ms 容差
+                const nameMatch = kf.name === name;
+
+                if (timeMatch && nameMatch) {
+                    // 使用当前画布的对象状态更新关键帧
+                    return { ...kf, objects: [...step.objects] as SceneObject[] };
+                }
+                return kf;
+            });
+
+            setAnimation({
+                ...animation,
+                keyframes,
+            });
+        },
+        [animation, step.objects, setAnimation],
+    );
+
     // 跳转到关键帧并应用其对象状态到画布
     const jumpToKeyframe = useCallback(
         (time: number) => {
@@ -370,6 +399,7 @@ export const AnimationProvider: React.FC<PropsWithChildren> = ({ children }) => 
         removeKeyframe,
         updateKeyframeName,
         updateKeyframeTime,
+        updateKeyframeObjects,
         jumpToKeyframe,
         getAnimatedObjects,
     };
