@@ -88,6 +88,11 @@ export interface ObjectUpdateAction {
     value: SceneObject | readonly SceneObject[];
 }
 
+export interface ObjectReplaceAction {
+    type: 'replace';
+    value: readonly SceneObject[];
+}
+
 export interface ObjectAddAction {
     type: 'add';
     object: SceneObjectWithoutId | readonly SceneObjectWithoutId[];
@@ -114,7 +119,8 @@ export type ObjectAction =
     | ObjectRemoveAction
     | ObjectMoveAction
     | GroupMoveAction
-    | ObjectUpdateAction;
+    | ObjectUpdateAction
+    | ObjectReplaceAction;
 
 export interface SetStepAction {
     type: 'setStep';
@@ -558,6 +564,11 @@ function updateObjects(state: Readonly<EditorState>, values: readonly SceneObjec
     return updateCurrentStep(state, { objects });
 }
 
+function replaceObjects(state: Readonly<EditorState>, values: readonly SceneObject[]): EditorState {
+    // 完全替换对象列表，用于关键帧跳转等场景
+    return updateCurrentStep(state, { objects: [...values] });
+}
+
 function updateArena(state: Readonly<EditorState>, arena: Arena): EditorState {
     return {
         ...state,
@@ -654,6 +665,9 @@ function sceneReducer(state: Readonly<EditorState>, action: SceneAction): Editor
 
         case 'update':
             return updateObjects(state, asArray(action.value));
+
+        case 'replace':
+            return replaceObjects(state, action.value);
     }
 
     return state;

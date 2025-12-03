@@ -325,37 +325,16 @@ export const AnimationProvider: React.FC<PropsWithChildren> = ({ children }) => 
             // 更新播放时间
             seekTo(time);
 
-            // 将关键帧的对象状态应用到当前 step
-            // 需要保留对象的 id,只更新位置、旋转等属性
-            const currentObjects = step.objects;
-            const keyframeObjects = keyframe.objects;
+            // 完全使用关键帧的对象列表替换当前画布的对象列表
+            // 这样可以确保：
+            // 1. 关键帧中有的对象会显示在画布上
+            // 2. 关键帧中没有的对象会从画布上移除
+            const keyframeObjects = [...keyframe.objects];
 
-            // 创建一个 id 到关键帧对象的映射
-            const keyframeMap = new Map<number, SceneObject>();
-            keyframeObjects.forEach((obj) => {
-                keyframeMap.set(obj.id, obj);
-            });
-
-            // 更新现有对象,如果关键帧中有该对象,则应用其状态
-            const updatedObjects = currentObjects.map((currentObj) => {
-                const keyframeObj = keyframeMap.get(currentObj.id);
-                if (keyframeObj) {
-                    // 应用关键帧中保存的状态
-                    return keyframeObj;
-                }
-                return currentObj;
-            });
-
-            // 添加关键帧中有但当前 step 没有的对象
-            const currentIds = new Set(currentObjects.map((obj) => obj.id));
-            const newObjects = keyframeObjects.filter((obj) => !currentIds.has(obj.id));
-
-            const finalObjects = [...updatedObjects, ...newObjects];
-
-            // 批量更新所有对象
+            // 使用 replace action 完全替换对象列表
             dispatch({
-                type: 'update',
-                value: finalObjects,
+                type: 'replace',
+                value: keyframeObjects,
             });
         },
         [animation, step.objects, seekTo, dispatch],
