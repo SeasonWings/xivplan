@@ -25,12 +25,38 @@ import {
     isStackZone,
     isText,
 } from '../scene';
+import { Animation } from '../animation/animationTypes';
 import { DEFAULT_ENEMY_OPACITY, DEFAULT_IMAGE_OPACITY, DEFAULT_MARKER_OPACITY, DEFAULT_PARTY_OPACITY } from '../theme';
 
-export function upgradeScene(scene: Scene): Scene {
+// 旧版本单动画数据结构（兼容性）
+type LegacyScene = Omit<Scene, 'animations' | 'currentAnimationId'> & {
+    animation?: Animation;
+    animations?: readonly Animation[];
+    currentAnimationId?: string;
+};
+
+export function upgradeScene(scene: Scene | LegacyScene): Scene {
+    // 兼容旧版本单动画数据
+    let animations: readonly Animation[] | undefined;
+    let currentAnimationId: string | undefined;
+
+    if ('animation' in scene && scene.animation) {
+        // 旧版本：单个 animation 字段
+        const legacyAnimation = scene.animation;
+        animations = [legacyAnimation];
+        currentAnimationId = legacyAnimation.id;
+        console.log('[Upgrade] Migrating legacy single animation to animations array');
+    } else {
+        // 新版本：animations 数组
+        animations = scene.animations;
+        currentAnimationId = scene.currentAnimationId;
+    }
+
     return {
         ...scene,
         steps: scene.steps.map(upgradeStep),
+        animations,
+        currentAnimationId,
     };
 }
 
