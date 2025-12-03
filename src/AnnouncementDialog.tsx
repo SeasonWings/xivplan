@@ -65,7 +65,7 @@ interface AnnouncementItem {
     content: string;
 }
 
-// 公告数据（可以后续从服务器获取）
+// 公告数据
 const announcements: AnnouncementItem[] = [
     {
         id: '1',
