@@ -61,6 +61,12 @@ export const SceneRenderer: React.FC = () => {
         // 只处理左键
         if (e.evt.button !== 0) return;
 
+        // 检查鼠标光标样式，如果是 'move' 说明在可拖拽对象上，不触发框选
+        const container = stage?.container();
+        if (container && container.style.cursor === 'move') {
+            return;
+        }
+
         // 如果点击的是舞台背景（不是对象），开始长按计时
         const targetName = e.target.name();
         const isBackground = !targetName || targetName === '' || e.target === e.target.getStage();
