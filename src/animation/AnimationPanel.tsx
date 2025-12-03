@@ -7,20 +7,22 @@ import {
     DialogSurface,
     DialogTitle,
     DialogTrigger,
+    Dropdown,
     Input,
     makeStyles,
+    Option,
     Switch,
     Tab,
     TabList,
     tokens,
     Tooltip,
 } from '@fluentui/react-components';
-import { Settings24Regular, VideoRecordingRegular } from '@fluentui/react-icons';
+import { Add24Regular, Settings24Regular, VideoRecordingRegular } from '@fluentui/react-icons';
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAnimation } from './AnimationContext';
+import { Animation } from './animationTypes';
 import { AnimationTimeline } from './AnimationTimeline';
-import { Animation, EasingType } from './animationTypes';
 import { KeyframePanel } from './KeyframePanel';
 
 const useStyles = makeStyles({
@@ -84,7 +86,7 @@ const useStyles = makeStyles({
 export const AnimationPanel: React.FC = () => {
     const classes = useStyles();
     const { t } = useTranslation();
-    const { animation, setAnimation } = useAnimation();
+    const { animation, animations, createAnimation, switchAnimation, deleteAnimation, setAnimation } = useAnimation();
     const [settingsOpen, setSettingsOpen] = useState(false);
     const [activeTab, setActiveTab] = useState<'timeline' | 'keyframes'>('timeline');
 
@@ -93,17 +95,15 @@ export const AnimationPanel: React.FC = () => {
     const [loop, setLoop] = useState(animation?.loop ?? false);
 
     const handleCreateAnimation = useCallback(() => {
-        const newAnimation: Animation = {
-            name: '新动画',
-            keyframes: [],
-            duration: 0, // 初始为 0，添加关键帧后自动计算
-            loop: false,
-            easing: EasingType.Linear,
-        };
-        setAnimation(newAnimation);
-        setAnimationName(newAnimation.name ?? '');
-        setLoop(newAnimation.loop);
-    }, [setAnimation]);
+        createAnimation('新动画');
+    }, [createAnimation]);
+
+    const handleSwitchAnimation = useCallback(
+        (animationId: string) => {
+            switchAnimation(animationId);
+        },
+        [switchAnimation],
+    );
 
     const handleSaveSettings = useCallback(() => {
         if (!animation) {
@@ -122,11 +122,13 @@ export const AnimationPanel: React.FC = () => {
     }, [animation, animationName, loop, setAnimation]);
 
     const handleDeleteAnimation = useCallback(() => {
-        setAnimation(null);
-        setSettingsOpen(false);
-    }, [setAnimation]);
+        if (animation) {
+            deleteAnimation(animation.id);
+            setSettingsOpen(false);
+        }
+    }, [animation, deleteAnimation]);
 
-    if (!animation) {
+    if (animations.length === 0) {
         return (
             <div className={classes.container}>
                 <div className={classes.header}>
@@ -157,27 +159,66 @@ export const AnimationPanel: React.FC = () => {
             <div className={classes.header}>
                 <div className={classes.title}>
                     <VideoRecordingRegular />
-                    {animation.name || t('animation.untitled', '未命名动画')}
+                    {animation ? (
+                        <Dropdown
+                            value={animation.name || t('animation.untitled', '未命名动画')}
+                            selectedOptions={[animation.id]}
+                            onOptionSelect={(_, data) => {
+                                if (data.optionValue) {
+                                    handleSwitchAnimation(data.optionValue);
+                                }
+                            }}
+                            appearance="underline"
+                            style={{ minWidth: '150px', border: 'none' }}
+                        >
+                            {animations.map((anim) => (
+                                <Option key={anim.id} value={anim.id}>
+                                    {anim.name || t('animation.untitled', '未命名动画')}
+                                </Option>
+                            ))}
+                        </Dropdown>
+                    ) : (
+                        <span>{t('animation.title', '动画')}</span>
+                    )}
                 </div>
-                <Tooltip content={t('animation.settings', '动画设置')} relationship="label">
-                    <Button icon={<Settings24Regular />} appearance="subtle" onClick={() => setSettingsOpen(true)} />
-                </Tooltip>
+                <div style={{ display: 'flex', gap: tokens.spacingHorizontalS }}>
+                    <Tooltip content={t('animation.createAnimation', '创建新动画')} relationship="label">
+                        <Button icon={<Add24Regular />} appearance="subtle" onClick={handleCreateAnimation} />
+                    </Tooltip>
+                    {animation && (
+                        <Tooltip content={t('animation.settings', '动画设置')} relationship="label">
+                            <Button
+                                icon={<Settings24Regular />}
+                                appearance="subtle"
+                                onClick={() => setSettingsOpen(true)}
+                            />
+                        </Tooltip>
+                    )}
+                </div>
             </div>
 
-            <div className={classes.content}>
-                <TabList
-                    selectedValue={activeTab}
-                    onTabSelect={(_, data) => setActiveTab(data.value as 'timeline' | 'keyframes')}
-                >
-                    <Tab value="timeline">{t('animation.timeline', '时间轴')}</Tab>
-                    <Tab value="keyframes">{t('animation.keyframes', '关键帧')}</Tab>
-                </TabList>
+            {animation ? (
+                <div className={classes.content}>
+                    <TabList
+                        selectedValue={activeTab}
+                        onTabSelect={(_, data) => setActiveTab(data.value as 'timeline' | 'keyframes')}
+                    >
+                        <Tab value="timeline">{t('animation.timeline', '时间轴')}</Tab>
+                        <Tab value="keyframes">{t('animation.keyframes', '关键帧')}</Tab>
+                    </TabList>
 
-                <div className={classes.tabContent}>
-                    {activeTab === 'timeline' && <AnimationTimeline />}
-                    {activeTab === 'keyframes' && <KeyframePanel />}
+                    <div className={classes.tabContent}>
+                        {activeTab === 'timeline' && <AnimationTimeline />}
+                        {activeTab === 'keyframes' && <KeyframePanel />}
+                    </div>
                 </div>
-            </div>
+            ) : (
+                <div className={classes.noAnimation}>
+                    <div style={{ color: tokens.colorNeutralForeground2 }}>
+                        {t('animation.selectOrCreate', '请选择或创建一个动画')}
+                    </div>
+                </div>
+            )}
 
             {/* 设置对话框 */}
             <Dialog open={settingsOpen} onOpenChange={(_, data) => setSettingsOpen(data.open)}>
@@ -198,7 +239,8 @@ export const AnimationPanel: React.FC = () => {
                                 <div className={classes.formField}>
                                     <label className={classes.label}>{t('animation.duration', '总时长')}</label>
                                     <div style={{ padding: '8px 12px', color: tokens.colorNeutralForeground2 }}>
-                                        {animation.duration} ms ({(animation.duration / 1000).toFixed(2)} s)
+                                        {animation?.duration ?? 0} ms ({((animation?.duration ?? 0) / 1000).toFixed(2)}{' '}
+                                        s)
                                         <div style={{ fontSize: tokens.fontSizeBase200, marginTop: '4px' }}>
                                             {t('animation.autoCalculated', '自动根据关键帧计算')}
                                         </div>

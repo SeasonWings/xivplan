@@ -1,6 +1,7 @@
 {
   "header": {
     "help": "Help",
+    "announcement": "Update",
     "github": "GitHub",
     "language": "Language",
     "language_zh": "中文",
@@ -80,6 +81,11 @@
       "part1": "This site is a Chinese localized version based on the XIVPlan project, aiming to provide a better user experience for Chinese users.",
       "part2": "The original project information is as follows:"
     }
+  },
+  "announcement": {
+    "title": "Update",
+    "empty": "No Update",
+    "close": "Close"
   },
   "toolbar": {
     "open": "Open",
@@ -224,7 +230,8 @@
     "currentTime": "Current Time",
     "saveSettings": "Save Settings",
     "deleteAnimation": "Delete Animation",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "editKeyframe": "Edit Keyframe"
   },
   "toasts": {
     "error": "Error",

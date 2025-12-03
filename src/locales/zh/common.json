@@ -1,6 +1,7 @@
 {
   "header": {
     "help": "帮助",
+    "announcement": "更新日志",
     "github": "GitHub",
     "language": "语言",
     "language_zh": "中文",
@@ -80,6 +81,11 @@
       "part1": "本站是基于 XIVPlan 项目进行汉化的版本，旨在为中文用户提供更好的使用体验。",
       "part2": "原项目信息如下："
     }
+  },
+  "announcement": {
+    "title": "更新",
+    "empty": "暂无更新",
+    "close": "关闭"
   },
   "toolbar": {
     "open": "打开",
@@ -224,7 +230,8 @@
     "currentTime": "当前时间",
     "saveSettings": "保存设置",
     "deleteAnimation": "删除动画",
-    "cancel": "取消"
+    "cancel": "取消",
+    "editKeyframe": "编辑此帧"
   },
   "toasts": {
     "error": "错误",

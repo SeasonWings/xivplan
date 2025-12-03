@@ -17,6 +17,7 @@ import React, { HTMLAttributes, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { OutPortal } from 'react-reverse-portal';
 import { AboutDialog } from './AboutDialog';
+import { AnnouncementDialog } from './AnnouncementDialog';
 import { ExternalLink } from './ExternalLink';
 import { HelpContext } from './HelpContext';
 import { PANEL_WIDTH } from './panel/PanelStyles';
@@ -111,6 +112,7 @@ export const SiteHeader: React.FC<HTMLAttributes<HTMLElement>> = ({ className, .
             <Link onClick={() => setHelpOpen(true)} className={classes.link}>
                 {t('header.help')}
             </Link>
+            <AnnouncementDialog className={classes.link} />
             <AboutDialog className={classes.link} />
             <ExternalLink className={classes.link} href="https://github.com/SeasonWings/xivplan" noIcon>
                 {t('header.github')}

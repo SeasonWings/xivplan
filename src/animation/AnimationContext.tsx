@@ -1,17 +1,26 @@
 /* eslint-disable react-refresh/only-export-components */
-import React, { createContext, PropsWithChildren, useCallback, useContext, useEffect, useRef, useState } from 'react';
+/* eslint-disable react-hooks/preserve-manual-memoization */
+import React, { createContext, PropsWithChildren, useContext, useEffect, useRef, useState } from 'react';
 import { SceneObject } from '../scene';
 import { useScene } from '../SceneProvider';
 import { getObjectsAtTime } from './animationEngine';
-import { Animation, AnimationPlayerState, Keyframe, PlaybackState } from './animationTypes';
+import { Animation, AnimationPlayerState, EasingType, Keyframe, PlaybackState } from './animationTypes';
 
 interface AnimationContextValue {
     /** 当前动画配置 */
     animation: Animation | null;
+    /** 所有动画列表 */
+    animations: readonly Animation[];
     /** 播放器状态 */
     playerState: AnimationPlayerState;
-    /** 设置动画配置 */
+    /** 设置当前动画配置 */
     setAnimation: (animation: Animation | null) => void;
+    /** 创建新动画 */
+    createAnimation: (name?: string) => void;
+    /** 切换当前动画 */
+    switchAnimation: (animationId: string) => void;
+    /** 删除动画 */
+    deleteAnimation: (animationId: string) => void;
     /** 播放控制 */
     play: () => void;
     pause: () => void;
@@ -46,42 +55,158 @@ const DEFAULT_PLAYER_STATE: AnimationPlayerState = {
 
 export const AnimationProvider: React.FC<PropsWithChildren> = ({ children }) => {
     const { step, scene, dispatch } = useScene();
-    // 完全独立管理动画状态,不依赖 scene.animation 的引用
-    const [animation, setAnimationState] = useState<Animation | null>(() => scene.animation ?? null);
+
+    // 获取所有动画和当前动画ID
+    const animations = scene.animations ?? [];
+    const currentAnimationId = scene.currentAnimationId;
+
+    // 获取当前激活的动画
+    const currentAnimation = animations.find((a) => a.id === currentAnimationId) ?? null;
+
+    const [animation, setAnimationState] = useState<Animation | null>(() => currentAnimation);
     const [playerState, setPlayerState] = useState<AnimationPlayerState>(DEFAULT_PLAYER_STATE);
     const animationFrameRef = useRef<number | null>(null);
     const lastTimeRef = useRef<number>(0);
-    // 保存上次的 scene.animation 的序列化值,用于深度比较
-    const lastSceneAnimationRef = useRef<string>(JSON.stringify(scene.animation ?? null));
+    // 保存上次的动画列表和当前ID的序列化值
+    const lastAnimationsRef = useRef<string>(JSON.stringify({ animations, currentAnimationId }));
+
+    // 使用 ref 保持最新的值引用，避免闭包陷阱
+    const animationsRef = useRef(animations);
+    const dispatchRef = useRef(dispatch);
+    const stepRef = useRef(step);
+
+    // 更新 refs
+    React.useEffect(() => {
+        animationsRef.current = animations;
+        dispatchRef.current = dispatch;
+        stepRef.current = step;
+    });
 
     // 监听外部场景加载(如打开文件、撤销/重做等)
     // 使用深度比较而不是引用比较
     React.useEffect(() => {
-        const currentSceneAnimation = JSON.stringify(scene.animation ?? null);
+        const currentData = JSON.stringify({ animations, currentAnimationId });
 
         // 只有当序列化后的内容真正不同时才同步
-        if (currentSceneAnimation !== lastSceneAnimationRef.current) {
+        if (currentData !== lastAnimationsRef.current) {
             console.log('[AnimationContext] External scene loaded, syncing animation');
-            lastSceneAnimationRef.current = currentSceneAnimation;
-            setAnimationState(scene.animation ?? null);
+            lastAnimationsRef.current = currentData;
+            const newCurrentAnimation = animations.find((a) => a.id === currentAnimationId) ?? null;
+            setAnimationState(newCurrentAnimation);
             // 重置播放状态
             setPlayerState(DEFAULT_PLAYER_STATE);
         }
-    }, [scene.animation]);
+    }, [animations, currentAnimationId]);
 
     // 当动画变化时,更新场景
-    const setAnimation = React.useCallback(
-        (newAnimation: Animation | null) => {
-            setAnimationState(newAnimation);
-            // 同步更新引用值,避免触发上面的 useEffect
-            lastSceneAnimationRef.current = JSON.stringify(newAnimation ?? null);
-            // 通过 dispatch 更新场景中的动画数据
-            dispatch({
-                type: 'setAnimation',
-                value: newAnimation ?? undefined,
+    const setAnimation = React.useCallback((newAnimation: Animation | null) => {
+        setAnimationState(newAnimation);
+
+        if (newAnimation) {
+            // 更新动画列表中的对应动画
+            const updatedAnimations = animationsRef.current.map((a) => (a.id === newAnimation.id ? newAnimation : a));
+
+            // 同步更新引用值
+            lastAnimationsRef.current = JSON.stringify({
+                animations: updatedAnimations,
+                currentAnimationId: newAnimation.id,
+            });
+
+            dispatchRef.current({
+                type: 'setAnimations',
+                animations: updatedAnimations,
+            });
+            dispatchRef.current({
+                type: 'setCurrentAnimationId',
+                animationId: newAnimation.id,
+            });
+        } else {
+            // 删除当前动画
+            dispatchRef.current({
+                type: 'setCurrentAnimationId',
+                animationId: undefined,
+            });
+        }
+    }, []);
+
+    // 创建新动画
+    const createAnimation = React.useCallback((name?: string) => {
+        const newAnimation: Animation = {
+            id: `anim_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            name: name || `动画 ${animationsRef.current.length + 1}`,
+            keyframes: [],
+            duration: 0,
+            loop: false,
+            easing: EasingType.Linear,
+        };
+
+        const updatedAnimations = [...animationsRef.current, newAnimation];
+
+        lastAnimationsRef.current = JSON.stringify({
+            animations: updatedAnimations,
+            currentAnimationId: newAnimation.id,
+        });
+
+        setAnimationState(newAnimation);
+
+        dispatchRef.current({
+            type: 'setAnimations',
+            animations: updatedAnimations,
+        });
+        dispatchRef.current({
+            type: 'setCurrentAnimationId',
+            animationId: newAnimation.id,
+        });
+    }, []);
+
+    // 切换当前动画
+    const switchAnimation = React.useCallback((animationId: string) => {
+        const targetAnimation = animationsRef.current.find((a) => a.id === animationId);
+        if (targetAnimation) {
+            lastAnimationsRef.current = JSON.stringify({
+                animations: animationsRef.current,
+                currentAnimationId: animationId,
+            });
+
+            setAnimationState(targetAnimation);
+            setPlayerState(DEFAULT_PLAYER_STATE);
+
+            dispatchRef.current({
+                type: 'setCurrentAnimationId',
+                animationId,
+            });
+        }
+    }, []);
+
+    // 删除动画
+    const deleteAnimation = React.useCallback(
+        (animationId: string) => {
+            const updatedAnimations = animationsRef.current.filter((a) => a.id !== animationId);
+
+            // 如果删除的是当前动画,切换到第一个或null
+            const currentId = scene.currentAnimationId;
+            const newCurrentId = currentId === animationId ? (updatedAnimations[0]?.id ?? undefined) : currentId;
+
+            const newCurrentAnimation = updatedAnimations.find((a) => a.id === newCurrentId) ?? null;
+
+            lastAnimationsRef.current = JSON.stringify({
+                animations: updatedAnimations,
+                currentAnimationId: newCurrentId,
+            });
+
+            setAnimationState(newCurrentAnimation);
+            setPlayerState(DEFAULT_PLAYER_STATE);
+
+            dispatchRef.current({
+                type: 'setAnimations',
+                animations: updatedAnimations,
+            });
+            dispatchRef.current({
+                type: 'setCurrentAnimationId',
+                animationId: newCurrentId,
             });
         },
-        [dispatch],
+        [scene.currentAnimationId],
     );
 
     // 播放循环
@@ -106,10 +231,21 @@ export const AnimationProvider: React.FC<PropsWithChildren> = ({ children }) => 
                     if (animation.loop) {
                         newTime = newTime % animation.duration;
                     } else {
-                        // 非循环动画播放完毕，重置到开始位置
+                        // 非循环动画播放完毕，跳转到第一个关键帧
+                        const firstKeyframe = animation.keyframes.length > 0 ? animation.keyframes[0] : null;
+                        if (firstKeyframe) {
+                            // 使用第一个关键帧的对象状态替换画布
+                            const keyframeObjects = [...firstKeyframe.objects];
+                            dispatchRef.current({
+                                type: 'replace',
+                                value: keyframeObjects,
+                            });
+                        }
+
+                        // 重置到第一个关键帧的时间点（如果有）或 0
                         return {
                             state: PlaybackState.Stopped,
-                            currentTime: 0, // 重置为 0
+                            currentTime: firstKeyframe?.time ?? 0,
                             playbackSpeed: prev.playbackSpeed,
                         };
                     }
@@ -136,14 +272,14 @@ export const AnimationProvider: React.FC<PropsWithChildren> = ({ children }) => 
     }, [playerState.state, playerState.playbackSpeed, animation]);
 
     // 播放控制函数
-    const play = useCallback(() => {
+    const play = React.useCallback(() => {
         setPlayerState((prev) => ({
             ...prev,
             state: PlaybackState.Playing,
         }));
     }, []);
 
-    const pause = useCallback(() => {
+    const pause = React.useCallback(() => {
         setPlayerState((prev) => ({
             ...prev,
             state: PlaybackState.Paused,
@@ -151,7 +287,7 @@ export const AnimationProvider: React.FC<PropsWithChildren> = ({ children }) => 
         lastTimeRef.current = 0;
     }, []);
 
-    const stop = useCallback(() => {
+    const stop = React.useCallback(() => {
         setPlayerState({
             state: PlaybackState.Stopped,
             currentTime: 0, // 回到开始位置
@@ -160,17 +296,17 @@ export const AnimationProvider: React.FC<PropsWithChildren> = ({ children }) => 
         lastTimeRef.current = 0;
     }, []);
 
-    const seekTo = useCallback(
+    const seekTo = React.useCallback(
         (time: number) => {
             setPlayerState((prev) => ({
                 ...prev,
                 currentTime: Math.max(0, Math.min(time, animation?.duration ?? 0)),
             }));
         },
-        [animation],
+        [animation?.duration],
     );
 
-    const setPlaybackSpeed = useCallback((speed: number) => {
+    const setPlaybackSpeed = React.useCallback((speed: number) => {
         setPlayerState((prev) => ({
             ...prev,
             playbackSpeed: Math.max(0.1, Math.min(5.0, speed)),
@@ -178,7 +314,7 @@ export const AnimationProvider: React.FC<PropsWithChildren> = ({ children }) => 
     }, []);
 
     // 关键帧管理函数(记录当前画板状态)
-    const addKeyframe = useCallback(
+    const addKeyframe = React.useCallback(
         (time: number, name?: string) => {
             if (!animation) {
                 return;
@@ -201,7 +337,7 @@ export const AnimationProvider: React.FC<PropsWithChildren> = ({ children }) => 
             // 记录当前步骤中所有对象的状态
             const newKeyframe: Keyframe = {
                 time,
-                objects: [...step.objects] as SceneObject[],
+                objects: [...stepRef.current.objects] as SceneObject[],
                 name: finalName,
             };
 
@@ -217,10 +353,10 @@ export const AnimationProvider: React.FC<PropsWithChildren> = ({ children }) => 
                 duration, // 自动更新 duration
             });
         },
-        [animation, step.objects, setAnimation],
+        [animation, setAnimation],
     );
 
-    const removeKeyframe = useCallback(
+    const removeKeyframe = React.useCallback(
         (time: number, name: string | undefined, objectCount: number) => {
             if (!animation) {
                 return;
@@ -249,7 +385,7 @@ export const AnimationProvider: React.FC<PropsWithChildren> = ({ children }) => 
     );
 
     // 更新关键帧名称
-    const updateKeyframeName = useCallback(
+    const updateKeyframeName = React.useCallback(
         (time: number, oldName: string | undefined, newName: string) => {
             if (!animation) {
                 return;
@@ -275,7 +411,7 @@ export const AnimationProvider: React.FC<PropsWithChildren> = ({ children }) => 
     );
 
     // 更新关键帧时间
-    const updateKeyframeTime = useCallback(
+    const updateKeyframeTime = React.useCallback(
         (oldTime: number, name: string | undefined, newTime: number) => {
             if (!animation) {
                 return;
@@ -310,7 +446,7 @@ export const AnimationProvider: React.FC<PropsWithChildren> = ({ children }) => 
     );
 
     // 更新关键帧对象(将当前画布状态更新到指定关键帧)
-    const updateKeyframeObjects = useCallback(
+    const updateKeyframeObjects = React.useCallback(
         (time: number, name: string | undefined) => {
             if (!animation) {
                 return;
@@ -323,7 +459,7 @@ export const AnimationProvider: React.FC<PropsWithChildren> = ({ children }) => 
 
                 if (timeMatch && nameMatch) {
                     // 使用当前画布的对象状态更新关键帧
-                    return { ...kf, objects: [...step.objects] as SceneObject[] };
+                    return { ...kf, objects: [...stepRef.current.objects] as SceneObject[] };
                 }
                 return kf;
             });
@@ -333,11 +469,11 @@ export const AnimationProvider: React.FC<PropsWithChildren> = ({ children }) => 
                 keyframes,
             });
         },
-        [animation, step.objects, setAnimation],
+        [animation, setAnimation],
     );
 
     // 跳转到关键帧并应用其对象状态到画布
-    const jumpToKeyframe = useCallback(
+    const jumpToKeyframe = React.useCallback(
         (time: number) => {
             if (!animation) {
                 return;
@@ -361,16 +497,16 @@ export const AnimationProvider: React.FC<PropsWithChildren> = ({ children }) => 
             const keyframeObjects = [...keyframe.objects];
 
             // 使用 replace action 完全替换对象列表
-            dispatch({
+            dispatchRef.current({
                 type: 'replace',
                 value: keyframeObjects,
             });
         },
-        [animation, step.objects, seekTo, dispatch],
+        [animation, seekTo],
     );
 
     // 获取应用动画后的对象
-    const getAnimatedObjects = useCallback((): readonly SceneObject[] => {
+    const getAnimatedObjects = React.useCallback((): readonly SceneObject[] => {
         if (!animation || playerState.state === PlaybackState.Stopped) {
             return step.objects;
         }
@@ -388,8 +524,12 @@ export const AnimationProvider: React.FC<PropsWithChildren> = ({ children }) => 
 
     const value: AnimationContextValue = {
         animation,
+        animations,
         playerState,
         setAnimation,
+        createAnimation,
+        switchAnimation,
+        deleteAnimation,
         play,
         pause,
         stop,

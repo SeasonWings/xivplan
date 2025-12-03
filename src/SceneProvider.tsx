@@ -66,9 +66,14 @@ export interface SetArenaBackgroundOpacityAction {
     value: number;
 }
 
-export interface SetAnimationAction {
-    type: 'setAnimation';
-    value: Animation | undefined;
+export interface SetAnimationsAction {
+    type: 'setAnimations';
+    animations: readonly Animation[];
+}
+
+export interface SetCurrentAnimationIdAction {
+    type: 'setCurrentAnimationId';
+    animationId: string | undefined;
 }
 
 export type ArenaAction =
@@ -81,7 +86,8 @@ export type ArenaAction =
     | SetArenaTicksActions
     | SetArenaBackgroundAction
     | SetArenaBackgroundOpacityAction
-    | SetAnimationAction;
+    | SetAnimationsAction
+    | SetCurrentAnimationIdAction;
 
 export interface ObjectUpdateAction {
     type: 'update';
@@ -408,7 +414,8 @@ function updateStep(scene: Readonly<Scene>, index: number, step: SceneStep): Sce
         nextId: scene.nextId,
         arena: scene.arena,
         steps: [...scene.steps],
-        animation: scene.animation, // 保留 animation 字段
+        animations: scene.animations, // 保留 animations 字段
+        currentAnimationId: scene.currentAnimationId, // 保留 currentAnimationId 字段
     };
     result.steps[index] = step;
     return result;
@@ -633,12 +640,21 @@ function sceneReducer(state: Readonly<EditorState>, action: SceneAction): Editor
         case 'arenaBackgroundOpacity':
             return updateArena(state, { ...state.scene.arena, backgroundOpacity: action.value });
 
-        case 'setAnimation':
+        case 'setAnimations':
             return {
                 ...state,
                 scene: {
                     ...state.scene,
-                    animation: action.value,
+                    animations: action.animations,
+                },
+            };
+
+        case 'setCurrentAnimationId':
+            return {
+                ...state,
+                scene: {
+                    ...state.scene,
+                    currentAnimationId: action.animationId,
                 },
             };
 

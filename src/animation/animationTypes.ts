@@ -43,6 +43,8 @@ export enum EasingType {
  * 动画配置
  */
 export interface Animation {
+    /** 动画ID（唯一标识） */
+    readonly id: string;
     /** 动画名称 */
     readonly name?: string;
     /** 关键帧列表（按时间排序） */

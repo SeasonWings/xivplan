@@ -501,7 +501,10 @@ export interface Scene {
     readonly nextId: number;
     readonly arena: Arena;
     readonly steps: SceneStep[];
-    readonly animation?: Animation;
+    /** 动画列表 */
+    readonly animations?: readonly Animation[];
+    /** 当前激活的动画ID */
+    readonly currentAnimationId?: string;
 }
 
 export const NO_GRID: NoGrid = {

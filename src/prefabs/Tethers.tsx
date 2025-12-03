@@ -8,6 +8,7 @@ import { LineConfig } from 'konva/lib/shapes/Line';
 import { Vector2d } from 'konva/lib/types';
 import * as React from 'react';
 import { Arrow, Circle, Group, Line } from 'react-konva';
+import { useAnimation } from '../animation/AnimationContext';
 import { CursorGroup } from '../CursorGroup';
 import { getObjectById, useScene } from '../SceneProvider';
 import { getArrowStrokeExtent } from '../arrowUtil';
@@ -370,9 +371,13 @@ const TetherRenderer: React.FC<RendererProps<Tether>> = ({ object }) => {
     const groupRef = React.useRef<Konva.Group>(null);
     const [editMode] = useEditMode();
     const { scene } = useScene();
+    const { getAnimatedObjects } = useAnimation();
 
-    const startObject = getObjectById(scene, object.startId);
-    const endObject = getObjectById(scene, object.endId);
+    // 从动画插值后的对象列表中查找 tether 的绑定对象
+    const animatedObjects = getAnimatedObjects();
+    const startObject =
+        animatedObjects.find((obj) => obj.id === object.startId) ?? getObjectById(scene, object.startId);
+    const endObject = animatedObjects.find((obj) => obj.id === object.endId) ?? getObjectById(scene, object.endId);
 
     const cacheConfig = getCacheConfig(object);
     const Renderer = getRenderer(object.tether);
