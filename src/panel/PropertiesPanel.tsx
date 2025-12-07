@@ -26,12 +26,14 @@ import {
     isRadiusObject,
     isResizable,
     isRotateable,
+    isStackZone,
     isStarburstZone,
     isTether,
     isText,
     supportsHollow,
     supportsNativeStyle,
     supportsStackCount,
+    ObjectType,
 } from '../scene';
 import { getSelectedObjects, useSelection } from '../selection';
 import { useControlStyles } from '../useControlStyles';
@@ -66,6 +68,7 @@ import { StarburstSpokeCountControl, StarburstSpokeWidthControl } from './proper
 import { TetherTypeControl, TetherWidthControl } from './properties/TetherControls';
 import { TextLayoutControl, TextOutlineControl, TextValueControl } from './properties/TextControls';
 import { ZoneStyleTypeControl } from './properties/ZoneStyleTypeControl';
+import { AnimatedControl } from './properties/AnimatedControl';
 
 export interface PropertiesPanelProps {
     className?: string;
@@ -194,6 +197,11 @@ const Controls: React.FC = () => {
             <div className={mergeClasses(classes.row, classes.rightGap)}>
                 <ControlCondition objects={objects} test={supportsStackCount} control={StackCountControl} />
             </div>
+            <ControlCondition
+                objects={objects}
+                test={(obj) => isStackZone(obj) || obj.type === ObjectType.LineStack}
+                control={AnimatedControl}
+            />
             <ControlCondition objects={objects} test={isEye} control={EyeInvertControl} />
             <ControlCondition objects={objects} test={isText} control={TextValueControl} />
             <div className={mergeClasses(classes.row, classes.rightGap)}>

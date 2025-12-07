@@ -61,10 +61,17 @@ export const SceneRenderer: React.FC = () => {
         // 只处理左键
         if (e.evt.button !== 0) return;
 
-        // 检查鼠标光标样式，如果是 'move' 说明在可拖拽对象上，不触发框选
+        // 检查鼠标光标样式，禁止在拖拽或拉伸操作时触发框选
         const container = stage?.container();
-        if (container && container.style.cursor === 'move') {
-            return;
+        if (container) {
+            const cursor = container.style.cursor;
+            // 拖拽样式：move
+            // 拉伸样式：ns-resize, ew-resize, nesw-resize, nwse-resize
+            // 旋转样式：crosshair
+            const isInteracting = cursor === 'move' || cursor.endsWith('-resize') || cursor === 'crosshair';
+            if (isInteracting) {
+                return;
+            }
         }
 
         // 如果点击的是舞台背景（不是对象），开始长按计时
@@ -294,10 +301,10 @@ interface SceneContentsProps {
 const SceneContents: React.FC<SceneContentsProps> = ({ listening, simple, backgroundColor, selectionBox }) => {
     listening = listening ?? true;
 
-    const { getAnimatedObjects } = useAnimation();
+    const { animatedObjects } = useAnimation();
 
     // 如果有动画正在播放，使用动画后的对象，否则使用原始对象
-    const objects = getAnimatedObjects();
+    const objects = animatedObjects;
 
     return (
         <>

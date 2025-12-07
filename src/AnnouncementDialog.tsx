@@ -68,6 +68,12 @@ interface AnnouncementItem {
 // 公告数据
 const announcements: AnnouncementItem[] = [
     {
+        id: '2',
+        date: '2025-12-08',
+        title: 'v1.0.1 更新日志',
+        content: '1. 修复了缩放/旋转时鼠标框选被错误触发的问题\n2. 为分摊&直线分摊添加了动画',
+    },
+    {
         id: '1',
         date: '2025-12-03',
         title: 'v1.0.0 更新日志',

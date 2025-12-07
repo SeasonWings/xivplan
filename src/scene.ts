@@ -282,6 +282,7 @@ export const isCircleZone = makeObjectTest<CircleZone>(
 
 export interface StackZone extends StackCountObject, RadiusObject, ColoredObject, HollowObject, BaseObject {
     readonly type: ObjectType.Stack;
+    readonly animated?: boolean;
 }
 export const isStackZone = makeObjectTest<StackZone>(ObjectType.Stack);
 

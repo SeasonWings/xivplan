@@ -13,6 +13,10 @@ interface AnimationContextValue {
     animations: readonly Animation[];
     /** 播放器状态 */
     playerState: AnimationPlayerState;
+    /** 应用动画后的对象列表（优化性能） */
+    animatedObjects: readonly SceneObject[];
+    /** 对象ID到对象的映射（优化查找性能） */
+    animatedObjectsMap: ReadonlyMap<number, SceneObject>;
     /** 设置当前动画配置 */
     setAnimation: (animation: Animation | null) => void;
     /** 创建新动画 */
@@ -505,27 +509,39 @@ export const AnimationProvider: React.FC<PropsWithChildren> = ({ children }) => 
         [animation, seekTo],
     );
 
-    // 获取应用动画后的对象
-    const getAnimatedObjects = React.useCallback((): readonly SceneObject[] => {
+    // 使用 useMemo 缓存动画对象结果，减少拖拽时的重新计算
+    const animatedObjects = React.useMemo((): readonly SceneObject[] => {
         if (!animation || playerState.state === PlaybackState.Stopped) {
             return step.objects;
         }
 
         // 使用动画引擎计算当前时间的对象状态
-        const animatedObjects = getObjectsAtTime(animation, playerState.currentTime);
+        const objects = getObjectsAtTime(animation, playerState.currentTime);
 
         // 如果没有动画对象，返回原始对象
-        if (animatedObjects.length === 0) {
+        if (objects.length === 0) {
             return step.objects;
         }
 
+        return objects;
+    }, [animation, playerState.state, playerState.currentTime, step.objects]);
+
+    // 创建对象 ID 到对象的 Map，优化 Tether 查找性能（O(1) vs O(n)）
+    const animatedObjectsMap = React.useMemo(() => {
+        return new Map(animatedObjects.map((obj) => [obj.id, obj]));
+    }, [animatedObjects]);
+
+    // 获取应用动画后的对象
+    const getAnimatedObjects = React.useCallback((): readonly SceneObject[] => {
         return animatedObjects;
-    }, [animation, playerState, step.objects]);
+    }, [animatedObjects]);
 
     const value: AnimationContextValue = {
         animation,
         animations,
         playerState,
+        animatedObjects,
+        animatedObjectsMap,
         setAnimation,
         createAnimation,
         switchAnimation,
