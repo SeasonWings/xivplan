@@ -2,11 +2,11 @@ import { Field, Switch } from '@fluentui/react-components';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useScene } from '../../SceneProvider';
-import { StackZone, RectangleZone, UnknownObject } from '../../scene';
+import { StackZone, RectangleZone, CircleZone, UnknownObject } from '../../scene';
 import { commonValue } from '../../util';
 import { PropertiesControlProps } from '../PropertiesControl';
 
-type AnimatedObject = (StackZone | RectangleZone) & { animated?: boolean };
+type AnimatedObject = (StackZone | RectangleZone | CircleZone) & { animated?: boolean };
 
 export const AnimatedControl: React.FC<PropertiesControlProps<UnknownObject>> = ({ objects }) => {
     const { dispatch } = useScene();

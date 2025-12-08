@@ -128,13 +128,13 @@ const LineStackRenderer: React.FC<RendererProps<RectangleZone>> = ({ object }) =
     const isAnimated =
         object.type === ObjectType.LineStack && (object as RectangleZone & { animated?: boolean }).animated !== false;
 
-    const [pulseOpacity, setPulseOpacity] = useState(1);
-    const [glowIntensity, setGlowIntensity] = useState(0);
+    // const [pulseOpacity, setPulseOpacity] = useState(1);
+    // const [glowIntensity, setGlowIntensity] = useState(0);
     const [arrowProgress, setArrowProgress] = useState(0);
 
     // 动画关闭时使用默认值
-    const finalPulseOpacity = isAnimated ? pulseOpacity : 1;
-    const finalGlowIntensity = isAnimated ? glowIntensity : 0;
+    // const finalPulseOpacity = isAnimated ? pulseOpacity : 1;
+    // const finalGlowIntensity = isAnimated ? glowIntensity : 0;
     const finalArrowProgress = isAnimated ? arrowProgress : 1; // 关闭动画时箭头在结束位置（中间）
 
     useEffect(() => {
@@ -147,19 +147,19 @@ const LineStackRenderer: React.FC<RendererProps<RectangleZone>> = ({ object }) =
 
         const animate = () => {
             const elapsed = Date.now() - startTime;
-            const pulseCycle = 1000; // 2秒一个完整周期（呼吸效果）
+            // const pulseCycle = 1000; // 2秒一个完整周期（呼吸效果）
             const arrowCycle = 1000; // 1秒箭头移动周期
-            const pulseProgress = (elapsed % pulseCycle) / pulseCycle;
+            // const pulseProgress = (elapsed % pulseCycle) / pulseCycle;
             const arrowTime = (elapsed % arrowCycle) / arrowCycle;
 
-            // 使用正弦波创建平滑的呼吸效果
-            const sineWave = Math.sin(pulseProgress * Math.PI * 2);
+            // // 使用正弦波创建平滑的呼吸效果
+            // const sineWave = Math.sin(pulseProgress * Math.PI * 2);
 
-            // 光晕透明度在 0.6 ~ 1.0 之间波动
-            setPulseOpacity(0.6 + (sineWave * 0.5 + 0.5) * 0.4);
-
-            // 发光强度在 0 ~ 15 之间波动
-            setGlowIntensity((sineWave * 0.5 + 0.5) * 15);
+            // // 光晕透明度在 0.6 ~ 1.0 之间波动
+            // setPulseOpacity(0.6 + (sineWave * 0.5 + 0.5) * 0.4);
+            //
+            // // 发光强度在 0 ~ 15 之间波动
+            // setGlowIntensity((sineWave * 0.5 + 0.5) * 15);
 
             // 箭头图案从两侧向中间移动的动画（1秒周期，到达后重置）
             setArrowProgress(arrowTime);
@@ -183,57 +183,58 @@ const LineStackRenderer: React.FC<RendererProps<RectangleZone>> = ({ object }) =
                         {isAnimated ? (
                             // ANIMATE
                             <HideGroup>
-                                {/* 外部发光层 - FF14风格脉动效果 */}
-                                <Rect
-                                    width={object.width}
-                                    height={object.height}
-                                    stroke={object.color}
-                                    strokeWidth={4}
-                                    opacity={finalPulseOpacity * 0.4}
-                                    fill="transparent"
-                                    shadowColor={object.color}
-                                    shadowBlur={20}
-                                    shadowOpacity={finalPulseOpacity * 0.5}
-                                    listening={false}
-                                />
+                                {/*/!* 外部发光层 - FF14风格脉动效果 *!/*/}
+                                {/*<Rect*/}
+                                {/*    width={object.width}*/}
+                                {/*    height={object.height}*/}
+                                {/*    stroke={object.color}*/}
+                                {/*    strokeWidth={4}*/}
+                                {/*    opacity={finalPulseOpacity * 0.4}*/}
+                                {/*    fill="transparent"*/}
+                                {/*    shadowColor={object.color}*/}
+                                {/*    shadowBlur={20}*/}
+                                {/*    shadowOpacity={finalPulseOpacity * 0.5}*/}
+                                {/*    listening={false}*/}
+                                {/*/>*/}
 
-                                {/* 中间发光层 */}
-                                <Rect
-                                    width={object.width}
-                                    height={object.height}
-                                    stroke={object.color}
-                                    strokeWidth={3}
-                                    opacity={finalPulseOpacity * 0.6}
-                                    fill="transparent"
-                                    shadowColor={object.color}
-                                    shadowBlur={finalGlowIntensity}
-                                    shadowOpacity={finalPulseOpacity * 0.4}
-                                    listening={false}
-                                />
+                                {/*/!* 中间发光层 *!/*/}
+                                {/*<Rect*/}
+                                {/*    width={object.width}*/}
+                                {/*    height={object.height}*/}
+                                {/*    stroke={object.color}*/}
+                                {/*    strokeWidth={3}*/}
+                                {/*    opacity={finalPulseOpacity * 0.6}*/}
+                                {/*    fill="transparent"*/}
+                                {/*    shadowColor={object.color}*/}
+                                {/*    shadowBlur={finalGlowIntensity}*/}
+                                {/*    shadowOpacity={finalPulseOpacity * 0.4}*/}
+                                {/*    listening={false}*/}
+                                {/*/>*/}
 
-                                {/* 左侧箭头向右移动 - 只显示左侧箭头 */}
+                                {/* 左侧箭头向右移动 - 扩展显示范围以显示超出的箭头 */}
                                 <Group clip={undefined}>
                                     <Rect
-                                        width={object.width / 2}
+                                        x={-object.width / 6}
+                                        width={object.width / 2 + object.width / 6}
                                         height={object.height}
                                         fillPatternImage={leftPattern}
                                         fillPatternOffsetX={
-                                            patternWidth / 2 -
+                                            patternWidth / 5 -
                                             object.width / 3 -
                                             finalArrowProgress * (object.width / 3.5)
                                         }
                                         fillPatternOffsetY={patternHeight / 2}
-                                        fillPatternX={0}
+                                        fillPatternX={-object.width / 6}
                                         fillPatternY={object.height / 2}
                                         fillPatternRepeat="repeat-y"
                                     />
                                 </Group>
 
-                                {/* 右侧箭头向左移动 - 只显示右侧箭头 */}
+                                {/* 右侧箭头向左移动 - 扩展显示范围以显示超出的箭头 */}
                                 <Group clip={undefined}>
                                     <Rect
                                         x={object.width / 2}
-                                        width={object.width / 2}
+                                        width={object.width / 2 + object.width / 6}
                                         height={object.height}
                                         fillPatternImage={rightPattern}
                                         fillPatternOffsetX={

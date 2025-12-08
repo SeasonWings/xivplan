@@ -86,12 +86,12 @@ const StackRenderer: React.FC<StackRendererProps> = ({ object, radius }) => {
     // 默认开启动画
     const isAnimated = object.animated !== false;
 
-    const [pulseOpacity, setPulseOpacity] = useState(1);
+    // const [pulseOpacity, setPulseOpacity] = useState(1);
     const [glowScale, setGlowScale] = useState(1);
     const [arrowOffset, setArrowOffset] = useState(0);
 
     // 动画关闭时使用默认值
-    const finalPulseOpacity = isAnimated ? pulseOpacity : 1;
+    // const finalPulseOpacity = isAnimated ? pulseOpacity : 1;
     const finalGlowScale = isAnimated ? glowScale : 1;
     const finalArrowOffset = isAnimated ? arrowOffset : 0;
 
@@ -111,8 +111,8 @@ const StackRenderer: React.FC<StackRendererProps> = ({ object, radius }) => {
             // 使用正弦波创建平滑的呼吸效果
             const sineWave = Math.sin(progress * Math.PI * 2);
 
-            // 光晕透明度在 0.6 ~ 1.0 之间波动
-            setPulseOpacity(0.6 + (sineWave * 0.5 + 0.5) * 0.4);
+            // // 光晕透明度在 0.6 ~ 1.0 之间波动
+            // setPulseOpacity(0.6 + (sineWave * 0.5 + 0.5) * 0.4);
 
             // 光晕缩放在 0.95 ~ 1.05 之间波动
             setGlowScale(0.95 + (sineWave * 0.5 + 0.5) * 0.1);
@@ -138,31 +138,31 @@ const StackRenderer: React.FC<StackRendererProps> = ({ object, radius }) => {
             {isAnimated ? (
                 // ANIMATE
                 <HideGroup>
-                    {/* 外部发光层 - FF14风格脉动效果 */}
-                    <Circle
-                        radius={radius * finalGlowScale}
-                        stroke={object.color}
-                        strokeWidth={ring.strokeWidth * 1.5}
-                        opacity={finalPulseOpacity * 0.3}
-                        fill="transparent"
-                        shadowColor={object.color}
-                        shadowBlur={20}
-                        shadowOpacity={finalPulseOpacity * 0.5}
-                        listening={false}
-                    />
+                    {/*/!* 外部发光层 - FF14风格脉动效果 *!/*/}
+                    {/*<Circle*/}
+                    {/*    radius={radius * finalGlowScale}*/}
+                    {/*    stroke={object.color}*/}
+                    {/*    strokeWidth={ring.strokeWidth * 1.5}*/}
+                    {/*    opacity={finalPulseOpacity * 0.3}*/}
+                    {/*    fill="transparent"*/}
+                    {/*    shadowColor={object.color}*/}
+                    {/*    shadowBlur={20}*/}
+                    {/*    shadowOpacity={finalPulseOpacity * 0.5}*/}
+                    {/*    listening={false}*/}
+                    {/*/>*/}
 
-                    {/* 中间发光层 */}
-                    <Circle
-                        radius={radius * (1 + (finalGlowScale - 1) * 0.5)}
-                        stroke={object.color}
-                        strokeWidth={ring.strokeWidth * 1.2}
-                        opacity={finalPulseOpacity * 0.5}
-                        fill="transparent"
-                        shadowColor={object.color}
-                        shadowBlur={15}
-                        shadowOpacity={finalPulseOpacity * 0.4}
-                        listening={false}
-                    />
+                    {/*/!* 中间发光层 *!/*/}
+                    {/*<Circle*/}
+                    {/*    radius={radius * (1 + (finalGlowScale - 1) * 0.5)}*/}
+                    {/*    stroke={object.color}*/}
+                    {/*    strokeWidth={ring.strokeWidth * 1.2}*/}
+                    {/*    opacity={finalPulseOpacity * 0.5}*/}
+                    {/*    fill="transparent"*/}
+                    {/*    shadowColor={object.color}*/}
+                    {/*    shadowBlur={15}*/}
+                    {/*    shadowOpacity={finalPulseOpacity * 0.4}*/}
+                    {/*    listening={false}*/}
+                    {/*/>*/}
 
                     {/* 主圆环 */}
                     <Circle radius={radius} {...ring} opacity={0.75} fill="transparent" />

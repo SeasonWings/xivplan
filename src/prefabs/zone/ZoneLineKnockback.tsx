@@ -87,6 +87,67 @@ const LineKnockbackRenderer: React.FC<RendererProps<RectangleZone>> = ({ object 
         });
     }, [fill, arrow, object.opacity, arrowRef]);
 
+    // 默认开启动画（仅对 LineKnockback 类型）
+    const isAnimated =
+        object.type === ObjectType.LineKnockback &&
+        (object as RectangleZone & { animated?: boolean }).animated !== false;
+
+    // 箭头持续移动动画
+    const [arrowOffset, setArrowOffset] = useState(0);
+    // 箭头闪烁效果
+    const [pulseOpacity, setPulseOpacity] = useState(1);
+
+    // 动画关闭时使用默认值
+    const finalArrowOffset = isAnimated ? arrowOffset : 0;
+    const finalPulseOpacity = isAnimated ? pulseOpacity : 1;
+
+    useEffect(() => {
+        if (!isAnimated) {
+            return;
+        }
+
+        let animationFrameId: number;
+        const startTime = Date.now();
+
+        const animate = () => {
+            const elapsed = Date.now() - startTime;
+            const arrowCycle = 500; // 箭头移动周期
+            const pulseCycle = 1200; // 闪烁周期
+            const fadeUpDuration = 200; // 从0回到1的过渡时间(0.2秒)
+            const arrowProgress = (elapsed % arrowCycle) / arrowCycle;
+            const pulseProgress = (elapsed % pulseCycle) / pulseCycle;
+
+            // 箭头持续向下移动（沿着击退方向）
+            // 从顶部 (0) 移动到底部 (PATTERN_H)，循环往复
+            setArrowOffset(arrowProgress * PATTERN_H);
+
+            // 闪烁效果: 1 → 0.2 (800ms) → 1 (200ms)
+            const fadeDownDuration = pulseCycle - fadeUpDuration; // 800ms
+            const minOpacity = 0.1; // 最小透明度
+            let opacity: number;
+
+            if (pulseProgress < fadeDownDuration / pulseCycle) {
+                // 前800ms: 从1降到0.2
+                const fadeDownProgress = (pulseProgress * pulseCycle) / fadeDownDuration;
+                opacity = 1 - fadeDownProgress * (1 - minOpacity);
+            } else {
+                // 后200ms: 从0.2快速回到1
+                const fadeUpProgress = (pulseProgress * pulseCycle - fadeDownDuration) / fadeUpDuration;
+                opacity = minOpacity + fadeUpProgress * (1 - minOpacity);
+            }
+
+            setPulseOpacity(opacity);
+
+            animationFrameId = requestAnimationFrame(animate);
+        };
+
+        animationFrameId = requestAnimationFrame(animate);
+
+        return () => {
+            cancelAnimationFrame(animationFrameId);
+        };
+    }, [isAnimated]);
+
     const highlightOffset = style.strokeWidth;
     const highlightWidth = object.width + highlightOffset;
     const highlightHeight = object.height + highlightOffset;
@@ -106,16 +167,19 @@ const LineKnockbackRenderer: React.FC<RendererProps<RectangleZone>> = ({ object 
                             />
                         )}
                         <HideGroup>
+                            {/* 背景填充 - 不闪烁 */}
+                            <Rect width={object.width} height={object.height} fill={fill} {...stroke} />
+                            {/*箭头图案 - 带闪烁效果 */}
                             <Rect
                                 width={object.width}
                                 height={object.height}
                                 fillPatternImage={pattern}
                                 fillPatternOffsetX={PATTERN_W / 2}
-                                fillPatternOffsetY={PATTERN_H / 2}
+                                fillPatternOffsetY={PATTERN_H / 2 - finalArrowOffset}
                                 fillPatternX={object.width / 2}
                                 fillPatternY={object.height / 2}
                                 fillPatternRepeat="repeat"
-                                {...stroke}
+                                opacity={finalPulseOpacity}
                             />
                         </HideGroup>
                     </Group>
@@ -123,7 +187,6 @@ const LineKnockbackRenderer: React.FC<RendererProps<RectangleZone>> = ({ object 
             </ResizeableObjectContainer>
 
             <Group ref={arrowRef} x={OFFSCREEN_X} y={OFFSCREEN_Y}>
-                <Rect width={PATTERN_W} height={PATTERN_H} fill={fill} />
                 <ChevronTail
                     width={ARROW_W}
                     height={ARROW_H}

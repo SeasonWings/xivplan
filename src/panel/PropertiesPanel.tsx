@@ -199,7 +199,12 @@ const Controls: React.FC = () => {
             </div>
             <ControlCondition
                 objects={objects}
-                test={(obj) => isStackZone(obj) || obj.type === ObjectType.LineStack}
+                test={(obj) =>
+                    isStackZone(obj) ||
+                    obj.type === ObjectType.LineStack ||
+                    obj.type === ObjectType.LineKnockback ||
+                    obj.type === ObjectType.Knockback
+                }
                 control={AnimatedControl}
             />
             <ControlCondition objects={objects} test={isEye} control={EyeInvertControl} />
