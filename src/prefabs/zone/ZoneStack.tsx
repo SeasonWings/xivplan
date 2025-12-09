@@ -89,11 +89,13 @@ const StackRenderer: React.FC<StackRendererProps> = ({ object, radius }) => {
     // const [pulseOpacity, setPulseOpacity] = useState(1);
     const [glowScale, setGlowScale] = useState(1);
     const [arrowOffset, setArrowOffset] = useState(0);
+    const [arrowOpacity, setArrowOpacity] = useState(1);
 
     // 动画关闭时使用默认值
     // const finalPulseOpacity = isAnimated ? pulseOpacity : 1;
     const finalGlowScale = isAnimated ? glowScale : 1;
     const finalArrowOffset = isAnimated ? arrowOffset : 0;
+    const finalArrowOpacity = isAnimated ? arrowOpacity : 1;
 
     useEffect(() => {
         if (!isAnimated) {
@@ -105,10 +107,14 @@ const StackRenderer: React.FC<StackRendererProps> = ({ object, radius }) => {
 
         const animate = () => {
             const elapsed = Date.now() - startTime;
-            const cycle = 1000; // 时间周期
-            const progress = (elapsed % cycle) / cycle;
+            const moveDuration = 800; // 移动阶段
+            const fadeOutDuration = 300; // 渐隐时间
+            const pauseDuration = 100; // 暂停时间
+            const cycle = moveDuration + fadeOutDuration + pauseDuration; // 2s 总周期
+            const currentTime = elapsed % cycle;
 
             // 使用正弦波创建平滑的呼吸效果
+            const progress = currentTime / cycle;
             const sineWave = Math.sin(progress * Math.PI * 2);
 
             // // 光晕透明度在 0.6 ~ 1.0 之间波动
@@ -118,8 +124,30 @@ const StackRenderer: React.FC<StackRendererProps> = ({ object, radius }) => {
             setGlowScale(0.95 + (sineWave * 0.5 + 0.5) * 0.1);
 
             // 箭头从内向外移动的动画
-            // 从内部 (0) 移动到外部 (cx * 0.4)，循环往复
-            setArrowOffset(progress * cx * 0.4);
+            let offset: number;
+            let opacity: number;
+
+            if (currentTime < moveDuration + fadeOutDuration) {
+                // 0-1s: 移动 + 渐隐阶段
+                const moveProgress = Math.min(currentTime / moveDuration, 1);
+                offset = moveProgress * cx * 0.4;
+
+                if (currentTime < moveDuration) {
+                    // 0-0.7s: 保持满透明度
+                    opacity = 1;
+                } else {
+                    // 0.7-1s: 渐隐
+                    const fadeProgress = (currentTime - moveDuration) / fadeOutDuration;
+                    opacity = 1 - fadeProgress * 0.99; // 1 -> 0.1
+                }
+            } else {
+                // 1-2s: 暂停阶段
+                offset = cx * 0.4;
+                opacity = 0;
+            }
+
+            setArrowOffset(offset);
+            setArrowOpacity(opacity);
 
             animationFrameId = requestAnimationFrame(animate);
         };
@@ -191,6 +219,7 @@ const StackRenderer: React.FC<StackRendererProps> = ({ object, radius }) => {
                                 width={cw}
                                 height={ch}
                                 {...arrow}
+                                opacity={finalArrowOpacity}
                             />
                         ))}
                     </Group>

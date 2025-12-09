@@ -1,6 +1,6 @@
 import Color from 'colorjs.io';
 import { ShapeConfig } from 'konva/lib/Shape';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Circle, Group, Line, Path, Wedge } from 'react-konva';
 import { getDragOffset, registerDropHandler } from '../../DropHandler';
 import Icon from '../../assets/zone/falloff.svg?react';
@@ -49,6 +49,7 @@ registerDropHandler<CircleZone>(ObjectType.Proximity, (object, position) => {
             color: COLOR_BLUE_WHITE,
             opacity: DEFAULT_AOE_OPACITY,
             radius: DEFAULT_RADIUS,
+            animated: true,
             ...object,
             ...position,
         },
@@ -152,6 +153,75 @@ const ProximityRenderer: React.FC<ProximityRendererProps> = ({ object, radius })
 
     const arrowScale = Math.max(1, radius / DEFAULT_RADIUS);
 
+    // 默认开启动画（仅对 Proximity 类型）
+    const isAnimated =
+        object.type === ObjectType.Proximity && (object as CircleZone & { animated?: boolean }).animated !== false;
+
+    // 箭头沿半径方向移动的距离
+    const [arrowOffset, setArrowOffset] = useState(0);
+    // 四角的动画偏移（略有延迟）
+    const [cornerOffset, setCornerOffset] = useState(0);
+
+    // 动画关闭时使用默认值
+    const finalArrowOffset = isAnimated ? arrowOffset : 0;
+    const finalCornerOffset = isAnimated ? cornerOffset : 0;
+
+    useEffect(() => {
+        if (!isAnimated) {
+            return;
+        }
+
+        let animationFrameId: number;
+        const startTime = Date.now();
+
+        const animate = () => {
+            const elapsed = Date.now() - startTime;
+            const moveDuration = 800; // 0.8s 向外移动
+            const returnDuration = 300; // 0.5s 原路返回
+            const totalCycle = moveDuration + returnDuration; // 1.3s 总周期
+            const cycleTime = elapsed % totalCycle;
+
+            // 箭头沿半径方向来回移动
+            // 0 -> 0.8s: 向外移动 (0 -> 1)
+            // 0.8s -> 1.3s: 原路返回 (1 -> 0)
+            let progress: number;
+            if (cycleTime < moveDuration) {
+                // 前半周期：向外移动 (0.8s)
+                progress = cycleTime / moveDuration;
+            } else {
+                // 后半周期：原路返回 (0.5s)
+                progress = 1 - (cycleTime - moveDuration) / returnDuration;
+            }
+
+            // 移动距离：最多向外移动15像素
+            setArrowOffset(progress * 15);
+
+            // 四角动画延迟播放
+            const cornerDelay = -200;
+            const delayedTime = elapsed - cornerDelay;
+            if (delayedTime > 0) {
+                const cornerCycleTime = delayedTime % totalCycle;
+                let cornerProgress: number;
+                if (cornerCycleTime < moveDuration) {
+                    cornerProgress = cornerCycleTime / moveDuration;
+                } else {
+                    cornerProgress = 1 - (cornerCycleTime - moveDuration) / returnDuration;
+                }
+                setCornerOffset(cornerProgress * 15);
+            } else {
+                setCornerOffset(0);
+            }
+
+            animationFrameId = requestAnimationFrame(animate);
+        };
+
+        animationFrameId = requestAnimationFrame(animate);
+
+        return () => {
+            cancelAnimationFrame(animationFrameId);
+        };
+    }, [isAnimated]);
+
     return (
         <>
             {highlightProps && <Circle radius={radius} {...highlightProps} />}
@@ -160,21 +230,29 @@ const ProximityRenderer: React.FC<ProximityRendererProps> = ({ object, radius })
                 <Circle radius={radius} {...gradient} />
 
                 <Group scaleX={arrowScale} scaleY={arrowScale}>
-                    {CORNER_ANGLES.map((r, i) => (
-                        <Group key={i} rotation={r}>
-                            <FlareCorner scaleX={SCALE1} scaleY={SCALE1} {...arrow} />
-                            <FlareCorner
-                                scaleX={SCALE2}
-                                scaleY={SCALE2}
-                                {...arrow}
-                                shadowColor={shadowColor}
-                                {...getShadowOffset(i)}
-                            />
-                        </Group>
-                    ))}
+                    {CORNER_ANGLES.map((r, i) => {
+                        // 计算沿半径方向的偏移量（对角线方向，即角度+45°）
+                        const offset = finalCornerOffset * 0.25;
+                        const radians = degtorad(r + 135);
+                        const offsetX = Math.cos(radians) * offset;
+                        const offsetY = Math.sin(radians) * offset;
+
+                        return (
+                            <Group key={i} rotation={r} x={offsetX} y={offsetY}>
+                                <FlareCorner scaleX={SCALE1} scaleY={SCALE1} {...arrow} />
+                                <FlareCorner
+                                    scaleX={SCALE2}
+                                    scaleY={SCALE2}
+                                    {...arrow}
+                                    shadowColor={shadowColor}
+                                    {...getShadowOffset(i)}
+                                />
+                            </Group>
+                        );
+                    })}
                     {ARROW_ANGLES.map((r, i) => (
                         <Group key={i} rotation={r}>
-                            <FlareArrow offsetY={60} {...arrow} shadowColor={shadowColor} />
+                            <FlareArrow offsetY={60 - finalArrowOffset} {...arrow} shadowColor={shadowColor} />
                         </Group>
                     ))}
                 </Group>

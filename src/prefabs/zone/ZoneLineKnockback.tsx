@@ -53,6 +53,7 @@ registerDropHandler<RectangleZone>(ObjectType.LineKnockback, (object, position) 
             width: DEFAULT_SIZE,
             height: DEFAULT_SIZE,
             rotation: 0,
+            animated: true,
             ...object,
             ...position,
         },

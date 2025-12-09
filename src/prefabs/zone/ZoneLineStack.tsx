@@ -131,11 +131,13 @@ const LineStackRenderer: React.FC<RendererProps<RectangleZone>> = ({ object }) =
     // const [pulseOpacity, setPulseOpacity] = useState(1);
     // const [glowIntensity, setGlowIntensity] = useState(0);
     const [arrowProgress, setArrowProgress] = useState(0);
+    const [arrowOpacity, setArrowOpacity] = useState(1);
 
     // 动画关闭时使用默认值
     // const finalPulseOpacity = isAnimated ? pulseOpacity : 1;
     // const finalGlowIntensity = isAnimated ? glowIntensity : 0;
     const finalArrowProgress = isAnimated ? arrowProgress : 1; // 关闭动画时箭头在结束位置（中间）
+    const finalArrowOpacity = isAnimated ? arrowOpacity : 1;
 
     useEffect(() => {
         if (!isAnimated) {
@@ -147,22 +149,37 @@ const LineStackRenderer: React.FC<RendererProps<RectangleZone>> = ({ object }) =
 
         const animate = () => {
             const elapsed = Date.now() - startTime;
-            // const pulseCycle = 1000; // 2秒一个完整周期（呼吸效果）
-            const arrowCycle = 1000; // 1秒箭头移动周期
-            // const pulseProgress = (elapsed % pulseCycle) / pulseCycle;
-            const arrowTime = (elapsed % arrowCycle) / arrowCycle;
+            const moveDuration = 800; // 0.7s 移动阶段
+            const fadeOutDuration = 300; // 0.3s 渐隐时间
+            const pauseDuration = 100; // 1s 暂停时间
+            const cycle = moveDuration + fadeOutDuration + pauseDuration; // 2s 总周期
+            const currentTime = elapsed % cycle;
 
-            // // 使用正弦波创建平滑的呼吸效果
-            // const sineWave = Math.sin(pulseProgress * Math.PI * 2);
+            // 箭头从两侧向中间移动的动画
+            let progress: number;
+            let opacity: number;
 
-            // // 光晕透明度在 0.6 ~ 1.0 之间波动
-            // setPulseOpacity(0.6 + (sineWave * 0.5 + 0.5) * 0.4);
-            //
-            // // 发光强度在 0 ~ 15 之间波动
-            // setGlowIntensity((sineWave * 0.5 + 0.5) * 15);
+            if (currentTime < moveDuration + fadeOutDuration) {
+                // 0-1s: 移动 + 渐隐阶段
+                const moveProgress = Math.min(currentTime / moveDuration, 1);
+                progress = moveProgress;
 
-            // 箭头图案从两侧向中间移动的动画（1秒周期，到达后重置）
-            setArrowProgress(arrowTime);
+                if (currentTime < moveDuration) {
+                    // 0-0.7s: 保持满透明度
+                    opacity = 1;
+                } else {
+                    // 0.7-1s: 渐隐到0.1
+                    const fadeProgress = (currentTime - moveDuration) / fadeOutDuration;
+                    opacity = 1 - fadeProgress * 0.99; // 1 -> 0.1
+                }
+            } else {
+                // 1-2s: 暂停阶段，保持在中间位置和最低透明度
+                progress = 1;
+                opacity = 0;
+            }
+
+            setArrowProgress(progress);
+            setArrowOpacity(opacity);
 
             animationFrameId = requestAnimationFrame(animate);
         };
@@ -227,6 +244,7 @@ const LineStackRenderer: React.FC<RendererProps<RectangleZone>> = ({ object }) =
                                         fillPatternX={-object.width / 6}
                                         fillPatternY={object.height / 2}
                                         fillPatternRepeat="repeat-y"
+                                        opacity={finalArrowOpacity}
                                     />
                                 </Group>
 
@@ -246,6 +264,7 @@ const LineStackRenderer: React.FC<RendererProps<RectangleZone>> = ({ object }) =
                                         fillPatternX={object.width / 2}
                                         fillPatternY={object.height / 2}
                                         fillPatternRepeat="repeat-y"
+                                        opacity={finalArrowOpacity}
                                     />
                                 </Group>
 

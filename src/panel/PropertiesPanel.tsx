@@ -203,6 +203,8 @@ const Controls: React.FC = () => {
                     isStackZone(obj) ||
                     obj.type === ObjectType.LineStack ||
                     obj.type === ObjectType.LineKnockback ||
+                    obj.type === ObjectType.LineKnockAway ||
+                    obj.type === ObjectType.Proximity ||
                     obj.type === ObjectType.Knockback
                 }
                 control={AnimatedControl}

@@ -68,6 +68,12 @@ interface AnnouncementItem {
 // 公告数据
 const announcements: AnnouncementItem[] = [
     {
+        id: '3',
+        date: '2025-12-09',
+        title: 'v1.0.2 更新日志',
+        content: '1. 优化了直线分摊&圆形分摊的动画\n2. 为各种击退&距离衰减添加了动画',
+    },
+    {
         id: '2',
         date: '2025-12-08',
         title: 'v1.0.1 更新日志',
