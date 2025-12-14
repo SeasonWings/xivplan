@@ -26,6 +26,7 @@ import { DarkModeContext } from './ThemeContext';
 import { ToolbarContext } from './ToolbarContext';
 import { useIsDirty } from './useIsDirty';
 import { removeFileExtension } from './util';
+import { TutorialDialog } from './tutorial/TutorialDialog';
 
 const GAP = tokens.spacingHorizontalL;
 const HEADER_HEIGHT = '48px';
@@ -92,6 +93,7 @@ export const SiteHeader: React.FC<HTMLAttributes<HTMLElement>> = ({ className, .
     const { source } = useScene();
     const toolbarNode = useContext(ToolbarContext);
     const [, setHelpOpen] = useContext(HelpContext);
+    const [tutorialOpen, setTutorialOpen] = React.useState(false);
     const [darkMode, setDarkMode] = useContext(DarkModeContext);
     const { t, i18n } = useTranslation();
 
@@ -111,6 +113,9 @@ export const SiteHeader: React.FC<HTMLAttributes<HTMLElement>> = ({ className, .
 
             <Link onClick={() => setHelpOpen(true)} className={classes.link}>
                 {t('header.help')}
+            </Link>
+            <Link onClick={() => setTutorialOpen(true)} className={classes.link}>
+                {t('tutorial.title', '使用教程')}
             </Link>
             <AnnouncementDialog className={classes.link} />
             <AboutDialog className={classes.link} />
@@ -146,6 +151,8 @@ export const SiteHeader: React.FC<HTMLAttributes<HTMLElement>> = ({ className, .
                     onClick={() => setDarkMode(!darkMode)}
                 />
             </div>
+
+            <TutorialDialog open={tutorialOpen} onOpenChange={(_, data) => setTutorialOpen(data.open)} />
         </header>
     );
 };

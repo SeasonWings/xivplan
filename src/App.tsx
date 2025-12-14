@@ -15,6 +15,7 @@ import { SiteHeader } from './SiteHeader';
 import { ThemeProvider } from './ThemeProvider';
 import { useFileLoaderDropTarget } from './useFileLoader';
 import { HotkeyScopes } from './useHotkeys';
+import { TutorialProvider } from './tutorial/TutorialProvider';
 
 const useStyles = makeStyles({
     root: {
@@ -57,15 +58,17 @@ const BaseProviders: React.FC<PropsWithChildren> = ({ children }) => {
     return (
         <HotkeysProvider initiallyActiveScopes={[HotkeyScopes.Default, HotkeyScopes.AlwaysEnabled]}>
             <HelpProvider>
-                <SceneProvider initialScene={sceneFromUrl}>
-                    <EditActivityProvider>
-                        <CollaborationProvider>
-                            <AnimationProvider>
-                                <DirtyProvider>{children}</DirtyProvider>
-                            </AnimationProvider>
-                        </CollaborationProvider>
-                    </EditActivityProvider>
-                </SceneProvider>
+                <TutorialProvider>
+                    <SceneProvider initialScene={sceneFromUrl}>
+                        <EditActivityProvider>
+                            <CollaborationProvider>
+                                <AnimationProvider>
+                                    <DirtyProvider>{children}</DirtyProvider>
+                                </AnimationProvider>
+                            </CollaborationProvider>
+                        </EditActivityProvider>
+                    </SceneProvider>
+                </TutorialProvider>
             </HelpProvider>
         </HotkeysProvider>
     );

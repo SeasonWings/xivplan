@@ -7,6 +7,7 @@ import {
     EyeOffFilled,
     EyeOffRegular,
     EyeRegular,
+    ArrowFitInFilled,
 } from '@fluentui/react-icons';
 import React, { ReactNode } from 'react';
 import { useScene } from '../SceneProvider';
@@ -14,6 +15,7 @@ import { PrefabIcon } from '../prefabs/PrefabIcon';
 import { SceneObject } from '../scene';
 import { setOrOmit } from '../util';
 import { detailsItemClassNames } from './detailsItemStyles';
+import { selectGroup, useSelection } from '../selection';
 
 export interface DetailsItemProps {
     object: SceneObject;
@@ -27,6 +29,23 @@ export interface DetailsItemProps {
 
 // TODO: only show hide button if hidden or hovered/selected
 
+// 为不同的组ID生成一致的颜色
+function getGroupColor(groupId: string): string {
+    // 使用groupId生成一致的哈希值
+    let hash = 0;
+    for (let i = 0; i < groupId.length; i++) {
+        hash = (hash << 5) - hash + groupId.charCodeAt(i);
+        hash = hash & hash; // 转换为32位整数
+    }
+
+    // 使用哈希值生成HSL颜色（色相由哈希值决定，饱和度和亮度固定以保证颜色鲜明）
+    const hue = Math.abs(hash) % 360; // 色相：0-360度
+    const saturation = 65; // 饱和度：65%（保证颜色鲜艳但不过分）
+    const lightness = 50; // 亮度：50%（保证颜色不太暗也不太亮）
+
+    return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+}
+
 export const DetailsItem: React.FC<DetailsItemProps> = ({
     object,
     icon,
@@ -37,8 +56,19 @@ export const DetailsItem: React.FC<DetailsItemProps> = ({
     children,
 }) => {
     const classes = useStyles();
+    const { step } = useScene();
+    const [, setSelection] = useSelection();
 
     const size = isNested ? 20 : undefined;
+    const hasGroup = 'groupId' in object && object.groupId;
+    const groupColor = hasGroup ? getGroupColor(object.groupId as string) : undefined;
+
+    const handleGroupIconClick = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (hasGroup) {
+            setSelection(selectGroup(step.objects, object.groupId as string));
+        }
+    };
 
     return (
         <div className={mergeClasses(classes.wrapper, isNested && classes.nested)}>
@@ -46,6 +76,16 @@ export const DetailsItem: React.FC<DetailsItemProps> = ({
             {children ? children : <div className={classes.name}>{name}</div>}
             {!isNested && (
                 <div className={classes.buttons}>
+                    {hasGroup && groupColor && (
+                        <div
+                            className={classes.groupIndicator}
+                            title="点击选中组内所有元素"
+                            onClick={handleGroupIconClick}
+                            data-tutorial="group-arrow"
+                        >
+                            <ArrowFitInFilled fontSize={16} style={{ color: groupColor }} />
+                        </div>
+                    )}
                     <DetailsItemHideButton
                         object={object}
                         className={mergeClasses(isSelected && classes.selectedButton, isDragging && classes.visible)}
@@ -163,6 +203,18 @@ const useStyles = makeStyles({
 
         ':hover': {
             color: tokens.colorNeutralForegroundOnBrand,
+        },
+    },
+
+    groupIndicator: {
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: tokens.spacingHorizontalXXS,
+        cursor: 'pointer',
+
+        ':hover': {
+            opacity: 0.8,
         },
     },
 });

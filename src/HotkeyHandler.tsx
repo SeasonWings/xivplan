@@ -83,6 +83,32 @@ function toggleLock(objects: readonly SceneObject[], dispatch: Dispatch<SceneAct
     dispatch({ type: 'update', value: moveable.map((obj) => setOrOmit(obj, 'pinned', newValue)) });
 }
 
+function createGroup(objects: readonly SceneObject[], dispatch: Dispatch<SceneAction>) {
+    if (objects.length < 2) {
+        return; // 至少需要2个对象才能组成组
+    }
+
+    // 生成唯一的组ID
+    const groupId = `group-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+    dispatch({
+        type: 'update',
+        value: objects.map((obj) => ({ ...obj, groupId })),
+    });
+}
+
+function ungroupObjects(objects: readonly SceneObject[], dispatch: Dispatch<SceneAction>) {
+    // 移除groupId属性
+    dispatch({
+        type: 'update',
+        value: objects.map((obj) => {
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            const { groupId, ...rest } = obj as SceneObject & { groupId?: string };
+            return rest as SceneObject;
+        }),
+    });
+}
+
 const SelectionActionHandler: React.FC = () => {
     const [clipboard, setClipboard] = useState<readonly SceneObject[]>([]);
     const [selection, setSelection] = useSelection();
@@ -229,6 +255,34 @@ const SelectionActionHandler: React.FC = () => {
         },
         { useKey: true },
         [step, dispatch, selection],
+    );
+
+    useHotkeys(
+        'alt+g',
+        { category: CATEGORY_SELECTION, help: t('hotkeys.groupSelected', { defaultValue: '创建组' }) },
+        (e) => {
+            if (!selection.size || editMode !== EditMode.Normal) {
+                return;
+            }
+
+            createGroup(getSelectedObjects(step, selection), dispatch);
+            e.preventDefault();
+        },
+        [step, dispatch, selection, editMode],
+    );
+
+    useHotkeys(
+        'alt+shift+g',
+        { category: CATEGORY_SELECTION, help: t('hotkeys.ungroupSelected', { defaultValue: '解散组' }) },
+        (e) => {
+            if (!selection.size || editMode !== EditMode.Normal) {
+                return;
+            }
+
+            ungroupObjects(getSelectedObjects(step, selection), dispatch);
+            e.preventDefault();
+        },
+        [step, dispatch, selection, editMode],
     );
 
     const tetherCallback = (type: TetherType) => (e: KeyboardEvent) => {

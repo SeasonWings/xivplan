@@ -16,6 +16,7 @@ import { MIN_STAGE_WIDTH } from './theme';
 import { useIsDirty } from './useIsDirty';
 import { removeFileExtension } from './util';
 import CollaborationPanel from './collaboration/CollaborationPanel';
+import { TutorialOverlay } from './tutorial/TutorialOverlay';
 
 export const MainPage: React.FC = () => {
     return (
@@ -106,6 +107,9 @@ const MainPageContent: React.FC = () => {
                     <AnimationPanel />
                 </div>
             )}
+
+            {/* 教程覆盖层 */}
+            <TutorialOverlay />
         </>
     );
 };

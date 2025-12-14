@@ -59,6 +59,7 @@ export interface BaseObject {
     readonly id: number;
     readonly opacity: number;
     readonly hide?: boolean;
+    readonly groupId?: string; // 元素组ID，同组元素一起移动
 }
 
 export interface UnknownObject extends BaseObject {

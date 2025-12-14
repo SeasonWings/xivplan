@@ -106,7 +106,28 @@ function updatePosition(
         return;
     }
 
-    const draggedObjects = getSelectedObjects(step, dragSelection);
+    // 获取正在拖动的对象
+    let draggedObjects = getSelectedObjects(step, dragSelection);
+
+    // 如果目标对象有groupId，将同组的所有对象也加入拖动列表
+    if (targetObject.groupId) {
+        const groupMembers = step.objects.filter(
+            (obj): obj is MoveableObject & UnknownObject =>
+                'groupId' in obj && obj.groupId === targetObject.groupId && 'x' in obj && 'y' in obj,
+        );
+
+        // 合并拖动对象和组成员，去重
+        const allObjects = new Map<number, MoveableObject & UnknownObject>();
+        draggedObjects.forEach((obj) => {
+            if ('x' in obj && 'y' in obj) {
+                allObjects.set(obj.id, obj as MoveableObject & UnknownObject);
+            }
+        });
+        groupMembers.forEach((obj) => allObjects.set(obj.id, obj));
+
+        draggedObjects = Array.from(allObjects.values());
+    }
+
     const value = moveObjectsBy(draggedObjects, offset);
 
     dispatch({ type: 'update', value, transient: true });

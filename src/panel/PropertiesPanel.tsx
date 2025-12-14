@@ -69,6 +69,7 @@ import { TetherTypeControl, TetherWidthControl } from './properties/TetherContro
 import { TextLayoutControl, TextOutlineControl, TextValueControl } from './properties/TextControls';
 import { ZoneStyleTypeControl } from './properties/ZoneStyleTypeControl';
 import { AnimatedControl } from './properties/AnimatedControl';
+import { GroupControl } from './properties/GroupControl';
 
 export interface PropertiesPanelProps {
     className?: string;
@@ -78,7 +79,7 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ className }) =
     const classes = useControlStyles();
 
     return (
-        <div className={mergeClasses(classes.panel, classes.column, className)}>
+        <div className={mergeClasses(classes.panel, classes.column, className)} data-tutorial="properties-panel">
             <Controls />
         </div>
     );
@@ -215,6 +216,9 @@ const Controls: React.FC = () => {
                 <ControlCondition objects={objects} test={isIcon} control={IconStacksControl} />
                 <ControlCondition objects={objects} test={isIcon} control={IconTimeControl} />
             </div>
+
+            {/* 组控制 */}
+            <GroupControl objects={objects} />
         </>
     );
 };

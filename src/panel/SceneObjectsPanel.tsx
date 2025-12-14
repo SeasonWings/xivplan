@@ -17,7 +17,7 @@ export const SceneObjectsPanel: React.FC<SceneObjectsPanelProps> = ({ className 
     };
 
     return (
-        <div className={mergeClasses(classes.panel, classes.noSelect, className)}>
+        <div className={mergeClasses(classes.panel, classes.noSelect, className)} data-tutorial="scene-objects-panel">
             <ObjectList objects={step.objects} onMove={moveObject} />
         </div>
     );
