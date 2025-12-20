@@ -206,7 +206,9 @@ const Controls: React.FC = () => {
                     obj.type === ObjectType.LineKnockback ||
                     obj.type === ObjectType.LineKnockAway ||
                     obj.type === ObjectType.Proximity ||
-                    obj.type === ObjectType.Knockback
+                    obj.type === ObjectType.Knockback ||
+                    obj.type === ObjectType.RotateCW ||
+                    obj.type === ObjectType.RotateCCW
                 }
                 control={AnimatedControl}
             />

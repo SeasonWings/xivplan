@@ -272,6 +272,7 @@ export interface CircleZone extends RadiusObject, ColoredObject, ZoneStyleObject
         | ObjectType.Knockback
         | ObjectType.RotateCW
         | ObjectType.RotateCCW;
+    readonly animated?: boolean; // 添加动画支持
 }
 export const isCircleZone = makeObjectTest<CircleZone>(
     ObjectType.Circle,

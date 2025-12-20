@@ -1,7 +1,7 @@
 import Konva from 'konva';
 import { ShapeConfig } from 'konva/lib/Shape';
-import React, { CSSProperties, RefObject, useRef } from 'react';
-import { Circle, Path } from 'react-konva';
+import React, { RefObject, useRef, useEffect, useState, CSSProperties } from 'react';
+import { Circle, Path, Group } from 'react-konva';
 import { getDragOffset, registerDropHandler } from '../../DropHandler';
 import CounterClockwiseIcon from '../../assets/zone/rotate_ccw.svg?react';
 import ClockwiseIcon from '../../assets/zone/rotate_cw.svg?react';
@@ -75,6 +75,7 @@ registerDropHandler<CircleZone>([ObjectType.RotateCW, ObjectType.RotateCCW], (ob
             color: CLOCKWISE_COLOR,
             opacity: DEFAULT_OPACITY,
             radius: DEFAULT_RADIUS,
+            animated: true, // 默认开启动画
             ...object,
             ...position,
         },
@@ -111,6 +112,40 @@ const RotateRenderer: React.FC<RotateRendererProps> = ({ object, radius, groupRe
         strokeWidth: radius / 15,
     };
 
+    // 默认开启动画
+    const isAnimated = object.animated !== false;
+
+    // 旋转动画状态
+    const [rotationOffset, setRotationOffset] = useState(0);
+
+    // 动画关闭时使用默认值
+    const finalRotationOffset = isAnimated ? rotationOffset : 0;
+
+    useEffect(() => {
+        if (!isAnimated) {
+            return;
+        }
+
+        let animationFrameId: number;
+        const startTime = Date.now();
+
+        const animate = () => {
+            const elapsed = Date.now() - startTime;
+            // 旋转速度：顺时针为正，逆时针为负
+            const rotationSpeed = isClockwise ? 300 : -300; // 每秒旋转90度
+            const newRotation = (elapsed / 1000) * rotationSpeed;
+            setRotationOffset(newRotation);
+
+            animationFrameId = requestAnimationFrame(animate);
+        };
+
+        animationFrameId = requestAnimationFrame(animate);
+
+        return () => {
+            cancelAnimationFrame(animationFrameId);
+        };
+    }, [isAnimated, isClockwise]);
+
     // Cache so overlapping shapes with opacity appear as one object.
     useKonvaCache(groupRef, [object, radius, arrow, isDragging]);
 
@@ -121,9 +156,19 @@ const RotateRenderer: React.FC<RotateRendererProps> = ({ object, radius, groupRe
             <HideGroup opacity={(object.opacity * 2) / 100} ref={groupRef}>
                 <Circle radius={radius} {...style} />
 
-                {ARROW_ANGLES.map((r, i) => (
-                    <Arrow key={i} rotation={r} fillAfterStrokeEnabled strokeScaleEnabled={false} {...arrow} />
-                ))}
+                {isAnimated ? (
+                    // 动画版本 - 箭头持续旋转
+                    <Group rotation={finalRotationOffset}>
+                        {ARROW_ANGLES.map((r, i) => (
+                            <Arrow key={i} rotation={r} fillAfterStrokeEnabled strokeScaleEnabled={false} {...arrow} />
+                        ))}
+                    </Group>
+                ) : (
+                    // 静态版本 - 箭头固定位置
+                    ARROW_ANGLES.map((r, i) => (
+                        <Arrow key={i} rotation={r} fillAfterStrokeEnabled strokeScaleEnabled={false} {...arrow} />
+                    ))
+                )}
 
                 {isDragging && <Circle radius={CENTER_DOT_RADIUS} fill={style.stroke} />}
             </HideGroup>
