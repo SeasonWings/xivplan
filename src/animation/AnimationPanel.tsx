@@ -146,7 +146,7 @@ export const AnimationPanel: React.FC = () => {
                             {t('animation.createAnimationTip', '创建动画后，可以为对象设置不同时间点的位置')}
                         </div>
                     </div>
-                    <Button appearance="primary" onClick={handleCreateAnimation}>
+                    <Button appearance="primary" onClick={handleCreateAnimation} data-tutorial="animation-create">
                         {t('animation.createAnimation', '创建动画')}
                     </Button>
                 </div>
@@ -191,6 +191,7 @@ export const AnimationPanel: React.FC = () => {
                                 icon={<Settings24Regular />}
                                 appearance="subtle"
                                 onClick={() => setSettingsOpen(true)}
+                                data-tutorial="animation-settings"
                             />
                         </Tooltip>
                     )}
@@ -203,8 +204,12 @@ export const AnimationPanel: React.FC = () => {
                         selectedValue={activeTab}
                         onTabSelect={(_, data) => setActiveTab(data.value as 'timeline' | 'keyframes')}
                     >
-                        <Tab value="timeline">{t('animation.timeline', '时间轴')}</Tab>
-                        <Tab value="keyframes">{t('animation.keyframes', '关键帧')}</Tab>
+                        <Tab value="timeline" data-tutorial="tab-timeline">
+                            {t('animation.timeline', '时间轴')}
+                        </Tab>
+                        <Tab value="keyframes" data-tutorial="tab-keyframe">
+                            {t('animation.keyframes', '关键帧')}
+                        </Tab>
                     </TabList>
 
                     <div className={classes.tabContent}>

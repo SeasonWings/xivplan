@@ -153,58 +153,35 @@ const CollaborationPanel: React.FC = () => {
                             <InfoField label="房间ID">
                                 <div className={classes.row}>
                                     <Input type="text" value={roomId} readOnly className={classes.inputReadOnly} />
-                                    <Button onClick={copyRoomLink} title="复制房间链接">
+                                    <Button
+                                        onClick={copyRoomLink}
+                                        title="复制房间链接"
+                                        data-tutorial="collaboration-copy-link"
+                                    >
                                         复制
                                     </Button>
                                 </div>
                             </InfoField>
                         </div>
                         <div className={classes.actionsRow}>
-                            <Button onClick={createNewRoom} style={{ flex: 1 }}>
+                            <Button
+                                onClick={createNewRoom}
+                                style={{ flex: 1 }}
+                                data-tutorial="collaboration-create-room"
+                            >
                                 创建新房间
                             </Button>
-                            <Button onClick={leaveRoom} style={{ flex: 1 }}>
+                            <Button onClick={leaveRoom} style={{ flex: 1 }} data-tutorial="collaboration-leave-room">
                                 离开房间
                             </Button>
                         </div>
                         <div className={classes.helperText}>{isHost ? '你是房间主机' : '你是房间访客'}</div>
                         {isHost && (
-                            <div style={{ marginTop: '10px' }}>
+                            <div style={{ marginTop: '10px' }} data-tutorial="collaboration-host-functions">
                                 <span className={classes.subtitle}>支持在用户列表独立编辑用户绘图权限</span>
                                 <span className={classes.smallText}>
                                     开启后网络原因可能会导致操作不同步，请谨慎操作
                                 </span>
-
-                                {/* 更新延时控制 */}
-                                {/* <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #eee' }}>
-                                    <div
-                                        style={{
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'space-between',
-                                            marginBottom: '5px',
-                                        }}
-                                    >
-                                        <span style={{ fontSize: '14px' }}>启用场景更新延时</span>
-                                        <Switch
-                                            checked={enableUpdateDelay}
-                                            onChange={(event) => {
-                                                setEnableUpdateDelay(event.target.checked);
-                                            }}
-                                            aria-label="启用场景更新延时"
-                                            style={{
-                                                cursor: 'pointer',
-                                                width: '44px',
-                                                height: '24px',
-                                            }}
-                                        />
-                                    </div>
-                                    <span style={{ fontSize: '11px', color: '#666' }}>
-                                        {enableUpdateDelay
-                                            ? '已开启 - 场景更新将延迟1秒发送'
-                                            : '未开启 - 场景更新将立即发送'}
-                                    </span>
-                                </div> */}
                             </div>
                         )}
                     </div>
@@ -222,7 +199,11 @@ const CollaborationPanel: React.FC = () => {
                                 <Button onClick={joinSpecifiedRoom}>加入</Button>
                             </div>
                         </InfoField>
-                        <Button onClick={createNewRoom} style={{ width: '100%', marginTop: '10px' }}>
+                        <Button
+                            onClick={createNewRoom}
+                            style={{ width: '100%', marginTop: '10px' }}
+                            data-tutorial="collaboration-create-room"
+                        >
                             创建新房间
                         </Button>
                     </div>
@@ -232,7 +213,7 @@ const CollaborationPanel: React.FC = () => {
             {/* 在线用户 */}
             <div className={classes.section}>
                 <InfoField label={`在线用户 (${connectedUsers.length})`}>
-                    <div className={classes.userList}>
+                    <div className={classes.userList} data-tutorial="collaboration-user-list">
                         {connectedUsers.map((user) => (
                             <div key={user.id} className={user.id === userName ? classes.userSelf : classes.userItem}>
                                 <div className={classes.userRow}>
@@ -260,6 +241,7 @@ const CollaborationPanel: React.FC = () => {
                                                         startEditActivity();
                                                     }}
                                                     aria-label={`设置${user.name}的编辑权限`}
+                                                    data-tutorial="collaboration-edit-switch"
                                                 />
                                             </div>
                                         )}
@@ -273,6 +255,7 @@ const CollaborationPanel: React.FC = () => {
                                                     }
                                                 }}
                                                 className={classes.transferButton}
+                                                data-tutorial="collaboration-transfer-host"
                                             >
                                                 移交房主
                                             </Button>
@@ -286,7 +269,7 @@ const CollaborationPanel: React.FC = () => {
             </div>
 
             {/* 聊天区域 */}
-            <div className={classes.chatWrapper}>
+            <div className={classes.chatWrapper} data-tutorial="collaboration-chat">
                 <div className={classes.chatHeader}>聊天</div>
                 <div className={classes.chatMessages}>
                     {chatMessages.length === 0 ? (
@@ -313,7 +296,11 @@ const CollaborationPanel: React.FC = () => {
                             className={classes.input}
                             disabled={!roomId}
                         />
-                        <Button type="submit" disabled={!roomId || !newMessage.trim()}>
+                        <Button
+                            type="submit"
+                            disabled={!roomId || !newMessage.trim()}
+                            data-tutorial="collaboration-send-message"
+                        >
                             发送
                         </Button>
                     </div>

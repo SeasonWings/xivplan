@@ -17,6 +17,8 @@ import { useTranslation } from 'react-i18next';
 import { HotkeyBlockingDialogBody } from '../HotkeyBlockingDialogBody';
 import { TutorialContext } from './TutorialContext';
 import { groupTutorialSteps } from './model/groupTutorial.ts';
+import { collaborationTutorialSteps } from './model/collaborationTutorial.ts';
+import { animationTutorialSteps } from './model/animationTutorial.ts';
 
 export type TutorialDialogProps = Omit<DialogProps, 'children'>;
 
@@ -97,6 +99,40 @@ export const TutorialDialog: React.FC<TutorialDialogProps> = ({ open, onOpenChan
         }
     };
 
+    const startCollaborationTutorial = () => {
+        setTutorialState({
+            isActive: true,
+            currentStepIndex: 0,
+            steps: collaborationTutorialSteps,
+        });
+        // 关闭教程选择对话框
+        if (onOpenChange) {
+            const mockEvent = new MouseEvent('click');
+            onOpenChange(mockEvent as unknown as React.MouseEvent<HTMLElement>, {
+                type: 'triggerClick',
+                open: false,
+                event: mockEvent as unknown as React.MouseEvent<HTMLElement>,
+            });
+        }
+    };
+
+    const startAnimationTutorial = () => {
+        setTutorialState({
+            isActive: true,
+            currentStepIndex: 0,
+            steps: animationTutorialSteps,
+        });
+        // 关闭教程选择对话框
+        if (onOpenChange) {
+            const mockEvent = new MouseEvent('click');
+            onOpenChange(mockEvent as unknown as React.MouseEvent<HTMLElement>, {
+                type: 'triggerClick',
+                open: false,
+                event: mockEvent as unknown as React.MouseEvent<HTMLElement>,
+            });
+        }
+    };
+
     return (
         <Dialog {...otherProps} open={open} onOpenChange={onOpenChange}>
             <DialogSurface className={classes.surface}>
@@ -127,6 +163,34 @@ export const TutorialDialog: React.FC<TutorialDialogProps> = ({ open, onOpenChan
                                 {t(
                                     'tutorial.groupTutorial.description',
                                     '学习如何使用元素组功能来管理多个元素，包括创建组、选择组、移动组和解散组。',
+                                )}
+                            </div>
+                        </div>
+
+                        {/*协作功能*/}
+                        <div className={classes.tutorialCard} onClick={startCollaborationTutorial}>
+                            <div className={classes.tutorialTitle}>
+                                <BookRegular className={classes.icon} />
+                                {t('tutorial.collaborationTutorial.title', '协作功能教程')}
+                            </div>
+                            <div className={classes.tutorialDescription}>
+                                {t(
+                                    'tutorial.collaborationTutorial.description',
+                                    '学习如何使用协作功能与他人实时共享和编辑场景，包括创建房间、管理权限和实时聊天。',
+                                )}
+                            </div>
+                        </div>
+
+                        {/*动画功能*/}
+                        <div className={classes.tutorialCard} onClick={startAnimationTutorial}>
+                            <div className={classes.tutorialTitle}>
+                                <BookRegular className={classes.icon} />
+                                {t('tutorial.animationTutorial.title', '动画功能教程')}
+                            </div>
+                            <div className={classes.tutorialDescription}>
+                                {t(
+                                    'tutorial.animationTutorial.description',
+                                    '学习如何使用动画功能为场景中的元素创建生动的动画效果，包括创建动画、添加关键帧和控制播放。',
                                 )}
                             </div>
                         </div>

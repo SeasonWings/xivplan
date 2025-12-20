@@ -112,6 +112,7 @@ export const MainToolbar: React.FC<MainToolbarProps> = ({
                         icon={<PeopleRegular />}
                         onClick={() => onToggleCollaborationPanel?.(!showCollaborationPanel)}
                         className={showCollaborationPanel ? 'active' : undefined}
+                        data-tutorial="collaboration-open"
                     >
                         {t('toolbar.collaboration')}
                     </CollapsableToolbarButton>
@@ -120,6 +121,7 @@ export const MainToolbar: React.FC<MainToolbarProps> = ({
                         icon={<VideoRecordingRegular />}
                         onClick={() => onToggleAnimationPanel?.(!showAnimationPanel)}
                         className={showAnimationPanel ? 'active' : undefined}
+                        data-tutorial="animation-open"
                     >
                         {t('toolbar.animation', '动画')}
                     </CollapsableToolbarButton>

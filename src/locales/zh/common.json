@@ -552,12 +552,20 @@
     "decrement": "减少数值"
   },
   "tutorial": {
-    "title": "教程",
+    "title": "引导",
     "description": "选择一个功能开始学习",
     "start": "开始",
     "groupTutorial": {
-      "title": "元素组功能教程",
-      "description": "学习如何使用元素组功能来管理多个元素，包括创建组、选择组、移动组和解散组。"
+      "title": "元素组功能教程引导",
+      "description": "学习如何使用元素组功能来管理多个元素"
+    },
+    "collaborationTutorial": {
+      "title": "协作功能教程引导",
+      "description": "学习如何使用协作功能"
+    },
+    "animationTutorial": {
+      "title": "动画功能教程引导",
+      "description": "学习如何使用动画功能"
     }
   }
 }

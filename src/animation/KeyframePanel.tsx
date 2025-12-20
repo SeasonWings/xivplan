@@ -247,13 +247,18 @@ export const KeyframePanel: React.FC = () => {
                         </>
                     ) : (
                         <Tooltip content={t('animation.addKeyframe', '添加关键帧')} relationship="label">
-                            <Button icon={<Add24Regular />} onClick={handleAddKeyframe} appearance="primary" />
+                            <Button
+                                icon={<Add24Regular />}
+                                onClick={handleAddKeyframe}
+                                appearance="primary"
+                                data-tutorial="animation-add-keyframe"
+                            />
                         </Tooltip>
                     )}
                 </div>
             </div>
 
-            <div className={classes.content}>
+            <div className={classes.content} data-tutorial="animation-keyframe-list">
                 {rows.length > 0 ? (
                     <Table size="small">
                         <TableHeader>
@@ -338,6 +343,7 @@ export const KeyframePanel: React.FC = () => {
                                                         onClick={() => handleStartEditKeyframe(row.time, row.name)}
                                                         icon={<Edit24Regular />}
                                                         disabled={editingKeyframe !== null}
+                                                        data-tutorial="animation-edit-keyframe"
                                                     >
                                                         {t('animation.editKeyframe', '编辑此帧')}
                                                     </MenuItem>

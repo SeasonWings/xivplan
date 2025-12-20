@@ -6,6 +6,8 @@ export interface TutorialActionContext {
     getSceneObjects: () => readonly SceneObject[]; // 添加获取场景对象的方法
     setSelection: (selection: SceneSelection) => void; // 设置选择状态的方法
     toggleSelection: (selection: SceneSelection, id: number) => SceneSelection; // 切换选择状态的方法
+    finishAction?: () => void; // 可选的完成回调，用于异步操作完成后通知
+    updateSpotlight?: (selector: string) => void; // 可选的更新高亮元素范围方法
 }
 
 export interface TutorialStep {

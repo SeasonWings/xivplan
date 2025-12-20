@@ -19,11 +19,15 @@ const createDemoCircle = (id: number, color: string, x: number, groupId?: string
 });
 
 // 工具函数：模拟点击按钮
-const clickButton = (selector: string) => {
+const clickButton = (selector: string, onFinish?: () => void) => {
     setTimeout(() => {
         const button = document.querySelector(selector);
         if (button instanceof HTMLElement) {
             button.click();
+        }
+        // 如果提供了完成回调，则调用它
+        if (onFinish) {
+            onFinish();
         }
     }, 500); // 延迟500ms以确保界面渲染完成
 };
@@ -52,6 +56,7 @@ export const groupTutorialSteps: TutorialStep[] = [
             selection = context.toggleSelection(selection, DEMO_ID_START);
             selection = context.toggleSelection(selection, DEMO_ID_START + 1);
             context.setSelection(selection);
+            context.finishAction?.();
         },
         autoAction: true,
     },
@@ -97,7 +102,7 @@ export const groupTutorialSteps: TutorialStep[] = [
             context.setSelection(selection); // 应用最终的选择状态
 
             // 点击创建组按钮
-            clickButton('[data-tutorial="create-group-button"]');
+            clickButton('[data-tutorial="create-group-button"]', context.finishAction);
 
             // 清掉
             context.setSelection(selectNone());
@@ -114,6 +119,18 @@ export const groupTutorialSteps: TutorialStep[] = [
             createDemoCircle(DEMO_ID_START, '#ff6b6b', -100, 'demo-group'),
             createDemoCircle(DEMO_ID_START + 1, '#4ecdc4', 100, 'demo-group'),
         ],
+        action: (context: TutorialActionContext) => {
+            // 演示如何使用updateSpotlight方法动态更新高亮元素
+            setTimeout(() => {
+                if (context.updateSpotlight) {
+                    context.updateSpotlight('[data-tutorial="create-group-button"]');
+                }
+
+                // 点击创建组按钮
+                clickButton('[data-tutorial="group-arrow"]', context.finishAction);
+            }, 1000);
+        },
+        autoAction: true,
     },
     {
         id: 'move-group',
@@ -125,9 +142,9 @@ export const groupTutorialSteps: TutorialStep[] = [
             createDemoCircle(DEMO_ID_START, '#ff6b6b', -100, 'demo-group'),
             createDemoCircle(DEMO_ID_START + 1, '#4ecdc4', 100, 'demo-group'),
         ],
-        action: () => {
+        action: (context: TutorialActionContext) => {
             // 点击创建组按钮
-            clickButton('[data-tutorial="group-arrow"]');
+            clickButton('[data-tutorial="group-arrow"]', context.finishAction);
         },
         autoAction: true,
     },
@@ -163,7 +180,7 @@ export const groupTutorialSteps: TutorialStep[] = [
             context.setSelection(selection); // 应用最终的选择状态
 
             // 点击解散组按钮
-            clickButton('[data-tutorial="ungroup-button"]');
+            clickButton('[data-tutorial="ungroup-button"]', context.finishAction);
         },
         autoAction: true,
     },

@@ -130,6 +130,7 @@ export const TutorialOverlay: React.FC = () => {
     const popoverRef = useRef<HTMLDivElement>(null);
     const originalObjectsRef = useRef<typeof step.objects | null>(null);
     const isFirstDemoRef = useRef(true); // 跟踪是否是第一次添加演示
+    const [isActionRunning, setIsActionRunning] = useState(false); // 添加状态跟踪action是否正在运行
 
     const { isActive, currentStepIndex, steps } = tutorialState;
     const currentStep = steps[currentStepIndex];
@@ -146,6 +147,18 @@ export const TutorialOverlay: React.FC = () => {
         },
         [setSelection],
     );
+
+    // 创建稳定的 updateSpotlight 回调
+    const handleUpdateSpotlight = useCallback((selector: string) => {
+        const targetElement = document.querySelector(selector);
+        if (targetElement) {
+            const rect = targetElement.getBoundingClientRect();
+            console.log('[TutorialOverlay] updateSpotlight', rect);
+            setSpotlightRect(rect);
+        } else {
+            setSpotlightRect(null);
+        }
+    }, []);
 
     // 创建稳定的 toggleSelection 回调
     const handleToggleSelection = useCallback((currentSelection: SceneSelection, id: number) => {
@@ -165,8 +178,14 @@ export const TutorialOverlay: React.FC = () => {
             getSceneObjects: () => step.objects,
             setSelection: handleSetSelection,
             toggleSelection: handleToggleSelection,
+            // 提供finishAction回调，允许action主动通知完成
+            finishAction: () => {
+                setIsActionRunning(false);
+            },
+            // 提供updateSpotlight方法，允许action更新高亮元素范围
+            updateSpotlight: handleUpdateSpotlight,
         };
-    }, [step.objects, handleSetSelection, handleToggleSelection]);
+    }, [step.objects, handleSetSelection, handleToggleSelection, handleUpdateSpotlight]);
 
     // 处理演示对象的添加和移除
     useEffect(() => {
@@ -209,9 +228,18 @@ export const TutorialOverlay: React.FC = () => {
         const allDemoObjectsPresent = demoObjectIds.every((id) => step.objects.some((obj) => obj.id === id));
 
         if (allDemoObjectsPresent) {
+            // 设置action运行状态为true
+            setIsActionRunning(true);
+
             // 使用 setTimeout 确保 React 完成渲染
             const timeoutId = setTimeout(() => {
                 currentStep.action!(actionContextRef.current);
+                // 对于没有主动调用finishAction的action，我们增加一个额外的延迟以确保完成
+                setTimeout(() => {
+                    if (isActionRunning) {
+                        setIsActionRunning(false);
+                    }
+                }, 5000); // 1秒后自动关闭，作为兜底机制
             }, 100);
 
             return () => clearTimeout(timeoutId);
@@ -357,6 +385,11 @@ export const TutorialOverlay: React.FC = () => {
     }, [isActive, currentStep]);
 
     const handleNext = () => {
+        // 如果action正在运行，不允许点击下一步
+        if (isActionRunning) {
+            return;
+        }
+
         if (currentStepIndex < steps.length - 1) {
             setTutorialState((prev) => ({
                 ...prev,
@@ -435,7 +468,11 @@ export const TutorialOverlay: React.FC = () => {
                                 上一步
                             </Button>
                         )}
-                        <Button appearance="primary" onClick={handleNext}>
+                        <Button
+                            appearance="primary"
+                            onClick={handleNext}
+                            disabled={isActionRunning} // 当action正在运行时禁用按钮
+                        >
                             {currentStepIndex < steps.length - 1 ? '下一步' : '完成'}
                         </Button>
                     </div>

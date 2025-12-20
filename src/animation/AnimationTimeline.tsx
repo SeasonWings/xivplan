@@ -81,7 +81,7 @@ export const AnimationTimeline: React.FC = () => {
     const isPlaying = playerState.state === PlaybackState.Playing;
 
     return (
-        <div className={classes.container}>
+        <div className={classes.container} data-tutorial="animation-timeline">
             <div className={classes.controls}>
                 {/* 播放控制按钮 */}
                 <div className={classes.playbackButtons}>
@@ -117,7 +117,7 @@ export const AnimationTimeline: React.FC = () => {
                 </div>
 
                 {/* 速度控制 */}
-                <div className={classes.speedControl}>
+                <div className={classes.speedControl} data-tutorial="animation-speed-control">
                     <span className={classes.label}>
                         {t('animation.speed', '速度')}: {playerState.playbackSpeed.toFixed(1)}x
                     </span>

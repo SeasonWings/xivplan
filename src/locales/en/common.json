@@ -550,5 +550,22 @@
   "spin": {
     "increment": "Increment value",
     "decrement": "Decrement value"
+  },
+  "tutorial": {
+    "title": "Tutorial",
+    "description": "Choose a feature to start learning",
+    "start": "Start",
+    "groupTutorial": {
+      "title": "Element Group Tutorial",
+      "description": "Learn how to use the element group feature to manage multiple elements, including creating groups, selecting groups, moving groups, and ungrouping."
+    },
+    "collaborationTutorial": {
+      "title": "Collaboration Tutorial",
+      "description": "Learn how to use the collaboration feature to share and edit scenes with others in real time, including creating rooms, managing permissions, and chatting."
+    },
+    "animationTutorial": {
+      "title": "Animation Tutorial",
+      "description": "Learn how to use the animation feature to create dynamic animations for elements in your scenes, including creating animations, adding keyframes, and controlling playback."
+    }
   }
 }
