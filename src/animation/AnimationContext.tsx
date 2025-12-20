@@ -17,6 +17,8 @@ interface AnimationContextValue {
     animatedObjects: readonly SceneObject[];
     /** 对象ID到对象的映射（优化查找性能） */
     animatedObjectsMap: ReadonlyMap<number, SceneObject>;
+    /** 自定义关键帧时间步长（毫秒） */
+    keyframeTimeStep: number;
     /** 设置当前动画配置 */
     setAnimation: (animation: Animation | null) => void;
     /** 创建新动画 */
@@ -33,6 +35,8 @@ interface AnimationContextValue {
     seekTo: (time: number) => void;
     /** 设置播放速度 */
     setPlaybackSpeed: (speed: number) => void;
+    /** 设置关键帧时间步长 */
+    setKeyframeTimeStep: (step: number) => void;
     /** 添加关键帧(记录当前画板状态) */
     addKeyframe: (time: number, name?: string) => void;
     /** 删除关键帧(根据时间、名称、对象数量精确匹配) */
@@ -41,9 +45,9 @@ interface AnimationContextValue {
     updateKeyframeName: (time: number, oldName: string | undefined, newName: string) => void;
     /** 更新关键帧时间 */
     updateKeyframeTime: (oldTime: number, name: string | undefined, newTime: number) => void;
-    /** 更新关键帧对象(将当前画布状态更新到指定关键帧) */
+    /** 更新关键帧对象(将当前画板状态更新到指定关键帧) */
     updateKeyframeObjects: (time: number, name: string | undefined) => void;
-    /** 跳转到关键帧并应用其对象状态到画布 */
+    /** 跳转到指定关键帧 */
     jumpToKeyframe: (time: number) => void;
     /** 获取应用动画后的对象 */
     getAnimatedObjects: () => readonly SceneObject[];
@@ -317,6 +321,9 @@ export const AnimationProvider: React.FC<PropsWithChildren> = ({ children }) => 
         }));
     }, []);
 
+    // 自定义关键帧时间步长状态，默认为100ms
+    const [keyframeTimeStep, setKeyframeTimeStep] = useState<number>(100);
+
     // 关键帧管理函数(记录当前画板状态)
     const addKeyframe = React.useCallback(
         (time: number, name?: string) => {
@@ -542,6 +549,7 @@ export const AnimationProvider: React.FC<PropsWithChildren> = ({ children }) => 
         playerState,
         animatedObjects,
         animatedObjectsMap,
+        keyframeTimeStep,
         setAnimation,
         createAnimation,
         switchAnimation,
@@ -551,6 +559,7 @@ export const AnimationProvider: React.FC<PropsWithChildren> = ({ children }) => 
         stop,
         seekTo,
         setPlaybackSpeed,
+        setKeyframeTimeStep,
         addKeyframe,
         removeKeyframe,
         updateKeyframeName,

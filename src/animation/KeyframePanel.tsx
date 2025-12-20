@@ -15,9 +15,13 @@ import {
     TableRow,
     tokens,
     Tooltip,
+    Field,
+    SpinButton,
+    SpinButtonChangeEvent,
+    SpinButtonOnChangeData,
 } from '@fluentui/react-components';
 import { Add24Regular, Delete24Regular, Edit24Regular, MoreVertical24Regular } from '@fluentui/react-icons';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAnimation } from './AnimationContext';
 
@@ -87,6 +91,8 @@ export const KeyframePanel: React.FC = () => {
     const { t } = useTranslation();
     const {
         animation,
+        keyframeTimeStep,
+        setKeyframeTimeStep,
         addKeyframe,
         removeKeyframe,
         updateKeyframeName,
@@ -100,18 +106,24 @@ export const KeyframePanel: React.FC = () => {
     const [editingTimeRowId, setEditingTimeRowId] = useState<string | null>(null);
     const [editingTime, setEditingTime] = useState<string>('');
     const [editingKeyframe, setEditingKeyframe] = useState<{ time: number; name: string | undefined } | null>(null);
+    const [inputValue, setInputValue] = useState<number>(keyframeTimeStep);
+
+    // 当 keyframeTimeStep 变化时更新 inputValue
+    useEffect(() => {
+        setInputValue(keyframeTimeStep);
+    }, [keyframeTimeStep]);
 
     const handleAddKeyframe = useCallback(() => {
-        // 计算默认时间: 当前最大时间 + 100ms
+        // 计算默认时间: 当前最大时间 + 自定义步长
         let defaultTime = 0;
         if (animation && animation.keyframes.length > 0) {
             const maxTime = Math.max(...animation.keyframes.map((kf) => kf.time));
-            defaultTime = maxTime + 100;
+            defaultTime = maxTime + keyframeTimeStep;
         }
 
         addKeyframe(defaultTime, keyframeName || undefined);
         setKeyframeName(''); // 清空名称输入
-    }, [animation, keyframeName, addKeyframe]);
+    }, [animation, keyframeTimeStep, keyframeName, addKeyframe]);
 
     const handleRemoveKeyframe = useCallback(
         (time: number, name: string | undefined, objectCount: number) => {
@@ -225,6 +237,55 @@ export const KeyframePanel: React.FC = () => {
 
     const rows = getKeyframeRows();
 
+    const handleTimeStepChange = useCallback(
+        (ev: SpinButtonChangeEvent, data: SpinButtonOnChangeData) => {
+            // 处理数值变化
+            if (data.value !== null && data.value !== undefined) {
+                const newStep = Math.max(10, data.value);
+                setKeyframeTimeStep(newStep);
+                setInputValue(newStep);
+            }
+        },
+        [setKeyframeTimeStep],
+    );
+
+    const handleTimeStepInput = useCallback((ev: React.FormEvent<HTMLInputElement>) => {
+        const target = ev.target as HTMLInputElement;
+        const value = target.value;
+
+        // 允许空字符串（用户可能正在输入）
+        if (value === '') {
+            setInputValue(10); // 临时设置为最小值
+            return;
+        }
+
+        // 如果输入的是有效数字，更新状态
+        const numValue = parseInt(value, 10);
+        if (!isNaN(numValue)) {
+            // 不在这里限制范围，留到失焦或回车时处理
+            setInputValue(numValue);
+        }
+    }, []);
+
+    const handleTimeStepBlur = useCallback(() => {
+        // 确保输入值在有效范围内
+        const clampedValue = Math.max(10, Math.min(5000, inputValue));
+        setKeyframeTimeStep(clampedValue);
+        setInputValue(clampedValue);
+    }, [inputValue, setKeyframeTimeStep]);
+
+    const handleTimeStepKeyDown = useCallback(
+        (ev: React.KeyboardEvent<HTMLInputElement>) => {
+            if (ev.key === 'Enter') {
+                // 用户按下回车键时，确保输入值在有效范围内
+                const clampedValue = Math.max(10, Math.min(5000, inputValue));
+                setKeyframeTimeStep(clampedValue);
+                setInputValue(clampedValue);
+            }
+        },
+        [inputValue, setKeyframeTimeStep],
+    );
+
     return (
         <div className={classes.container}>
             <div className={classes.header}>
@@ -232,6 +293,23 @@ export const KeyframePanel: React.FC = () => {
                     {t('animation.keyframes', '关键帧')} ({rows.length} {t('animation.frames', '帧')})
                 </div>
                 <div className={classes.toolbar}>
+                    <Field
+                        label={t('animation.timeStep', '步长')}
+                        orientation="horizontal"
+                        style={{ marginRight: tokens.spacingHorizontalM }}
+                    >
+                        <SpinButton
+                            value={inputValue}
+                            onChange={handleTimeStepChange}
+                            onInput={handleTimeStepInput}
+                            onBlur={handleTimeStepBlur}
+                            onKeyDown={handleTimeStepKeyDown}
+                            min={10}
+                            max={5000}
+                            step={10}
+                            style={{ width: '80px' }}
+                        />
+                    </Field>
                     {editingKeyframe ? (
                         <>
                             <Tooltip content={t('animation.saveEdit', '保存编辑')} relationship="label">
@@ -249,10 +327,12 @@ export const KeyframePanel: React.FC = () => {
                         <Tooltip content={t('animation.addKeyframe', '添加关键帧')} relationship="label">
                             <Button
                                 icon={<Add24Regular />}
-                                onClick={handleAddKeyframe}
                                 appearance="primary"
+                                onClick={handleAddKeyframe}
                                 data-tutorial="animation-add-keyframe"
-                            />
+                            >
+                                {t('animation.add', '添加')}
+                            </Button>
                         </Tooltip>
                     )}
                 </div>
