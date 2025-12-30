@@ -20,7 +20,6 @@ import { vecSub } from '../vector';
 import { SelectableObject } from './SelectableObject';
 import { TetherTarget } from './TetherTarget';
 import { useEditActivity } from '../EditActivityContext';
-import { useAnimation } from '../animation/AnimationContext';
 
 export interface DraggableObjectProps {
     object: MoveableObject & UnknownObject;
@@ -33,29 +32,9 @@ export const DraggableObject: React.FC<DraggableObjectProps> = ({ object, childr
     const [selection, setSelection] = useSelection();
     const [dragSelection, setDragSelection] = useDragSelection();
     const { startEditActivity, endEditActivity } = useEditActivity();
-    const { animation, playerState, startRecordingTrajectory, recordTrajectoryPoint, endRecordingTrajectory } =
-        useAnimation();
     const center = getCanvasCoord(scene, object);
 
     const isDraggable = !object.pinned && editMode === EditMode.Normal;
-
-    // 判断是否在关键帧之间
-    // eslint-disable-next-line react-hooks/preserve-manual-memoization
-    const isInKeyframeInterval = React.useMemo(() => {
-        if (!animation || !animation.keyframes || animation.keyframes.length < 2) {
-            return null;
-        }
-
-        const currentTime = playerState.currentTime;
-        for (let i = 0; i < animation.keyframes.length - 1; i++) {
-            const kf1 = animation.keyframes[i];
-            const kf2 = animation.keyframes[i + 1];
-            if (currentTime >= kf1.time && currentTime <= kf2.time) {
-                return { startTime: kf1.time, endTime: kf2.time };
-            }
-        }
-        return null;
-    }, [animation, playerState.currentTime]);
 
     const handleDragStart = (e: KonvaEventObject<DragEvent>) => {
         let newSelection: SceneSelection;
@@ -72,34 +51,14 @@ export const DraggableObject: React.FC<DraggableObjectProps> = ({ object, childr
         setDragSelection(newSelection);
         startEditActivity(); // 标记开始编辑活动
 
-        // 如果在关键帧之间，开始记录轨迹
-        if (isInKeyframeInterval) {
-            startRecordingTrajectory(object.id, isInKeyframeInterval.startTime, isInKeyframeInterval.endTime);
-            // 记录起始点
-            recordTrajectoryPoint(object.id, object.x, object.y, Date.now());
-        }
-
         updatePosition(scene, step, object, newSelection, e, dispatch);
     };
 
     const handleDragMove = (e: KonvaEventObject<DragEvent>) => {
-        // 如果在关键帧之间，记录轨迹点
-        if (isInKeyframeInterval) {
-            const pos = getSceneCoord(scene, e.target.position());
-            recordTrajectoryPoint(object.id, pos.x, pos.y, Date.now());
-        }
-
         updatePosition(scene, step, object, dragSelection, e, dispatch);
     };
 
     const handleDragEnd = (e: KonvaEventObject<DragEvent>) => {
-        // 如果在关键帧之间，记录最后一点并结束记录
-        if (isInKeyframeInterval) {
-            const pos = getSceneCoord(scene, e.target.position());
-            recordTrajectoryPoint(object.id, pos.x, pos.y, Date.now());
-            endRecordingTrajectory(object.id);
-        }
-
         updatePosition(scene, step, object, dragSelection, e, dispatch);
         dispatch({ type: 'commit' });
 
