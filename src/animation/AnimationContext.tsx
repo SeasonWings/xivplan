@@ -145,7 +145,7 @@ export const AnimationProvider: React.FC<PropsWithChildren> = ({ children }) => 
             keyframes: [],
             duration: 0,
             loop: false,
-            easing: EasingType.Linear,
+            easing: EasingType.EaseInOut,
         };
 
         const updatedAnimations = [...animationsRef.current, newAnimation];

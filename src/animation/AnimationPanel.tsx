@@ -21,7 +21,7 @@ import { Add24Regular, Settings24Regular, VideoRecordingRegular } from '@fluentu
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAnimation } from './AnimationContext';
-import { Animation } from './animationTypes';
+import { Animation, EasingType } from './animationTypes';
 import { AnimationTimeline } from './AnimationTimeline';
 import { KeyframePanel } from './KeyframePanel';
 
@@ -93,6 +93,7 @@ export const AnimationPanel: React.FC = () => {
     // 动画设置表单状态
     const [animationName, setAnimationName] = useState(animation?.name ?? '');
     const [loop, setLoop] = useState(animation?.loop ?? false);
+    const [easing, setEasing] = useState<EasingType>(animation?.easing ?? EasingType.Linear);
 
     const handleCreateAnimation = useCallback(() => {
         createAnimation('新动画');
@@ -114,6 +115,7 @@ export const AnimationPanel: React.FC = () => {
             ...animation,
             name: animationName || undefined,
             loop,
+            easing,
             // duration 由关键帧自动计算，不需要手动设置
         };
 
@@ -250,6 +252,36 @@ export const AnimationPanel: React.FC = () => {
                                             {t('animation.autoCalculated', '自动根据关键帧计算')}
                                         </div>
                                     </div>
+                                </div>
+
+                                <div className={classes.formField}>
+                                    <label className={classes.label}>{t('animation.easing', '缓动效果')}</label>
+                                    <Dropdown
+                                        value={
+                                            easing === EasingType.Linear
+                                                ? t('animation.easingLinear', '匀速')
+                                                : easing === EasingType.EaseIn
+                                                  ? t('animation.easingEaseIn', '加速')
+                                                  : easing === EasingType.EaseOut
+                                                    ? t('animation.easingEaseOut', '减速')
+                                                    : t('animation.easingEaseInOut', '先加速后减速')
+                                        }
+                                        selectedOptions={[easing]}
+                                        onOptionSelect={(_, data) => {
+                                            if (data.optionValue) {
+                                                setEasing(data.optionValue as EasingType);
+                                            }
+                                        }}
+                                    >
+                                        <Option value={EasingType.Linear}>{t('animation.easingLinear', '匀速')}</Option>
+                                        <Option value={EasingType.EaseIn}>{t('animation.easingEaseIn', '加速')}</Option>
+                                        <Option value={EasingType.EaseOut}>
+                                            {t('animation.easingEaseOut', '减速')}
+                                        </Option>
+                                        <Option value={EasingType.EaseInOut}>
+                                            {t('animation.easingEaseInOut', '先加速后减速')}
+                                        </Option>
+                                    </Dropdown>
                                 </div>
 
                                 <div className={classes.formField}>

@@ -16,8 +16,8 @@ import { ARENA_PRESETS_NIGHTMARE_FXKND } from './nightmare/fxknd';
 export const ARENA_PRESETS: Record<string, Record<string, ArenaPreset[]>> = {
     '': {
         General: ARENA_PRESETS_GENERAL,
-        Criterion: ARENA_PRESETS_CRITERION,
-        Trials: ARENA_PRESETS_TRIALS,
+        异闻迷宫: ARENA_PRESETS_CRITERION,
+        '极&灭': ARENA_PRESETS_TRIALS,
     },
     大型任务: {
         伊甸希望乐园: ARENA_PRESETS_RAID_EDEN,

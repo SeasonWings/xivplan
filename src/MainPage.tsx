@@ -46,10 +46,12 @@ const MainPageContent: React.FC = () => {
     const handleMouseMove = React.useCallback(
         (e: MouseEvent) => {
             if (!isDragging) return;
-            const newWidth = window.innerWidth - e.clientX;
+            // 计算新宽度时需要考虑协作面板的宽度
+            const collaborationWidth = showCollaborationPanel ? 380 : 0;
+            const newWidth = window.innerWidth - e.clientX - collaborationWidth;
             setAnimationPanelWidth(Math.max(300, Math.min(800, newWidth)));
         },
-        [isDragging],
+        [isDragging, showCollaborationPanel],
     );
 
     const handleMouseUp = React.useCallback(() => {
@@ -93,18 +95,24 @@ const MainPageContent: React.FC = () => {
             {/* TODO: make panel collapsable */}
             <DetailsPanel />
 
-            {/* 协作面板从右侧展开 */}
-            {showCollaborationPanel && (
-                <div className={classes.collaborationWrapper}>
-                    <CollaborationPanel />
+            {/* 动画面板从右侧展开，可拖拽调整宽度 */}
+            {showAnimationPanel && (
+                <div
+                    className={classes.animationWrapper}
+                    style={{
+                        width: `${animationPanelWidth}px`,
+                        right: showCollaborationPanel ? '380px' : '0',
+                    }}
+                >
+                    <div className={classes.resizeHandle} onMouseDown={handleMouseDown} />
+                    <AnimationPanel />
                 </div>
             )}
 
-            {/* 动画面板从右侧展开，可拖拽调整宽度 */}
-            {showAnimationPanel && (
-                <div className={classes.animationWrapper} style={{ width: `${animationPanelWidth}px` }}>
-                    <div className={classes.resizeHandle} onMouseDown={handleMouseDown} />
-                    <AnimationPanel />
+            {/* 协作面板固定在最右侧 */}
+            {showCollaborationPanel && (
+                <div className={classes.collaborationWrapper}>
+                    <CollaborationPanel />
                 </div>
             )}
 
@@ -156,18 +164,19 @@ const useStyles = makeStyles({
         top: '48px',
         right: '0',
         height: 'calc(100vh - 48px)',
-        zIndex: 10,
+        zIndex: 100,
     },
     animationWrapper: {
         position: 'fixed',
         top: '48px',
         right: '0',
         height: 'calc(100vh - 48px)',
-        zIndex: 10,
+        zIndex: 100,
         backgroundColor: tokens.colorNeutralBackground1,
         boxShadow: tokens.shadow16,
         display: 'flex',
         flexDirection: 'row',
+        transition: 'right 0.2s ease',
     },
     resizeHandle: {
         width: '4px',
