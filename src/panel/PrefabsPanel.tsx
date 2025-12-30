@@ -52,6 +52,9 @@ import {
     PartyHeHuanYue,
     PartyQingYunJian,
     PartyQingYunLei,
+    PartyTianYinGe,
+    PartyTianYinZhen,
+    PartyTianYinJing,
 } from '../prefabs/Party';
 import {
     TetherClose,
@@ -202,6 +205,7 @@ export const PrefabsPanel: React.FC = () => {
                         <PartyHeHuanZong />
                         <PartyLingXiGe />
                         <PartyQingYunMen />
+                        <PartyTianYinGe />
                     </ObjectGroup>
                     <ObjectGroup>
                         <PartyFenXiangYan />
@@ -209,6 +213,7 @@ export const PrefabsPanel: React.FC = () => {
                         <PartyHeHuanYing />
                         <PartyLingXiLing />
                         <PartyQingYunLei />
+                        <PartyTianYinZhen />
                     </ObjectGroup>
                     <ObjectGroup>
                         <PartyFenXiangZhou />
@@ -216,6 +221,7 @@ export const PrefabsPanel: React.FC = () => {
                         <PartyHeHuanYue />
                         <PartyLingXiXi />
                         <PartyQingYunJian />
+                        <PartyTianYinJing />
                     </ObjectGroup>
                 </Section>
             </Section>

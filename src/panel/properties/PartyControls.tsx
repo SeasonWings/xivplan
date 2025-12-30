@@ -5,8 +5,9 @@ import { useScene } from '../../SceneProvider';
 import { Job, getJob, getJobIconUrl } from '../../jobs';
 import { PartyObject } from '../../scene';
 import { PropertiesControlProps } from '../PropertiesControl';
+import { Section } from '../Section.tsx';
 
-const ICON_CHOICES = [
+const FF14_ICON = [
     [Job.RoleSupport, Job.RoleTank, Job.RoleHealer, Job.RoleDps, Job.RoleAny],
     [Job.RoleMelee, Job.RoleRanged, Job.RoleMagicRanged, Job.RolePhysicalRanged],
     [Job.Paladin, Job.Warrior, Job.DarkKnight, Job.Gunbreaker],
@@ -14,10 +15,13 @@ const ICON_CHOICES = [
     [Job.Monk, Job.Dragoon, Job.Samurai, Job.Reaper, Job.Ninja, Job.Viper],
     [Job.BlackMage, Job.Summoner, Job.RedMage, Job.Pictomancer, Job.BlueMage],
     [Job.Bard, Job.Machinist, Job.Dancer],
+].map((row) => row.map((job) => getJob(job)));
+
+const ZXSJ_ICON = [
     // ZXSJ
-    [Job.FenXiangGu, Job.GuiWangZong, Job.HeHuanZong, Job.LingXiGe, Job.QingYunMen],
-    [Job.FenXiangYan, Job.GuiWangSha, Job.HeHuanYing, Job.LingXiLing, Job.QingYunLei],
-    [Job.FenXiangZhou, Job.GuiWangGang, Job.HeHuanYue, Job.LingXiXi, Job.QingYunJian],
+    [Job.FenXiangGu, Job.GuiWangZong, Job.HeHuanZong, Job.LingXiGe, Job.QingYunMen, Job.TianYinGe],
+    [Job.FenXiangYan, Job.GuiWangSha, Job.HeHuanYing, Job.LingXiLing, Job.QingYunLei, Job.TianYinZhen],
+    [Job.FenXiangZhou, Job.GuiWangGang, Job.HeHuanYue, Job.LingXiXi, Job.QingYunJian, Job.TianYinJing],
 ].map((row) => row.map((job) => getJob(job)));
 
 export const PartyIconControl: React.FC<PropertiesControlProps<PartyObject>> = ({ objects }) => {
@@ -32,23 +36,45 @@ export const PartyIconControl: React.FC<PropertiesControlProps<PartyObject>> = (
         <div>
             <Label className={classes.label}>{t('properties.variant')}</Label>
             <div className={classes.container}>
-                {ICON_CHOICES.map((row, i) => (
-                    <div key={i} className={classes.row}>
-                        {row.map((job, j) => {
-                            const icon = getJobIconUrl(job.icon);
-                            const name = t(job.defaultNameKey);
-                            return (
-                                <Button
-                                    key={j}
-                                    appearance="transparent"
-                                    title={name}
-                                    icon={<Image src={icon} width={32} height={32} />}
-                                    onClick={() => onClick(job.defaultNameKey, icon)}
-                                />
-                            );
-                        })}
-                    </div>
-                ))}
+                <Section title={t('prefabs.FF14')}>
+                    {FF14_ICON.map((row, i) => (
+                        <div key={i} className={classes.row}>
+                            {row.map((job, j) => {
+                                const icon = getJobIconUrl(job.icon);
+                                const name = t(job.defaultNameKey);
+                                return (
+                                    <Button
+                                        key={j}
+                                        appearance="transparent"
+                                        title={name}
+                                        icon={<Image src={icon} width={32} height={32} />}
+                                        onClick={() => onClick(job.defaultNameKey, icon)}
+                                    />
+                                );
+                            })}
+                        </div>
+                    ))}
+                </Section>
+
+                <Section title={t('prefabs.ZXSJ')}>
+                    {ZXSJ_ICON.map((row, i) => (
+                        <div key={i} className={classes.row}>
+                            {row.map((job, j) => {
+                                const icon = getJobIconUrl(job.icon);
+                                const name = t(job.defaultNameKey);
+                                return (
+                                    <Button
+                                        key={j}
+                                        appearance="transparent"
+                                        title={name}
+                                        icon={<Image src={icon} width={32} height={32} />}
+                                        onClick={() => onClick(job.defaultNameKey, icon)}
+                                    />
+                                );
+                            })}
+                        </div>
+                    ))}
+                </Section>
             </div>
         </div>
     );

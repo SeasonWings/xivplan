@@ -41,6 +41,7 @@ export enum Job {
     HeHuanZong,
     LingXiGe,
     QingYunMen,
+    TianYinGe,
 
     LingXiLing,
     LingXiXi,
@@ -52,6 +53,8 @@ export enum Job {
     HeHuanYing,
     QingYunLei,
     QingYunJian,
+    TianYinZhen,
+    TianYinJing,
 }
 
 const JOBS: Record<Job, JobProps> = {
@@ -92,6 +95,7 @@ const JOBS: Record<Job, JobProps> = {
     [Job.HeHuanZong]: { defaultNameKey: 'jobs.HeHuanZong', icon: 'zxsj/jobs/hehuanzong.png' },
     [Job.LingXiGe]: { defaultNameKey: 'jobs.LingXiGe', icon: 'zxsj/jobs/lingxige.png' },
     [Job.QingYunMen]: { defaultNameKey: 'jobs.QingYunMen', icon: 'zxsj/jobs/qingyunmen.png' },
+    [Job.TianYinGe]: { defaultNameKey: 'jobs.TianYinGe', icon: 'zxsj/jobs/tianyinge.png' },
 
     [Job.LingXiLing]: { defaultNameKey: 'jobs.LingXiLing', icon: 'zxsj/lingxi_ling.png' },
     [Job.LingXiXi]: { defaultNameKey: 'jobs.LingXiXi', icon: 'zxsj/lingxi_xi.png' },
@@ -103,6 +107,8 @@ const JOBS: Record<Job, JobProps> = {
     [Job.HeHuanYing]: { defaultNameKey: 'jobs.HeHuanYing', icon: 'zxsj/hehuan_ying.png' },
     [Job.QingYunLei]: { defaultNameKey: 'jobs.QingYunLei', icon: 'zxsj/qingyun_lei.png' },
     [Job.QingYunJian]: { defaultNameKey: 'jobs.QingYunJian', icon: 'zxsj/qingyun_jian.png' },
+    [Job.TianYinJing]: { defaultNameKey: 'jobs.TianYinJing', icon: 'zxsj/tianyin_jing.png' },
+    [Job.TianYinZhen]: { defaultNameKey: 'jobs.TianYinZhen', icon: 'zxsj/tianyin_zhen.png' },
 };
 
 export function getJob(job: Job): JobProps {

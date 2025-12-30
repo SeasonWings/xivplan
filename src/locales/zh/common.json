@@ -536,6 +536,7 @@
     "HeHuanZong": "合欢宗",
     "LingXiGe": "灵汐阁",
     "QingYunMen": "青云门",
+    "TianYinGe": "天音阁",
     "LingXiLing": "灵灵汐",
     "LingXiXi": "汐灵汐",
     "FenXiangYan": "炎焚香",
@@ -545,7 +546,9 @@
     "HeHuanYue": "月合欢",
     "HeHuanYing": "影合欢",
     "QingYunLei": "雷青云",
-    "QingYunJian": "剑青云"
+    "QingYunJian": "剑青云",
+    "TianYinZhen": "镇天音",
+    "TianYinJing": "净天音"
   },
   "spin": {
     "increment": "增加数值",

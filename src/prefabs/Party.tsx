@@ -150,6 +150,7 @@ export const PartyGuiWangZong = makeIcon(Job.GuiWangZong);
 export const PartyHeHuanZong = makeIcon(Job.HeHuanZong);
 export const PartyLingXiGe = makeIcon(Job.LingXiGe);
 export const PartyQingYunMen = makeIcon(Job.QingYunMen);
+export const PartyTianYinGe = makeIcon(Job.TianYinGe);
 
 export const PartyLingXiLing = makeIcon(Job.LingXiLing);
 export const PartyLingXiXi = makeIcon(Job.LingXiXi);
@@ -161,3 +162,5 @@ export const PartyHeHuanYue = makeIcon(Job.HeHuanYue);
 export const PartyHeHuanYing = makeIcon(Job.HeHuanYing);
 export const PartyQingYunLei = makeIcon(Job.QingYunLei);
 export const PartyQingYunJian = makeIcon(Job.QingYunJian);
+export const PartyTianYinZhen = makeIcon(Job.TianYinZhen);
+export const PartyTianYinJing = makeIcon(Job.TianYinJing);
