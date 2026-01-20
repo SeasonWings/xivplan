@@ -1,5 +1,6 @@
 import { ArenaPreset, ArenaShape, DEFAULT_ARENA_PADDING, GridType } from '../../scene';
 import { SPOKES_45_DEGREES } from '../common';
+import config from '../../config.ts';
 
 const PRESET_7: ArenaPreset = {
     name: 'Abyssos: The Seventh Circle',
@@ -8,7 +9,7 @@ const PRESET_7: ArenaPreset = {
     height: 700,
     padding: 50,
     grid: { type: GridType.None },
-    backgroundImage: '/arena/p7.svg',
+    backgroundImage: config.s3.cos + '/arena/p7.svg',
 };
 
 const PRESET_9: ArenaPreset = {
@@ -31,7 +32,7 @@ const PRESET_10: ArenaPreset = {
     height: 12 * 60,
     padding: 50,
     grid: { type: GridType.None },
-    backgroundImage: '/arena/p10.svg',
+    backgroundImage: config.s3.cos + '/arena/p10.svg',
 };
 
 const PRESET_10_CENTER: ArenaPreset = {
@@ -54,7 +55,7 @@ const PRESET_11: ArenaPreset = {
     height: 600,
     padding: DEFAULT_ARENA_PADDING,
     grid: { type: GridType.None },
-    backgroundImage: '/arena/p11.svg',
+    backgroundImage: config.s3.cos + '/arena/p11.svg',
 };
 
 const PRESET_12: ArenaPreset = {
@@ -68,7 +69,7 @@ const PRESET_12: ArenaPreset = {
         rows: 4,
         columns: 2,
     },
-    backgroundImage: '/arena/p12.svg',
+    backgroundImage: config.s3.cos + '/arena/p12.svg',
 };
 
 const PRESET_12_CHECKERBOARD: ArenaPreset = {
@@ -79,7 +80,7 @@ const PRESET_12_CHECKERBOARD: ArenaPreset = {
     height: 600,
     padding: DEFAULT_ARENA_PADDING,
     grid: { type: GridType.None },
-    backgroundImage: '/arena/p12_checker.svg',
+    backgroundImage: config.s3.cos + '/arena/p12_checker.svg',
 };
 
 const PRESET_12_CHECKERBOARD_2: ArenaPreset = {
@@ -90,7 +91,7 @@ const PRESET_12_CHECKERBOARD_2: ArenaPreset = {
     height: 600,
     padding: DEFAULT_ARENA_PADDING,
     grid: { type: GridType.None },
-    backgroundImage: '/arena/p12_checker2.svg',
+    backgroundImage: config.s3.cos + '/arena/p12_checker2.svg',
 };
 
 const PRESET_12_OCTAGON: ArenaPreset = {
@@ -105,7 +106,7 @@ const PRESET_12_OCTAGON: ArenaPreset = {
         rows: [-225, 0, 225],
         columns: [0],
     },
-    backgroundImage: '/arena/p12_octagon.svg',
+    backgroundImage: config.s3.cos + '/arena/p12_octagon.svg',
 };
 
 const PRESET_12_PHASE_2: ArenaPreset = {
@@ -120,7 +121,7 @@ const PRESET_12_PHASE_2: ArenaPreset = {
         rows: 3,
         columns: 2,
     },
-    backgroundImage: '/arena/p12-p2.svg',
+    backgroundImage: config.s3.cos + '/arena/p12-p2.svg',
 };
 
 export const ARENA_PRESETS_RAID_PANDAEMONIUM = [

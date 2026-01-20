@@ -1,4 +1,5 @@
 import { ArenaPreset, ArenaShape, DEFAULT_ARENA_PADDING, GridType } from '../../scene';
+import config from '../../config.ts';
 
 const PRESET_3: ArenaPreset = {
     name: 'Phase 3',
@@ -8,7 +9,7 @@ const PRESET_3: ArenaPreset = {
     height: 600,
     padding: DEFAULT_ARENA_PADDING,
     grid: { type: GridType.None },
-    backgroundImage: '/arena/ucob-p3.png',
+    backgroundImage: config.s3.cos + '/arena/ucob-p3.png',
     backgroundOpacity: 50,
 };
 
@@ -20,7 +21,7 @@ const PRESET_4: ArenaPreset = {
     height: 600,
     padding: DEFAULT_ARENA_PADDING,
     grid: { type: GridType.None },
-    backgroundImage: '/arena/ucob-p4.png',
+    backgroundImage: config.s3.cos + '/arena/ucob-p4.png',
     backgroundOpacity: 50,
 };
 

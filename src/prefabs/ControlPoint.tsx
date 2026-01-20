@@ -160,6 +160,11 @@ export function createControlPointManager<T extends Vector2d, S, P = unknown>(
                 endEditActivity(); // 标记结束编辑活动
                 setTransform(undefined);
 
+                // 重置cursor样式
+                if (stage) {
+                    stage.container().style.cursor = 'default';
+                }
+
                 const pointerPos = getHandleCenter({ ...transform, pointerPos: getPointerPos() });
 
                 const activeHandleId = transform?.handleId ?? 0;
@@ -182,7 +187,16 @@ export function createControlPointManager<T extends Vector2d, S, P = unknown>(
                 window.removeEventListener('mouseup', handleEnd, true);
                 window.removeEventListener('touchend', handleEnd, true);
             };
-        }, [transform, object, onActive, setTransform, onTransformEnd, getPointerPos, props]);
+        }, [transform, object, onActive, setTransform, onTransformEnd, getPointerPos, props, stage]);
+
+        // 当组件卸载时（如删除元素），重置cursor样式
+        useLayoutEffect(() => {
+            return () => {
+                if (transform && stage) {
+                    stage.container().style.cursor = 'default';
+                }
+            };
+        }, [transform, stage]);
 
         const setCursor = (cursor: string) => {
             if (stage) {

@@ -13,7 +13,7 @@ import {
     tokens,
 } from '@fluentui/react-components';
 import { LocalLanguageFilled, WeatherMoonFilled, WeatherSunnyFilled } from '@fluentui/react-icons';
-import React, { HTMLAttributes, useContext } from 'react';
+import React, { HTMLAttributes } from 'react';
 import { useTranslation } from 'react-i18next';
 import { OutPortal } from 'react-reverse-portal';
 import { AboutDialog } from './AboutDialog';
@@ -39,6 +39,7 @@ const useStyles = makeStyles({
         columnGap: GAP,
         minHeight: HEADER_HEIGHT,
         paddingInlineEnd: tokens.spacingHorizontalS,
+        overflow: 'hidden',
     },
     title: {
         display: 'flex',
@@ -48,6 +49,19 @@ const useStyles = makeStyles({
         gap: GAP,
         width: `calc(${PANEL_WIDTH}px - ${GAP})`,
         textDecoration: 'none',
+        flexShrink: 0,
+    },
+    titlePWA: {
+        display: 'flex',
+        alignItems: 'baseline',
+        boxSizing: 'border-box',
+        paddingLeft: tokens.spacingHorizontalM,
+        gap: GAP,
+        textDecoration: 'none',
+        flexShrink: 0,
+        maxWidth: '200px', // 在PWA模式下限制标题宽度
+        minWidth: '100px', // 确保最小宽度
+        overflow: 'hidden',
     },
     source: {
         display: 'inline-flex',
@@ -65,9 +79,12 @@ const useStyles = makeStyles({
     },
     commandBar: {
         flexGrow: 1,
+        minWidth: 0,
+        overflow: 'hidden',
     },
     link: {
         color: tokens.colorNeutralForeground2,
+        flexShrink: 0,
     },
     toggleLabel: {
         color: tokens.colorNeutralForeground2,
@@ -76,32 +93,43 @@ const useStyles = makeStyles({
     iconButton: {
         minWidth: '40px',
         width: '40px',
+        flexShrink: 0,
     },
     buttonGroup: {
         display: 'flex',
         alignItems: 'center',
         gap: tokens.spacingHorizontalS,
+        flexShrink: 0,
     },
     activeLanguageItem: {
         color: tokens.colorBrandForeground1,
         fontWeight: 600,
     },
+    hideOnSmall: {
+        '@media (max-width: 760px)': {
+            display: 'none',
+        },
+    },
 });
 
-export const SiteHeader: React.FC<HTMLAttributes<HTMLElement>> = ({ className, ...props }) => {
+interface SiteHeaderProps extends HTMLAttributes<HTMLElement> {
+    isPWA?: boolean;
+}
+
+export const SiteHeader: React.FC<SiteHeaderProps> = ({ className, isPWA = false, ...props }) => {
     const classes = useStyles();
     const { source } = useScene();
-    const toolbarNode = useContext(ToolbarContext);
-    const [, setHelpOpen] = useContext(HelpContext);
+    const toolbarNode = React.useContext(ToolbarContext);
+    const [, setHelpOpen] = React.useContext(HelpContext);
     const [tutorialOpen, setTutorialOpen] = React.useState(false);
-    const [darkMode, setDarkMode] = useContext(DarkModeContext);
+    const [darkMode, setDarkMode] = React.useContext(DarkModeContext);
     const { t, i18n } = useTranslation();
 
     const titleSize = source ? 400 : 500;
 
     return (
         <header className={mergeClasses(classes.root, className)} {...props}>
-            <div className={classes.title}>
+            <div className={isPWA ? classes.titlePWA : classes.title}>
                 <Text size={titleSize} weight="semibold">
                     XIVPlan
                 </Text>
@@ -111,15 +139,19 @@ export const SiteHeader: React.FC<HTMLAttributes<HTMLElement>> = ({ className, .
                 <OutPortal node={toolbarNode} />
             </div>
 
-            <Link onClick={() => setHelpOpen(true)} className={classes.link}>
+            <Link onClick={() => setHelpOpen(true)} className={mergeClasses(classes.link, classes.hideOnSmall)}>
                 {t('header.help')}
             </Link>
-            <Link onClick={() => setTutorialOpen(true)} className={classes.link}>
+            <Link onClick={() => setTutorialOpen(true)} className={mergeClasses(classes.link, classes.hideOnSmall)}>
                 {t('tutorial.title', '使用教程')}
             </Link>
-            <AnnouncementDialog className={classes.link} />
-            <AboutDialog className={classes.link} />
-            <ExternalLink className={classes.link} href="https://github.com/SeasonWings/xivplan" noIcon>
+            <AnnouncementDialog className={mergeClasses(classes.link, classes.hideOnSmall)} />
+            <AboutDialog className={mergeClasses(classes.link, classes.hideOnSmall)} />
+            <ExternalLink
+                className={mergeClasses(classes.link, classes.hideOnSmall)}
+                href="https://github.com/SeasonWings/xivplan"
+                noIcon
+            >
                 {t('header.github')}
             </ExternalLink>
             <div className={classes.buttonGroup}>

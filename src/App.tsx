@@ -10,12 +10,14 @@ import { useSceneFromUrl } from './file/share';
 import { FileOpenPage } from './FileOpenPage';
 import { HelpProvider } from './HelpProvider';
 import { MainPage } from './MainPage';
+import { PWAUpdatePrompt } from './PWAUpdatePrompt';
 import { SceneProvider } from './SceneProvider';
 import { SiteHeader } from './SiteHeader';
 import { ThemeProvider } from './ThemeProvider';
 import { useFileLoaderDropTarget } from './useFileLoader';
 import { HotkeyScopes } from './useHotkeys';
 import { TutorialProvider } from './tutorial/TutorialProvider';
+import { usePWA } from './usePWA';
 
 const useStyles = makeStyles({
     root: {
@@ -34,6 +36,7 @@ const useStyles = makeStyles({
             `,
 
         background: tokens.colorNeutralBackground3,
+        overflow: 'hidden', // 防止出现滚动条
     },
     header: {
         gridArea: 'header',
@@ -88,6 +91,7 @@ const LoadingFallback: React.FC = () => {
 const Layout: React.FC = () => {
     return (
         <ThemeProvider>
+            <PWAUpdatePrompt />
             <Suspense fallback={<LoadingFallback />}>
                 <BaseProviders>
                     <Root />
@@ -100,12 +104,13 @@ const Layout: React.FC = () => {
 const Root: React.FC = () => {
     const classes = useStyles();
     const { onDragOver, onDrop, renderModal } = useFileLoaderDropTarget();
+    const isPWA = usePWA(); // 获取PWA状态
 
     return (
         <>
             <div className={classes.root} onDragOver={onDragOver} onDrop={onDrop}>
                 <Toaster position="top" />
-                <SiteHeader className={classes.header} />
+                <SiteHeader className={classes.header} isPWA={isPWA} />
                 <Outlet />
             </div>
             {renderModal()}

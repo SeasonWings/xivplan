@@ -38,6 +38,9 @@ const useStyles = makeStyles({
     toolbar: {
         paddingLeft: 0,
         paddingRight: 0,
+        overflowX: 'auto',
+        flexWrap: 'nowrap',
+        scrollbarWidth: 'thin',
     },
 });
 

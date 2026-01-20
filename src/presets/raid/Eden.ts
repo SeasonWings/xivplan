@@ -1,4 +1,5 @@
 import { ArenaPreset, ArenaShape, DEFAULT_ARENA_PADDING, GridType } from '../../scene';
+import config from '../../config.ts';
 
 const PRESET_2: ArenaPreset = {
     name: "Eden's Gate: Descent (E2)",
@@ -37,7 +38,7 @@ const PRESET_8: ArenaPreset = {
         angularDivs: 8,
         radialDivs: 1,
     },
-    backgroundImage: '/arena/e8.svg',
+    backgroundImage: config.s3.cos + '/arena/e8.svg',
 };
 
 const PRESET_11: ArenaPreset = {
@@ -51,7 +52,7 @@ const PRESET_11: ArenaPreset = {
         angularDivs: 8,
         radialDivs: 1,
     },
-    backgroundImage: '/arena/e11.svg',
+    backgroundImage: config.s3.cos + '/arena/e11.svg',
 };
 
 const PRESET_12: ArenaPreset = {

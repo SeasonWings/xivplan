@@ -1,4 +1,5 @@
 import { ArenaPreset, ArenaShape, DEFAULT_ARENA_PADDING, GridType } from '../../scene';
+import config from '../../config.ts';
 
 const PRESET_3A: ArenaPreset = {
     name: 'Phase 3a',
@@ -8,7 +9,7 @@ const PRESET_3A: ArenaPreset = {
     height: 600,
     padding: DEFAULT_ARENA_PADDING,
     grid: { type: GridType.Radial, angularDivs: 8, radialDivs: 1 },
-    backgroundImage: '/arena/uwu-p3a.png',
+    backgroundImage: config.s3.cos + '/arena/uwu-p3a.png',
     backgroundOpacity: 35,
 };
 
@@ -20,7 +21,7 @@ const PRESET_3B: ArenaPreset = {
     height: 600,
     padding: DEFAULT_ARENA_PADDING,
     grid: { type: GridType.Radial, angularDivs: 8, radialDivs: 1 },
-    backgroundImage: '/arena/uwu-p3b.png',
+    backgroundImage: config.s3.cos + '/arena/uwu-p3b.png',
     backgroundOpacity: 35,
 };
 
@@ -32,7 +33,7 @@ const PRESET_3C: ArenaPreset = {
     height: 600,
     padding: DEFAULT_ARENA_PADDING,
     grid: { type: GridType.Radial, angularDivs: 8, radialDivs: 1 },
-    backgroundImage: '/arena/uwu-p3c.png',
+    backgroundImage: config.s3.cos + '/arena/uwu-p3c.png',
     backgroundOpacity: 35,
 };
 
@@ -44,7 +45,7 @@ const PRESET_5: ArenaPreset = {
     height: 600,
     padding: DEFAULT_ARENA_PADDING,
     grid: { type: GridType.None },
-    backgroundImage: '/arena/uwu-p5.png',
+    backgroundImage: config.s3.cos + '/arena/uwu-p5.png',
     backgroundOpacity: 35,
 };
 

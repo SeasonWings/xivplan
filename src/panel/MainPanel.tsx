@@ -58,10 +58,14 @@ const useStyles = makeStyles({
         gridArea: 'left-panel',
         width: `${PANEL_WIDTH}px`,
         userSelect: 'none',
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
     },
 
     container: {
-        height: 'calc(100% - 44px)',
+        flex: 1,
         overflow: 'auto',
+        scrollbarWidth: 'thin',
     },
 });

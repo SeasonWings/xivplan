@@ -1,4 +1,5 @@
 import { ArenaPreset, ArenaShape, DEFAULT_ARENA_PADDING, GridType } from '../../scene';
+import config from '../../config.ts';
 
 const PRESET_2: ArenaPreset = {
     name: 'AAC Light-heavyweight M2',
@@ -7,7 +8,7 @@ const PRESET_2: ArenaPreset = {
     height: 800,
     padding: 20,
     grid: { type: GridType.None },
-    backgroundImage: '/arena/arcadion2.svg',
+    backgroundImage: config.s3.cos + '/arena/arcadion2.svg',
 };
 
 const PRESET_3: ArenaPreset = {
@@ -17,7 +18,7 @@ const PRESET_3: ArenaPreset = {
     height: 600,
     padding: DEFAULT_ARENA_PADDING,
     grid: { type: GridType.None },
-    backgroundImage: '/arena/arcadion3.svg',
+    backgroundImage: config.s3.cos + '/arena/arcadion3.svg',
 };
 
 const PRESET_4: ArenaPreset = {
@@ -28,7 +29,7 @@ const PRESET_4: ArenaPreset = {
     height: 600,
     padding: DEFAULT_ARENA_PADDING,
     grid: { type: GridType.Rectangular, rows: 4, columns: 4 },
-    backgroundImage: '/arena/arcadion4.svg',
+    backgroundImage: config.s3.cos + '/arena/arcadion4.svg',
 };
 
 const PRESET_4_PHASE_2: ArenaPreset = {
@@ -39,7 +40,7 @@ const PRESET_4_PHASE_2: ArenaPreset = {
     height: 450,
     padding: DEFAULT_ARENA_PADDING,
     grid: { type: GridType.Rectangular, rows: 3, columns: 4 },
-    backgroundImage: '/arena/arcadion4-p2.svg',
+    backgroundImage: config.s3.cos + '/arena/arcadion4-p2.svg',
 };
 
 const PRESET_6: ArenaPreset = {
@@ -50,7 +51,7 @@ const PRESET_6: ArenaPreset = {
     height: 600,
     padding: DEFAULT_ARENA_PADDING,
     grid: { type: GridType.None },
-    backgroundImage: '/arena/arcadion6.svg',
+    backgroundImage: config.s3.cos + '/arena/arcadion6.svg',
 };
 
 const PRESET_6_QUICKSAND: ArenaPreset = {
@@ -61,7 +62,7 @@ const PRESET_6_QUICKSAND: ArenaPreset = {
     height: 600,
     padding: DEFAULT_ARENA_PADDING,
     grid: { type: GridType.None },
-    backgroundImage: '/arena/arcadion6-quicksand.svg',
+    backgroundImage: config.s3.cos + '/arena/arcadion6-quicksand.svg',
 };
 
 const PRESET_6_QUICKSAND_2: ArenaPreset = {
@@ -72,7 +73,7 @@ const PRESET_6_QUICKSAND_2: ArenaPreset = {
     height: 600,
     padding: DEFAULT_ARENA_PADDING,
     grid: { type: GridType.None },
-    backgroundImage: '/arena/arcadion6-quicksand2.svg',
+    backgroundImage: config.s3.cos + '/arena/arcadion6-quicksand2.svg',
 };
 
 const PRESET_6_RIVER: ArenaPreset = {
@@ -83,7 +84,7 @@ const PRESET_6_RIVER: ArenaPreset = {
     height: 600,
     padding: DEFAULT_ARENA_PADDING,
     grid: { type: GridType.None },
-    backgroundImage: '/arena/arcadion6-river.svg',
+    backgroundImage: config.s3.cos + '/arena/arcadion6-river.svg',
 };
 
 const PRESET_6_VOLCANO: ArenaPreset = {
@@ -94,7 +95,7 @@ const PRESET_6_VOLCANO: ArenaPreset = {
     height: 600,
     padding: DEFAULT_ARENA_PADDING,
     grid: { type: GridType.None },
-    backgroundImage: '/arena/arcadion6-volcano.svg',
+    backgroundImage: config.s3.cos + '/arena/arcadion6-volcano.svg',
 };
 
 const PRESET_7: ArenaPreset = {
@@ -105,7 +106,7 @@ const PRESET_7: ArenaPreset = {
     height: 600,
     padding: DEFAULT_ARENA_PADDING,
     grid: { type: GridType.Rectangular, rows: 4, columns: 4 },
-    backgroundImage: '/arena/arcadion7.svg',
+    backgroundImage: config.s3.cos + '/arena/arcadion7.svg',
 };
 
 const PRESET_7_PHASE_2: ArenaPreset = {
@@ -116,7 +117,7 @@ const PRESET_7_PHASE_2: ArenaPreset = {
     height: 600,
     padding: DEFAULT_ARENA_PADDING,
     grid: { type: GridType.CustomRectangular, rows: [-150, 150], columns: [0] },
-    backgroundImage: '/arena/arcadion7-p2.svg',
+    backgroundImage: config.s3.cos + '/arena/arcadion7-p2.svg',
 };
 
 const PRESET_7_PHASE_3: ArenaPreset = {
@@ -127,7 +128,7 @@ const PRESET_7_PHASE_3: ArenaPreset = {
     height: 600,
     padding: DEFAULT_ARENA_PADDING,
     grid: { type: GridType.Rectangular, rows: 8, columns: 8 },
-    backgroundImage: '/arena/arcadion7-p3.svg',
+    backgroundImage: config.s3.cos + '/arena/arcadion7-p3.svg',
 };
 
 const PRESET_8: ArenaPreset = {
@@ -138,7 +139,7 @@ const PRESET_8: ArenaPreset = {
     height: 800,
     padding: 20,
     grid: { type: GridType.None },
-    backgroundImage: '/arena/arcadion8.svg',
+    backgroundImage: config.s3.cos + '/arena/arcadion8.svg',
 };
 
 const PRESET_8_PHASE_2: ArenaPreset = {
@@ -149,7 +150,7 @@ const PRESET_8_PHASE_2: ArenaPreset = {
     height: 580,
     padding: DEFAULT_ARENA_PADDING,
     grid: { type: GridType.None },
-    backgroundImage: '/arena/arcadion8-p2.svg',
+    backgroundImage: config.s3.cos + '/arena/arcadion8-p2.svg',
 };
 
 const PRESET_8_SAVAGE_PHASE_2: ArenaPreset = {
@@ -160,7 +161,7 @@ const PRESET_8_SAVAGE_PHASE_2: ArenaPreset = {
     height: 840,
     padding: 0,
     grid: { type: GridType.None },
-    backgroundImage: '/arena/arcadion8-sp2.svg',
+    backgroundImage: config.s3.cos + '/arena/arcadion8-sp2.svg',
 };
 
 const PRESET_8_SAVAGE_PHASE_2_MIRROR: ArenaPreset = {
@@ -171,7 +172,7 @@ const PRESET_8_SAVAGE_PHASE_2_MIRROR: ArenaPreset = {
     height: 840,
     padding: 0,
     grid: { type: GridType.None },
-    backgroundImage: '/arena/arcadion8-sp2-mirror.svg',
+    backgroundImage: config.s3.cos + '/arena/arcadion8-sp2-mirror.svg',
 };
 
 export const ARENA_PRESETS_RAID_ARCADION = [

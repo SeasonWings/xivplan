@@ -1,4 +1,5 @@
 import { ArenaPreset, ArenaShape, DEFAULT_ARENA_PADDING, DEFAULT_RADIAL_TICKS, GridType } from '../../scene';
+import config from '../../config.ts';
 
 const PRESET_1: ArenaPreset = {
     name: 'Phase 1',
@@ -13,7 +14,7 @@ const PRESET_1: ArenaPreset = {
         radialDivs: 1,
     },
     ticks: DEFAULT_RADIAL_TICKS,
-    backgroundImage: '/arena/e11.svg',
+    backgroundImage: config.s3.cos + '/arena/e11.svg',
 };
 
 export const ARENA_PRESETS_ULTIMATE_FRU = [PRESET_1];

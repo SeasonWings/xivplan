@@ -10,3 +10,39 @@ body {
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
 }
+
+/* PWA模式下无窗口尺寸限制 */
+@media (display-mode: standalone) {
+  html {
+    min-width: 0;
+    min-height: 0;
+  }
+  
+  body {
+    min-width: 0;
+    min-height: 0;
+  }
+}
+
+/* 侧边栏滑入动画 */
+@keyframes slideInLeft {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}

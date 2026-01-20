@@ -1,4 +1,5 @@
 import { ArenaPreset, ArenaShape, DEFAULT_ARENA_PADDING, GridType } from '../../scene';
+import config from '../../config.ts';
 
 const PRESET_1: ArenaPreset = {
     name: 'Phase 1',
@@ -8,7 +9,7 @@ const PRESET_1: ArenaPreset = {
     height: 600,
     padding: DEFAULT_ARENA_PADDING,
     grid: { type: GridType.None },
-    backgroundImage: '/arena/tea-p1.png',
+    backgroundImage: config.s3.cos + '/arena/tea-p1.png',
     backgroundOpacity: 35,
 };
 
@@ -20,7 +21,7 @@ const PRESET_2: ArenaPreset = {
     height: 600,
     padding: DEFAULT_ARENA_PADDING,
     grid: { type: GridType.None },
-    backgroundImage: '/arena/tea-p2.png',
+    backgroundImage: config.s3.cos + '/arena/tea-p2.png',
     backgroundOpacity: 50,
 };
 
@@ -32,7 +33,7 @@ const PRESET_3: ArenaPreset = {
     height: 600,
     padding: DEFAULT_ARENA_PADDING,
     grid: { type: GridType.None },
-    backgroundImage: '/arena/tea-p3.png',
+    backgroundImage: config.s3.cos + '/arena/tea-p3.png',
     backgroundOpacity: 35,
 };
 
@@ -44,7 +45,7 @@ const PRESET_4: ArenaPreset = {
     height: 600,
     padding: DEFAULT_ARENA_PADDING,
     grid: { type: GridType.None },
-    backgroundImage: '/arena/tea-p4.png',
+    backgroundImage: config.s3.cos + '/arena/tea-p4.png',
     backgroundOpacity: 35,
 };
 

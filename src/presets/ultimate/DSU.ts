@@ -1,4 +1,5 @@
 import { ArenaPreset, ArenaShape, DEFAULT_ARENA_PADDING, GridType, Ticks, TickType } from '../../scene';
+import config from '../../config.ts';
 
 const RADIAL_TICKS: Ticks = {
     type: TickType.Radial,
@@ -23,7 +24,7 @@ const PRESET_1: ArenaPreset = {
     padding: DEFAULT_ARENA_PADDING,
     grid: { type: GridType.None },
     ticks: RECT_TICKS,
-    backgroundImage: '/arena/dsu-p1.png',
+    backgroundImage: config.s3.cos + '/arena/dsu-p1.png',
     backgroundOpacity: 35,
 };
 
@@ -36,7 +37,7 @@ const PRESET_2A: ArenaPreset = {
     padding: DEFAULT_ARENA_PADDING,
     grid: { type: GridType.None },
     ticks: RADIAL_TICKS,
-    backgroundImage: '/arena/dsu-p2a.png',
+    backgroundImage: config.s3.cos + '/arena/dsu-p2a.png',
     backgroundOpacity: 35,
 };
 
@@ -49,7 +50,7 @@ const PRESET_2B: ArenaPreset = {
     padding: DEFAULT_ARENA_PADDING,
     grid: { type: GridType.None },
     ticks: RADIAL_TICKS,
-    backgroundImage: '/arena/dsu-p2b.png',
+    backgroundImage: config.s3.cos + '/arena/dsu-p2b.png',
     backgroundOpacity: 35,
 };
 
@@ -62,7 +63,7 @@ const PRESET_3: ArenaPreset = {
     padding: DEFAULT_ARENA_PADDING,
     grid: { type: GridType.Rectangular, rows: 4, columns: 4 },
     ticks: RECT_TICKS,
-    backgroundImage: '/arena/dsu-p3.png',
+    backgroundImage: config.s3.cos + '/arena/dsu-p3.png',
     backgroundOpacity: 25,
 };
 
@@ -75,7 +76,7 @@ const PRESET_4: ArenaPreset = {
     padding: DEFAULT_ARENA_PADDING,
     grid: { type: GridType.None },
     ticks: RADIAL_TICKS,
-    backgroundImage: '/arena/dsu-p4.png',
+    backgroundImage: config.s3.cos + '/arena/dsu-p4.png',
     backgroundOpacity: 50,
 };
 
@@ -88,7 +89,7 @@ const PRESET_5: ArenaPreset = {
     padding: DEFAULT_ARENA_PADDING,
     grid: { type: GridType.None },
     ticks: RADIAL_TICKS,
-    backgroundImage: '/arena/dsu-p5.png',
+    backgroundImage: config.s3.cos + '/arena/dsu-p5.png',
     backgroundOpacity: 35,
 };
 

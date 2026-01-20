@@ -1,5 +1,5 @@
-// @ts-ignore
-import { ArenaPreset, ArenaShape, DEFAULT_ARENA_PADDING, GridType } from '../../scene';
+import { ArenaPreset, ArenaShape, GridType } from '../../scene';
+import config from '../../config.ts';
 
 const BATTLE_1: ArenaPreset = {
     name: '伏凶夔牛岛-万毒三老',
@@ -8,7 +8,7 @@ const BATTLE_1: ArenaPreset = {
     height: 600,
     padding: 30,
     grid: { type: GridType.None },
-    backgroundImage: '/arena/zxsj/nightmare/fxknd/fxknd_b1.png',
+    backgroundImage: config.s3.cos + '/arena/zxsj/nightmare/fxknd/fxknd_b1.png',
 };
 const BATTLE_3: ArenaPreset = {
     name: '伏凶夔牛岛-髯奴',
@@ -17,7 +17,7 @@ const BATTLE_3: ArenaPreset = {
     height: 600,
     padding: 30,
     grid: { type: GridType.None },
-    backgroundImage: '/arena/zxsj/nightmare/fxknd/fxknd_b3.png',
+    backgroundImage: config.s3.cos + '/arena/zxsj/nightmare/fxknd/fxknd_b3.png',
 };
 const BATTLE_4: ArenaPreset = {
     name: '伏凶夔牛岛-夔牛-无边框',
@@ -26,7 +26,7 @@ const BATTLE_4: ArenaPreset = {
     height: 600,
     padding: 30,
     grid: { type: GridType.None },
-    backgroundImage: '/arena/zxsj/nightmare/fxknd/fxknd_b4.png',
+    backgroundImage: config.s3.cos + '/arena/zxsj/nightmare/fxknd/fxknd_b4.png',
 };
 
 export const ARENA_PRESETS_NIGHTMARE_FXKND = [BATTLE_1, BATTLE_3, BATTLE_4];
