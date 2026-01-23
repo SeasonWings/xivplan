@@ -27,6 +27,13 @@ import { ToolbarContext } from './ToolbarContext';
 import { useIsDirty } from './useIsDirty';
 import { removeFileExtension } from './util';
 import { TutorialDialog } from './tutorial/TutorialDialog';
+import { useAuth } from './auth/AuthContext';
+import { LoginDialog } from './auth/LoginDialog';
+import { RegisterDialog } from './auth/RegisterDialog';
+import { UserProfileDialog } from './auth/UserProfileDialog';
+import { ForgetPasswordDialog } from './auth/ForgetPasswordDialog';
+import { ResetPasswordDialog } from './auth/ResetPasswordDialog';
+import { Avatar } from '@fluentui/react-components';
 
 const GAP = tokens.spacingHorizontalL;
 const HEADER_HEIGHT = '48px';
@@ -96,6 +103,19 @@ export const SiteHeader: React.FC<HTMLAttributes<HTMLElement>> = ({ className, .
     const [tutorialOpen, setTutorialOpen] = React.useState(false);
     const [darkMode, setDarkMode] = useContext(DarkModeContext);
     const { t, i18n } = useTranslation();
+    const { state: authState, logout } = useAuth();
+
+    // 认证对话框状态
+    const [showLoginDialog, setShowLoginDialog] = React.useState(false);
+    const [showRegisterDialog, setShowRegisterDialog] = React.useState(false);
+    const [showProfileDialog, setShowProfileDialog] = React.useState(false);
+    const [showForgetPasswordDialog, setShowForgetPasswordDialog] = React.useState(false);
+    const [showResetPasswordDialog, setShowResetPasswordDialog] = React.useState(false);
+    const [forgetPasswordEmail, setForgetPasswordEmail] = React.useState('');
+
+    const handleLogout = async () => {
+        await logout();
+    };
 
     const titleSize = source ? 400 : 500;
 
@@ -150,9 +170,114 @@ export const SiteHeader: React.FC<HTMLAttributes<HTMLElement>> = ({ className, .
                     icon={darkMode ? <WeatherSunnyFilled /> : <WeatherMoonFilled />}
                     onClick={() => setDarkMode(!darkMode)}
                 />
+                {/* 用户菜单 - 放在暗黑模式切换按钮右侧 */}
+                <Menu positioning="below-end">
+                    <MenuTrigger disableButtonEnhancement>
+                        <Button
+                            appearance="subtle"
+                            icon={
+                                authState.isAuthenticated ? (
+                                    <Avatar
+                                        image={{ src: authState.user?.avatar || undefined }}
+                                        initials={authState.user?.username?.charAt(0).toUpperCase() || '?'}
+                                        name={authState.user?.username || 'Guest'}
+                                    />
+                                ) : undefined
+                            }
+                        >
+                            {!authState.isAuthenticated && t('toolbar.signIn', '登录')}
+                        </Button>
+                    </MenuTrigger>
+                    <MenuPopover>
+                        <MenuList>
+                            {!authState.isAuthenticated ? (
+                                <>
+                                    <MenuItem
+                                        onClick={() => {
+                                            setShowLoginDialog(true);
+                                        }}
+                                    >
+                                        {t('toolbar.signIn', '登录')}
+                                    </MenuItem>
+                                    <MenuItem
+                                        onClick={() => {
+                                            setShowRegisterDialog(true);
+                                        }}
+                                    >
+                                        {t('toolbar.signUp', '注册')}
+                                    </MenuItem>
+                                </>
+                            ) : (
+                                <>
+                                    <MenuItem onClick={() => setShowProfileDialog(true)}>
+                                        {t('toolbar.profile', '个人资料')}
+                                    </MenuItem>
+                                    <MenuItem onClick={handleLogout}>{t('toolbar.signOut', '退出登录')}</MenuItem>
+                                </>
+                            )}
+                        </MenuList>
+                    </MenuPopover>
+                </Menu>
             </div>
 
             <TutorialDialog open={tutorialOpen} onOpenChange={(_, data) => setTutorialOpen(data.open)} />
+
+            {/* 认证对话框 */}
+            <LoginDialog
+                open={showLoginDialog}
+                onClose={() => setShowLoginDialog(false)}
+                onSwitchToRegister={() => {
+                    setShowLoginDialog(false);
+                    setShowRegisterDialog(true);
+                }}
+                onShowForgetPassword={() => {
+                    setShowLoginDialog(false);
+                    setShowForgetPasswordDialog(true);
+                }}
+            />
+            <RegisterDialog
+                open={showRegisterDialog}
+                onClose={() => setShowRegisterDialog(false)}
+                onSwitchToLogin={() => {
+                    setShowRegisterDialog(false);
+                    setShowLoginDialog(true);
+                }}
+            />
+            <UserProfileDialog open={showProfileDialog} onClose={() => setShowProfileDialog(false)} />
+
+            {/* 忘记密码对话框 */}
+            <ForgetPasswordDialog
+                open={showForgetPasswordDialog}
+                onClose={() => {
+                    setShowForgetPasswordDialog(false);
+                    setForgetPasswordEmail('');
+                }}
+                onBackToLogin={() => {
+                    setShowForgetPasswordDialog(false);
+                    setShowLoginDialog(true);
+                    setForgetPasswordEmail('');
+                }}
+                onSubmitSuccess={(email) => {
+                    setForgetPasswordEmail(email);
+                    setShowForgetPasswordDialog(false);
+                    setShowResetPasswordDialog(true);
+                }}
+            />
+
+            {/* 重置密码对话框 */}
+            <ResetPasswordDialog
+                open={showResetPasswordDialog}
+                onClose={() => {
+                    setShowResetPasswordDialog(false);
+                    setForgetPasswordEmail('');
+                }}
+                onBackToLogin={() => {
+                    setShowResetPasswordDialog(false);
+                    setShowLoginDialog(true);
+                    setForgetPasswordEmail('');
+                }}
+                email={forgetPasswordEmail}
+            />
         </header>
     );
 };

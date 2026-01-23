@@ -18,6 +18,7 @@ import {
     SaveEditRegular,
     SaveRegular,
     VideoRecordingRegular,
+    PeopleTeamRegular,
 } from '@fluentui/react-icons';
 import React, { ReactElement, useContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -46,6 +47,8 @@ interface MainToolbarProps {
     onToggleCollaborationPanel?: (show: boolean) => void;
     showAnimationPanel?: boolean;
     onToggleAnimationPanel?: (show: boolean) => void;
+    showCommunityPanel?: boolean;
+    onToggleCommunityPanel?: (show: boolean) => void;
 }
 
 export const MainToolbar: React.FC<MainToolbarProps> = ({
@@ -53,6 +56,8 @@ export const MainToolbar: React.FC<MainToolbarProps> = ({
     onToggleCollaborationPanel,
     showAnimationPanel = false,
     onToggleAnimationPanel,
+    showCommunityPanel = false,
+    onToggleCommunityPanel,
 }) => {
     const classes = useStyles();
     const { t } = useTranslation();
@@ -124,6 +129,14 @@ export const MainToolbar: React.FC<MainToolbarProps> = ({
                         data-tutorial="animation-open"
                     >
                         {t('toolbar.animation', '动画')}
+                    </CollapsableToolbarButton>
+
+                    <CollapsableToolbarButton
+                        icon={<PeopleTeamRegular />}
+                        onClick={() => onToggleCommunityPanel?.(!showCommunityPanel)}
+                        className={showCommunityPanel ? 'active' : undefined}
+                    >
+                        {t('toolbar.community', '社区')}
                     </CollapsableToolbarButton>
                 </Toolbar>
             </InPortal>

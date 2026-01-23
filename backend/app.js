@@ -1,51 +1,59 @@
+// 加载环境变量
+require('dotenv').config();
+
 const WebSocket = require('ws');
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const express = require('express');
+const cors = require('cors');
+const bodyParser = require('body-parser');
+const { testConnection } = require('./db');
+const { testEmailConnection } = require('./email');
+const communityRoutes = require('./routes/community');
+const authRoutes = require('./routes/auth');
+const logger = require('./services/logger');
 
-// 创建HTTP服务器
-const server = http.createServer((req, res) => {
-    // 简单的文件服务，用于开发环境
-    const filePath = path.join(__dirname, req.url === '/' ? '/dist/index.html' : req.url);
-    const extname = path.extname(filePath);
-    let contentType = 'text/html';
+// 创建Express应用
+const app = express();
 
-    switch (extname) {
-        case '.js':
-            contentType = 'text/javascript';
-            break;
-        case '.css':
-            contentType = 'text/css';
-            break;
-        case '.json':
-            contentType = 'application/json';
-            break;
-        case '.png':
-            contentType = 'image/png';
-            break;
-        case '.jpg':
-            contentType = 'image/jpeg';
-            break;
-        case '.svg':
-            contentType = 'image/svg+xml';
-            break;
+// 跨域配置
+app.use((req, res, next) => {
+    // 设置CORS响应头
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+
+    console.log(`[CORS] ${req.method} ${req.url} from ${req.headers.origin || 'no-origin'}`);
+
+    // 处理OPTIONS预检请求
+    if (req.method === 'OPTIONS') {
+        console.log('[CORS] OPTIONS preflight handled');
+        return res.status(200).end();
     }
 
-    fs.readFile(filePath, (error, content) => {
-        if (error) {
-            if (error.code === 'ENOENT') {
-                res.writeHead(404);
-                res.end('Not Found');
-            } else {
-                res.writeHead(500);
-                res.end('Server Error');
-            }
-        } else {
-            res.writeHead(200, { 'Content-Type': contentType });
-            res.end(content, 'utf-8');
-        }
-    });
+    next();
 });
+// 中间件配置
+app.use(bodyParser.json({ limit: '50mb' })); // 支持大文件上传
+app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }));
+app.use(logger.createMiddleware());
+
+// API路由
+app.use('/api/auth', authRoutes);
+app.use('/api/community', communityRoutes);
+
+// 健康检查端点
+app.get('/api/health', (req, res) => {
+    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// 静态文件服务(开发环境)
+app.use(express.static(path.join(__dirname, 'dist')));
+
+// 创建HTTP服务器
+const server = http.createServer(app);
 
 // 创建WebSocket服务器
 const wss = new WebSocket.Server({ server });
@@ -482,10 +490,28 @@ wss.on('connection', (ws) => {
 });
 
 // 启动服务器
-const PORT = process.env.PORT || 9000;
+const PORT = process.env.PORT || 3000;
+
+// 测试数据库连接
+testConnection().then((connected) => {
+    if (!connected) {
+        console.warn('⚠️  Database connection failed. Community features will not be available.');
+        console.warn('⚠️  Please configure database settings in environment variables or db.js');
+    }
+});
+
+// 测试邮件服务连接
+testEmailConnection().then((connected) => {
+    if (!connected) {
+        console.warn('⚠️  Email service connection failed. Email features will not be available.');
+        console.warn('⚠️  Please configure email settings in environment variables or email.js');
+    }
+});
+
 server.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
     console.log(`WebSocket server available at ws://localhost:${PORT}`);
+    console.log(`REST API available at http://localhost:${PORT}/api`);
 });
 
 // 定期清理长时间未活跃的房间（超过1小时）

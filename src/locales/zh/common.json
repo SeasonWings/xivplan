@@ -98,7 +98,8 @@
     "download": "下载",
     "saveAsEllipsis": "另存为...",
     "collaboration": "协作",
-    "animation": "动画"
+    "animation": "动画",
+    "community": "社区"
   },
   "actions": {
     "apply": "应用",
@@ -570,5 +571,103 @@
       "title": "动画功能教程引导",
       "description": "学习如何使用动画功能"
     }
+  },
+  "community": {
+    "title": "社区战术板",
+    "share": "分享战术板",
+    "search": "搜索战术板...",
+    "searchBtn": "搜索",
+    "loading": "加载中...",
+    "empty": "暂无战术板",
+    "by": "作者",
+    "views": "浏览量",
+    "downloads": "导入次数",
+    "likes": "点赞数",
+    "like": "点赞",
+    "download": "导入",
+    "close": "关闭",
+    "prev": "上一页",
+    "next": "下一页",
+    "dungeonName": "副本",
+    "description": "描述",
+    "category": {
+      "all": "全部",
+      "raid": "零式",
+      "ultimate": "绝境战",
+      "trial": "讨伐战",
+      "criterion": "异闻",
+      "general": "通用"
+    },
+    "sort": {
+      "latest": "最新",
+      "popular": "最热",
+      "downloads": "下载最多",
+      "likes": "点赞最多"
+    },
+    "upload": {
+      "title": "分享战术板到社区",
+      "titleLabel": "标题",
+      "titlePlaceholder": "为你的战术板起一个标题",
+      "author": "作者",
+      "authorPlaceholder": "你的名字",
+      "category": "分类",
+      "dungeonName": "副本名称",
+      "dungeonPlaceholder": "例如:绝龙诗战争",
+      "description": "描述",
+      "descriptionPlaceholder": "描述这个战术板的用途和特点",
+      "cancel": "取消",
+      "submit": "分享",
+      "uploading": "上传中...",
+      "error": {
+        "required": "请填写标题和作者",
+        "noScene": "没有可分享的战术板",
+        "failed": "上传失败",
+        "network": "网络错误,请稍后重试"
+      }
+    },
+    "error": {
+      "parseError": "数据解析失败,请稍后重试",
+      "downloadError": "下载失败,请稍后重试",
+      "noSceneData": "战术板数据不存在"
+    }
+  },
+  "auth": {
+    "usernameRequired": "用户名不能为空",
+    "usernameTooShort": "用户名至少需要3个字符",
+    "usernameTooLong": "用户名不能超过20个字符",
+    "profileUpdateFailed": "资料更新失败",
+    "avatarUploadFailed": "头像上传失败",
+    "avatarTooLarge": "头像文件过大，请选择小于100KB的图片",
+    "invalidImageFormat": "请选择有效的图片格式",
+    "editProfile": "编辑资料",
+    "changeProfile": "更换头像",
+    "supportedImageFormats": "支持 JPG, PNG, GIF 格式",
+    "usernamePlaceholder": "请输入用户名",
+    "bioPlaceholder": "请输入个人简介",
+    "saveChanges": "保存更改",
+    "loading": "加载中...",
+    "emailRequired": "邮箱不能为空",
+    "invalidEmailFormat": "邮箱格式不正确",
+    "passwordRequired": "密码不能为空",
+    "passwordTooShort": "密码至少需要6个字符",
+    "verificationCodeRequired": "验证码不能为空",
+    "invalidVerificationCode": "验证码应为6位数字",
+    "failedToSendCode": "发送验证码失败",
+    "registrationFailed": "注册失败",
+    "register": "注册",
+    "registering": "注册中...",
+    "switchToRegister": "去注册",
+    "switchToLogin": "去登录",
+    "sending": "发送中...",
+    "resend": "重新发送",
+    "sendCode": "发送验证码",
+    "verificationCodePlaceholder": "请输入验证码",
+    "emailPlaceholder": "请输入邮箱",
+    "passwordPlaceholder": "请输入密码",
+    "identifierRequired": "用户名或邮箱不能为空",
+    "identifierPlaceholder": "请输入用户名或邮箱",
+    "login": "登录",
+    "loggingIn": "登录中...",
+    "loginFailed": "登录失败"
   }
 }

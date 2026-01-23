@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Circle, Line } from 'react-konva';
+import { rotateGroupObjects } from '../groupOperations';
 import { useScene } from '../SceneProvider';
 import { getPointerAngle, snapAngle } from '../coord';
 import { getResizeCursor } from '../cursor';
@@ -48,12 +49,20 @@ export const RadiusObjectContainer: React.FC<RadiusObjectContainerProps> = ({
     allowRotate,
     allowInnerRadius,
 }) => {
-    const { dispatch } = useScene();
+    const { step, dispatch } = useScene();
     const showResizer = useShowResizer(object);
     const [isResizing, setResizing] = useState(false);
     const isDragging = useIsDragging(object);
 
-    const updateObject = (state: RadiusObjectState) => {
+    const handleTransformStart = () => {
+        // 旋转开始，记录初始状态到撤销栈
+        if (isRotateable(object) && object.groupId) {
+            const rotatedObjects = rotateGroupObjects(step.objects, [object], object.rotation);
+            dispatch({ type: 'update', value: rotatedObjects, transient: false });
+        }
+    };
+
+    const updateObject = (state: RadiusObjectState, transient = false) => {
         state.rotation = Math.round(state.rotation);
 
         if (!stateChanged(object, state)) {
@@ -69,8 +78,25 @@ export const RadiusObjectContainer: React.FC<RadiusObjectContainerProps> = ({
             update.innerRadius = state.innerRadius;
         }
 
-        dispatch({ type: 'update', value: { ...object, ...update } as SceneObject });
-        onTransformEnd?.(state);
+        // 如果是旋转操作且对象在组中，同步旋转同组的所有对象
+        if (isRotateable(object) && update.rotation !== undefined && object.groupId) {
+            const updatedObjects = rotateGroupObjects(step.objects, [object], state.rotation);
+            dispatch({ type: 'update', value: updatedObjects, transient });
+        } else {
+            dispatch({ type: 'update', value: { ...object, ...update } as SceneObject, transient });
+        }
+
+        if (!transient) {
+            onTransformEnd?.(state);
+        }
+    };
+
+    const handleTransformMove = (state: RadiusObjectState) => {
+        updateObject(state, true); // 拖拽过程中使用 transient 标记
+    };
+
+    const handleTransformEnd = (state: RadiusObjectState) => {
+        updateObject(state, false); // 结束时提交
     };
 
     return (
@@ -80,7 +106,9 @@ export const RadiusObjectContainer: React.FC<RadiusObjectContainerProps> = ({
                     object={object}
                     onActive={setResizing}
                     visible={showResizer && !isDragging}
-                    onTransformEnd={updateObject}
+                    onTransformStart={handleTransformStart}
+                    onTransformMove={handleTransformMove}
+                    onTransformEnd={handleTransformEnd}
                     allowRotate={allowRotate}
                     allowInnerRadius={allowInnerRadius}
                 >

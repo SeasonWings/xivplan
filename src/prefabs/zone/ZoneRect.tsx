@@ -5,6 +5,7 @@ import Icon from '../../assets/zone/square.svg?react';
 import { getPointerAngle, rotateCoord, snapAngle } from '../../coord';
 import { getResizeCursor } from '../../cursor';
 import { getDragOffset, registerDropHandler } from '../../DropHandler';
+import { rotateGroupObjects } from '../../groupOperations';
 import AoeRect from '../../lib/aoe/AoeRect';
 import { DetailsItem } from '../../panel/DetailsItem';
 import { ListComponentProps, registerListComponent } from '../../panel/ListComponentRegistry';
@@ -413,12 +414,20 @@ function stateChanged(object: RectangleZone, state: RectangleState) {
 }
 
 const RectangleContainer: React.FC<RendererProps<RectangleZone>> = ({ object }) => {
-    const { dispatch } = useScene();
+    const { step, dispatch } = useScene();
     const showResizer = useShowResizer(object);
     const [resizing, setResizing] = useState(false);
     const dragging = useIsDragging(object);
 
-    const updateObject = (state: RectangleState) => {
+    const handleTransformStart = () => {
+        // 旋转开始，记录初始状态到撤销栈
+        if (object.groupId) {
+            const rotatedObjects = rotateGroupObjects(step.objects, [object], object.rotation);
+            dispatch({ type: 'update', value: rotatedObjects, transient: false });
+        }
+    };
+
+    const updateObject = (state: RectangleState, transient = false) => {
         state.rotation = Math.round(state.rotation);
         state.width = Math.round(state.width);
         state.height = Math.round(state.height);
@@ -431,10 +440,32 @@ const RectangleContainer: React.FC<RendererProps<RectangleZone>> = ({ object }) 
             return;
         }
 
-        dispatch({
-            type: 'update',
-            value: { ...object, width: state.width, height: state.height, rotation: state.rotation, x: newX, y: newY },
-        });
+        // 如果是旋转操作且对象在组中，同步旋转同组的所有对象
+        if (state.rotation !== object.rotation && object.groupId) {
+            const updatedObjects = rotateGroupObjects(step.objects, [object], state.rotation);
+            dispatch({ type: 'update', value: updatedObjects, transient });
+        } else {
+            dispatch({
+                type: 'update',
+                value: {
+                    ...object,
+                    width: state.width,
+                    height: state.height,
+                    rotation: state.rotation,
+                    x: newX,
+                    y: newY,
+                },
+                transient,
+            });
+        }
+    };
+
+    const handleTransformMove = (state: RectangleState) => {
+        updateObject(state, true);
+    };
+
+    const handleTransformEnd = (state: RectangleState) => {
+        updateObject(state, false);
     };
 
     return (
@@ -444,7 +475,9 @@ const RectangleContainer: React.FC<RendererProps<RectangleZone>> = ({ object }) 
                     object={object}
                     onActive={setResizing}
                     visible={showResizer && !dragging}
-                    onTransformEnd={updateObject}
+                    onTransformStart={handleTransformStart}
+                    onTransformMove={handleTransformMove}
+                    onTransformEnd={handleTransformEnd}
                 >
                     {(props) => (
                         <RectangleRenderer object={object} isDragging={dragging} isResizing={resizing} {...props} />

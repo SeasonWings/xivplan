@@ -7,6 +7,7 @@ import { useScene } from '../../SceneProvider';
 import Icon from '../../assets/zone/arc.svg?react';
 import { getPointerAngle, snapAngle } from '../../coord';
 import { getResizeCursor } from '../../cursor';
+import { rotateGroupObjects } from '../../groupOperations';
 import AoeArc from '../../lib/aoe/AoeArc';
 import { DetailsItem } from '../../panel/DetailsItem';
 import { ListComponentProps, registerListComponent } from '../../panel/ListComponentRegistry';
@@ -205,12 +206,20 @@ function stateChanged(object: ArcZone, state: ArcState) {
 }
 
 const ArcContainer: React.FC<RendererProps<ArcZone>> = ({ object }) => {
-    const { dispatch } = useScene();
+    const { step, dispatch } = useScene();
     const showResizer = useShowResizer(object);
     const [resizing, setResizing] = useState(false);
     const dragging = useIsDragging(object);
 
-    const updateObject = (state: ArcState) => {
+    const handleTransformStart = () => {
+        // 旋转开始，记录初始状态到撤销栈
+        if (object.groupId) {
+            const rotatedObjects = rotateGroupObjects(step.objects, [object], object.rotation);
+            dispatch({ type: 'update', value: rotatedObjects, transient: false });
+        }
+    };
+
+    const updateObject = (state: ArcState, transient = false) => {
         state.rotation = Math.round(state.rotation);
         state.coneAngle = Math.round(state.coneAngle);
 
@@ -218,7 +227,21 @@ const ArcContainer: React.FC<RendererProps<ArcZone>> = ({ object }) => {
             return;
         }
 
-        dispatch({ type: 'update', value: { ...object, ...state } });
+        // 如果是旋转操作且对象在组中，同步旋转同组的所有对象
+        if (state.rotation !== object.rotation && object.groupId) {
+            const updatedObjects = rotateGroupObjects(step.objects, [object], state.rotation);
+            dispatch({ type: 'update', value: updatedObjects, transient });
+        } else {
+            dispatch({ type: 'update', value: { ...object, ...state }, transient });
+        }
+    };
+
+    const handleTransformMove = (state: ArcState) => {
+        updateObject(state, true);
+    };
+
+    const handleTransformEnd = (state: ArcState) => {
+        updateObject(state, false);
     };
 
     return (
@@ -228,7 +251,9 @@ const ArcContainer: React.FC<RendererProps<ArcZone>> = ({ object }) => {
                     object={object}
                     onActive={setResizing}
                     visible={showResizer && !dragging}
-                    onTransformEnd={updateObject}
+                    onTransformStart={handleTransformStart}
+                    onTransformMove={handleTransformMove}
+                    onTransformEnd={handleTransformEnd}
                 >
                     {({ radius, innerRadius, rotation, coneAngle }) => (
                         <>

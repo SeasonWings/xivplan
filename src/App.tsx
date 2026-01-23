@@ -16,6 +16,7 @@ import { ThemeProvider } from './ThemeProvider';
 import { useFileLoaderDropTarget } from './useFileLoader';
 import { HotkeyScopes } from './useHotkeys';
 import { TutorialProvider } from './tutorial/TutorialProvider';
+import { AuthProvider } from './auth/AuthContext';
 
 const useStyles = makeStyles({
     root: {
@@ -56,21 +57,23 @@ const BaseProviders: React.FC<PropsWithChildren> = ({ children }) => {
     const sceneFromUrl = useSceneFromUrl();
 
     return (
-        <HotkeysProvider initiallyActiveScopes={[HotkeyScopes.Default, HotkeyScopes.AlwaysEnabled]}>
-            <HelpProvider>
-                <TutorialProvider>
-                    <SceneProvider initialScene={sceneFromUrl}>
-                        <EditActivityProvider>
-                            <CollaborationProvider>
-                                <AnimationProvider>
-                                    <DirtyProvider>{children}</DirtyProvider>
-                                </AnimationProvider>
-                            </CollaborationProvider>
-                        </EditActivityProvider>
-                    </SceneProvider>
-                </TutorialProvider>
-            </HelpProvider>
-        </HotkeysProvider>
+        <AuthProvider>
+            <HotkeysProvider initiallyActiveScopes={[HotkeyScopes.Default, HotkeyScopes.AlwaysEnabled]}>
+                <HelpProvider>
+                    <TutorialProvider>
+                        <SceneProvider initialScene={sceneFromUrl}>
+                            <EditActivityProvider>
+                                <CollaborationProvider>
+                                    <AnimationProvider>
+                                        <DirtyProvider>{children}</DirtyProvider>
+                                    </AnimationProvider>
+                                </CollaborationProvider>
+                            </EditActivityProvider>
+                        </SceneProvider>
+                    </TutorialProvider>
+                </HelpProvider>
+            </HotkeysProvider>
+        </AuthProvider>
     );
 };
 

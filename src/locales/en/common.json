@@ -98,7 +98,8 @@
     "download": "Download",
     "saveAsEllipsis": "Save as...",
     "collaboration": "collaboration",
-    "animation": "Animation"
+    "animation": "Animation",
+    "community": "Community"
   },
   "actions": {
     "apply": "Apply",
@@ -567,5 +568,103 @@
       "title": "Animation Tutorial",
       "description": "Learn how to use the animation feature to create dynamic animations for elements in your scenes, including creating animations, adding keyframes, and controlling playback."
     }
+  },
+  "community": {
+    "title": "Community Plans",
+    "share": "Share Plan",
+    "search": "Search plans...",
+    "searchBtn": "Search",
+    "loading": "Loading...",
+    "empty": "No plans found",
+    "by": "By",
+    "views": "Views",
+    "downloads": "Downloads",
+    "likes": "Likes",
+    "like": "Like",
+    "download": "Download & Import",
+    "close": "Close",
+    "prev": "Previous",
+    "next": "Next",
+    "dungeonName": "Dungeon",
+    "description": "Description",
+    "category": {
+      "all": "All",
+      "raid": "Raid",
+      "ultimate": "Ultimate",
+      "trial": "Trial",
+      "criterion": "Criterion",
+      "general": "General"
+    },
+    "sort": {
+      "latest": "Latest",
+      "popular": "Popular",
+      "downloads": "Most Downloads",
+      "likes": "Most Likes"
+    },
+    "upload": {
+      "title": "Share Plan to Community",
+      "titleLabel": "Title",
+      "titlePlaceholder": "Give your plan a title",
+      "author": "Author",
+      "authorPlaceholder": "Your name",
+      "category": "Category",
+      "dungeonName": "Dungeon Name",
+      "dungeonPlaceholder": "e.g. Dragonsong's Reprise",
+      "description": "Description",
+      "descriptionPlaceholder": "Describe what this plan is for",
+      "cancel": "Cancel",
+      "submit": "Share",
+      "uploading": "Uploading...",
+      "error": {
+        "required": "Please fill in title and author",
+        "noScene": "No plan to share",
+        "failed": "Failed to upload",
+        "network": "Network error, please try again later"
+      }
+    },
+    "error": {
+      "parseError": "Failed to parse data, please try again later",
+      "downloadError": "Download failed, please try again later",
+      "noSceneData": "Plan data not found"
+    }
+  },
+  "auth": {
+    "usernameRequired": "Username is required",
+    "usernameTooShort": "Username must be at least 3 characters",
+    "usernameTooLong": "Username cannot exceed 20 characters",
+    "profileUpdateFailed": "Failed to update profile",
+    "avatarUploadFailed": "Failed to upload avatar",
+    "avatarTooLarge": "Avatar file is too large, please select an image less than 100KB",
+    "invalidImageFormat": "Please select a valid image format",
+    "editProfile": "Edit Profile",
+    "changeAvatar": "Change Avatar",
+    "supportedImageFormats": "Supports JPG, PNG, GIF formats",
+    "usernamePlaceholder": "Enter username",
+    "bioPlaceholder": "Enter bio",
+    "saveChanges": "Save Changes",
+    "loading": "Loading...",
+    "emailRequired": "Email is required",
+    "invalidEmailFormat": "Invalid email format",
+    "passwordRequired": "Password is required",
+    "passwordTooShort": "Password must be at least 6 characters",
+    "verificationCodeRequired": "Verification code is required",
+    "invalidVerificationCode": "Verification code should be 6 digits",
+    "failedToSendCode": "Failed to send verification code",
+    "registrationFailed": "Registration failed",
+    "register": "Register",
+    "registering": "Registering...",
+    "switchToRegister": "Go to Register",
+    "switchToLogin": "Go to Login",
+    "sending": "Sending...",
+    "resend": "Resend",
+    "sendCode": "Send Code",
+    "verificationCodePlaceholder": "Enter verification code",
+    "emailPlaceholder": "Enter email",
+    "passwordPlaceholder": "Enter password",
+    "identifierRequired": "Username or email is required",
+    "identifierPlaceholder": "Enter username or email",
+    "login": "Login",
+    "loggingIn": "Logging in...",
+    "loginFailed": "Login failed"
   }
 }

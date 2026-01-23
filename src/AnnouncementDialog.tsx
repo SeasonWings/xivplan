@@ -32,6 +32,7 @@ const useStyles = makeStyles({
         gap: tokens.spacingVerticalM,
         maxHeight: 'calc(80vh - 180px)', // 减去标题和按钮的高度
         overflowY: 'auto',
+        scrollbarWidth: 'thin',
     },
     announcement: {
         padding: tokens.spacingVerticalM,
@@ -68,11 +69,18 @@ interface AnnouncementItem {
 // 公告数据
 const announcements: AnnouncementItem[] = [
     {
+        id: '5',
+        date: '2026-01-23',
+        title: 'v2.0.0 更新日志',
+        content:
+            '1. 社区功能上线！你可以自由分享你的战术板构想给大家，也可以自由查阅他人的分享！ \n2. 修复了组元素在旋转其一时不会同步旋转的问题',
+    },
+    {
         id: '4',
         date: '2025-12-31',
         title: 'v1.0.3 更新日志',
         content:
-            '1. 现在可以查看部分探索功能的引导了,单击右上角‘引导’按钮学习使用！\n2. 为旋转元素添加了动画\n3.添加关键帧时的步长不再是固定100，现在可以自由调节了\n4.动画设置里新增动画播放时元素移动速度曲线选择\n5.新增了天音阁元素',
+            "1. 现在可以查看部分探索功能的引导了,单击右上角'引导'按钮学习使用！\n2. 为旋转元素添加了动画\n3.添加关键帧时的步长不再是固定100，现在可以自由调节了\n4.动画设置里新增动画播放时元素移动速度曲线选择\n5.新增了天音阁元素",
     },
     {
         id: '3',

@@ -50,7 +50,9 @@ export interface ControlPointManagerPropsBase<T, S> {
     object: T;
     visible?: boolean;
     onActive?(active: boolean): void;
+    onTransformStart?(): void; // 旋转开始时的回调，用于记录撤销栈
     onTransformEnd?(state: S): void;
+    onTransformMove?(state: S): void; // 拖拽过程中的实时回调
     children: (state: S) => React.ReactElement;
 }
 
@@ -91,7 +93,7 @@ export function createControlPointManager<T extends Vector2d, S, P = unknown>(
     config: ControlPointConfig<T, S, P>,
 ): React.FC<ControlPointManagerProps<T, S, P>> {
     const ControlPointManager: React.FC<ControlPointManagerProps<T, S, P>> = (props) => {
-        const { children, onActive, onTransformEnd, object, visible } = props;
+        const { children, onActive, onTransformStart, onTransformEnd, onTransformMove, object, visible } = props;
 
         const { scene } = useScene();
         const stage = useStage();
@@ -138,6 +140,7 @@ export function createControlPointManager<T extends Vector2d, S, P = unknown>(
                 const handleId = getHandleId(config.handleFunc(object, {}, props), i);
 
                 onActive?.(true);
+                onTransformStart?.(); // 旋转开始，记录撤销栈
                 startEditActivity(); // 标记开始编辑活动
                 setTransform({ pointerPos, handleOffset, handleId });
             };
@@ -151,6 +154,15 @@ export function createControlPointManager<T extends Vector2d, S, P = unknown>(
             const handleMove = () => {
                 const pointerPos = getPointerPos();
                 setTransform({ ...transform, pointerPos });
+
+                // 实时回调，用于组内对象同步
+                if (onTransformMove) {
+                    const handleCenter = getHandleCenter({ ...transform, pointerPos });
+                    const activeHandleId = transform?.handleId ?? 0;
+                    const handleProps = { pointerPos: handleCenter, activeHandleId };
+                    const state = config.stateFunc(object, handleProps, props);
+                    onTransformMove(state);
+                }
             };
 
             const handleEnd = (e: Event) => {
@@ -182,7 +194,17 @@ export function createControlPointManager<T extends Vector2d, S, P = unknown>(
                 window.removeEventListener('mouseup', handleEnd, true);
                 window.removeEventListener('touchend', handleEnd, true);
             };
-        }, [transform, object, onActive, setTransform, onTransformEnd, getPointerPos, props]);
+        }, [
+            transform,
+            object,
+            onActive,
+            setTransform,
+            onTransformStart,
+            onTransformEnd,
+            onTransformMove,
+            getPointerPos,
+            props,
+        ]);
 
         const setCursor = (cursor: string) => {
             if (stage) {

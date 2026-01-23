@@ -16,6 +16,7 @@ import { MIN_STAGE_WIDTH } from './theme';
 import { useIsDirty } from './useIsDirty';
 import { removeFileExtension } from './util';
 import CollaborationPanel from './collaboration/CollaborationPanel';
+import { CommunityDialog } from './community/CommunityDialog';
 import { TutorialOverlay } from './tutorial/TutorialOverlay';
 
 export const MainPage: React.FC = () => {
@@ -35,6 +36,7 @@ const MainPageContent: React.FC = () => {
     const title = usePageTitle();
     const [showCollaborationPanel, setShowCollaborationPanel] = useState(false);
     const [showAnimationPanel, setShowAnimationPanel] = useState(false);
+    const [showCommunityPanel, setShowCommunityPanel] = useState(false);
     const [animationPanelWidth, setAnimationPanelWidth] = useState(400);
     const [isDragging, setIsDragging] = useState(false);
 
@@ -81,6 +83,8 @@ const MainPageContent: React.FC = () => {
                 onToggleCollaborationPanel={setShowCollaborationPanel}
                 showAnimationPanel={showAnimationPanel}
                 onToggleAnimationPanel={setShowAnimationPanel}
+                showCommunityPanel={showCommunityPanel}
+                onToggleCommunityPanel={setShowCommunityPanel}
             />
 
             {/* TODO: make panel collapsable */}
@@ -115,6 +119,9 @@ const MainPageContent: React.FC = () => {
                     <CollaborationPanel />
                 </div>
             )}
+
+            {/* 社区弹窗 */}
+            <CommunityDialog open={showCommunityPanel} onClose={() => setShowCommunityPanel(false)} />
 
             {/* 教程覆盖层 */}
             <TutorialOverlay />

@@ -11,7 +11,7 @@ import { EditorState, SceneAction, SceneContext, useScene } from '../SceneProvid
 import { SelectionContext, SelectionState, SpotlightContext } from '../SelectionContext';
 import { useCollaboration } from '../collaboration/CollaborationProvider';
 import { getCanvasSize, getSceneCoord, getCanvasCoord } from '../coord';
-import { Scene, isMoveable } from '../scene';
+import { Scene, isMoveable, SceneObject } from '../scene';
 import { selectNewObjects, selectNone, useSelection } from '../selection';
 import { UndoContext } from '../undo/undoContext';
 import { usePanelDrag } from '../usePanelDrag';
@@ -282,7 +282,14 @@ export const ScenePreview: React.FC<ScenePreviewProps> = ({
                 <SceneContext value={sceneContext}>
                     <SelectionContext value={selectionContext}>
                         <SpotlightContext value={spotlightContext}>
-                            <SceneContents listening={false} simple={simple} backgroundColor={backgroundColor} />
+                            <SceneContents
+                                listening={false}
+                                simple={simple}
+                                backgroundColor={backgroundColor}
+                                objects={
+                                    stepIndex !== undefined ? scene.steps[stepIndex]?.objects : scene.steps[0]?.objects
+                                }
+                            />
                         </SpotlightContext>
                     </SelectionContext>
                 </SceneContext>
@@ -296,15 +303,23 @@ interface SceneContentsProps {
     simple?: boolean;
     backgroundColor?: string;
     selectionBox?: { x: number; y: number; width: number; height: number } | null;
+    // 添加可选的objects属性，用于预览场景时直接使用传入的对象
+    objects?: readonly SceneObject[];
 }
 
-const SceneContents: React.FC<SceneContentsProps> = ({ listening, simple, backgroundColor, selectionBox }) => {
+const SceneContents: React.FC<SceneContentsProps> = ({
+    listening,
+    simple,
+    backgroundColor,
+    selectionBox,
+    objects: propObjects,
+}) => {
     listening = listening ?? true;
 
     const { animatedObjects } = useAnimation();
 
-    // 如果有动画正在播放，使用动画后的对象，否则使用原始对象
-    const objects = animatedObjects;
+    // 如果通过props传入了objects，则使用传入的对象；否则使用动画后的对象
+    const objects = propObjects !== undefined ? propObjects : animatedObjects;
 
     return (
         <>
