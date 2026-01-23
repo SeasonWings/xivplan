@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
     Dialog,
     DialogSurface,
@@ -15,6 +15,7 @@ import {
     Text,
     Field,
 } from '@fluentui/react-components';
+import Cropper from 'react-easy-crop';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from './AuthContext';
 
@@ -91,6 +92,16 @@ export const UserProfileDialog: React.FC<UserProfileDialogProps> = ({ open, onCl
     const [submitting, setSubmitting] = useState(false);
     const [avatarFile, setAvatarFile] = useState<File | null>(null);
     const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+    const [croppedImage, setCroppedImage] = useState<string | null>(null);
+    const [showCropper, setShowCropper] = useState(false);
+    const [crop, setCrop] = useState({ x: 0, y: 0 });
+    const [zoom, setZoom] = useState(1);
+    const [croppedAreaPixels, setCroppedAreaPixels] = useState<{
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+    } | null>(null);
     const errorsRef = useRef(errors);
 
     // 重置表单数据到用户初始状态的函数
@@ -135,15 +146,6 @@ export const UserProfileDialog: React.FC<UserProfileDialogProps> = ({ open, onCl
         if (e.target.files && e.target.files[0]) {
             const file = e.target.files[0];
 
-            // 验证文件大小 (最大100KB)
-            if (file.size > 100 * 1024) {
-                setErrors({
-                    ...errors,
-                    avatar: t('auth.avatarTooLarge', '头像文件过大，请选择小于100KB的图片'),
-                });
-                return;
-            }
-
             // 验证文件类型
             if (!file.type.match('image.*')) {
                 setErrors({
@@ -159,6 +161,8 @@ export const UserProfileDialog: React.FC<UserProfileDialogProps> = ({ open, onCl
             const reader = new FileReader();
             reader.onloadend = () => {
                 setAvatarPreview(reader.result as string);
+                // 显示裁剪界面
+                setShowCropper(true);
             };
             reader.readAsDataURL(file);
         }
@@ -192,13 +196,29 @@ export const UserProfileDialog: React.FC<UserProfileDialogProps> = ({ open, onCl
 
             // 如果有新的头像文件，先处理头像
             if (avatarFile) {
-                // 将文件转换为base64
-                const base64String = await new Promise<string>((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onload = () => resolve(reader.result as string);
-                    reader.onerror = () => reject(reader.error);
-                    reader.readAsDataURL(avatarFile);
-                });
+                let base64String: string;
+
+                if (croppedImage) {
+                    // 使用裁剪后的图像
+                    base64String = croppedImage;
+                } else {
+                    // 将文件转换为base64
+                    base64String = await new Promise<string>((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = () => resolve(reader.result as string);
+                        reader.onerror = () => reject(reader.error);
+                        reader.readAsDataURL(avatarFile);
+                    });
+                }
+
+                // 检查文件大小，如果超过限制则压缩
+                const base64Data = base64String.split(',')[1];
+                if (base64Data) {
+                    const byteLength = new Blob([atob(base64Data)]).size;
+                    if (byteLength > 100 * 1024) {
+                        base64String = await compressImage(base64String);
+                    }
+                }
 
                 updatedFormData.avatar = base64String;
             }
@@ -232,6 +252,94 @@ export const UserProfileDialog: React.FC<UserProfileDialogProps> = ({ open, onCl
         }
     }, [open]);
 
+    // 图像压缩函数
+    const compressImage = (base64: string, quality: number = 0.8): Promise<string> => {
+        return new Promise((resolve) => {
+            const img = new Image();
+            img.src = base64;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+
+                // 设置画布尺寸
+                canvas.width = img.width;
+                canvas.height = img.height;
+
+                // 绘制图像
+                ctx?.drawImage(img, 0, 0);
+
+                // 压缩图像
+                const compressedBase64 = canvas.toDataURL('image/jpeg', quality);
+
+                // 如果仍然太大，递归压缩
+                if (compressedBase64.length > 100 * 1024 && quality > 0.1) {
+                    resolve(compressImage(compressedBase64, quality - 0.1));
+                } else {
+                    resolve(compressedBase64);
+                }
+            };
+        });
+    };
+
+    // 裁剪区域变更回调
+    const onCropComplete = useCallback(
+        (
+            _: { x: number; y: number; width: number; height: number },
+            croppedAreaPixels: { x: number; y: number; width: number; height: number },
+        ) => {
+            setCroppedAreaPixels(croppedAreaPixels);
+        },
+        [],
+    );
+
+    // 裁剪图像函数
+    const cropImage = async (): Promise<string> => {
+        return new Promise((resolve, reject) => {
+            if (!avatarPreview) {
+                reject(new Error('No image to crop'));
+                return;
+            }
+
+            const image = new Image();
+            image.src = avatarPreview;
+
+            image.onload = () => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+
+                if (!ctx || !croppedAreaPixels) {
+                    reject(new Error('Canvas context or crop area not available'));
+                    return;
+                }
+
+                // 设置画布尺寸为裁剪区域的尺寸
+                canvas.width = croppedAreaPixels.width;
+                canvas.height = croppedAreaPixels.height;
+
+                // 绘制裁剪区域
+                ctx.drawImage(
+                    image,
+                    croppedAreaPixels.x,
+                    croppedAreaPixels.y,
+                    croppedAreaPixels.width,
+                    croppedAreaPixels.height,
+                    0,
+                    0,
+                    croppedAreaPixels.width,
+                    croppedAreaPixels.height,
+                );
+
+                // 获取裁剪后的图像数据
+                const croppedBase64 = canvas.toDataURL('image/jpeg', 1.0);
+                resolve(croppedBase64);
+            };
+
+            image.onerror = () => {
+                reject(new Error('Failed to load image'));
+            };
+        });
+    };
+
     const handleCancel = () => {
         // 重置表单数据
         resetFormToUserData();
@@ -263,29 +371,121 @@ export const UserProfileDialog: React.FC<UserProfileDialogProps> = ({ open, onCl
                             <form onSubmit={handleSubmit} className={classes.form}>
                                 <div className={classes.profileHeader}>
                                     <div className={classes.avatarSection}>
-                                        <Avatar
-                                            className={classes.avatar}
-                                            image={{ src: avatarPreview || undefined }}
-                                            name={formData.username || state.user?.username || ''}
-                                            badge={{ status: 'available' }}
-                                        />
-                                        <div className={classes.avatarUpload}>
-                                            <input
-                                                type="file"
-                                                accept="image/*"
-                                                onChange={handleAvatarChange}
-                                                style={{ display: 'none' }}
-                                                id="avatar-upload"
-                                            />
-                                            <label htmlFor="avatar-upload">
-                                                <Button appearance="secondary" tabIndex={0}>
-                                                    {t('auth.changeAvatar', '更换头像')}
-                                                </Button>
-                                            </label>
-                                            {/*<Text size={200} color="neutralSecondary">*/}
-                                            {/*  {t('auth.supportedImageFormats', '支持 JPG, PNG, GIF 格式')}*/}
-                                            {/*</Text>*/}
-                                        </div>
+                                        {showCropper && avatarPreview ? (
+                                            <div
+                                                style={{
+                                                    position: 'relative',
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    alignItems: 'center',
+                                                }}
+                                            >
+                                                <div
+                                                    style={{
+                                                        position: 'relative',
+                                                        width: '300px',
+                                                        height: '300px',
+                                                        margin: '0 auto',
+                                                    }}
+                                                >
+                                                    <Cropper
+                                                        image={avatarPreview}
+                                                        crop={crop}
+                                                        zoom={zoom}
+                                                        aspect={1}
+                                                        onCropChange={setCrop}
+                                                        onZoomChange={setZoom}
+                                                        onCropComplete={onCropComplete}
+                                                        cropShape="round"
+                                                        showGrid={false}
+                                                        objectFit="contain"
+                                                    />
+                                                </div>
+                                                <div
+                                                    style={{
+                                                        display: 'flex',
+                                                        gap: '10px',
+                                                        marginTop: '10px',
+                                                        alignItems: 'center',
+                                                    }}
+                                                >
+                                                    <span>缩放:</span>
+                                                    <input
+                                                        type="range"
+                                                        min="1"
+                                                        max="3"
+                                                        step="0.1"
+                                                        value={zoom}
+                                                        onChange={(e) => setZoom(parseFloat(e.target.value))}
+                                                        style={{ width: '100px' }}
+                                                    />
+                                                    <Button
+                                                        appearance="primary"
+                                                        onClick={async () => {
+                                                            try {
+                                                                const cropped = await cropImage();
+                                                                setCroppedImage(cropped);
+                                                                setAvatarPreview(cropped); // 更新预览
+                                                                setShowCropper(false);
+                                                            } catch (error) {
+                                                                console.error('裁剪图像失败:', error);
+                                                                setErrors({
+                                                                    ...errors,
+                                                                    avatar: t('auth.avatarCropFailed', '头像裁剪失败'),
+                                                                });
+                                                            }
+                                                        }}
+                                                    >
+                                                        {t('auth.confirmCrop', '确认裁剪')}
+                                                    </Button>
+                                                    <Button
+                                                        appearance="secondary"
+                                                        onClick={() => {
+                                                            setShowCropper(false);
+                                                            setAvatarPreview(null);
+                                                            setAvatarFile(null);
+                                                        }}
+                                                    >
+                                                        {t('common.cancel', '取消')}
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <Avatar
+                                                    className={classes.avatar}
+                                                    image={{ src: avatarPreview || undefined }}
+                                                    name={formData.username || state.user?.username || ''}
+                                                    badge={{ status: 'available' }}
+                                                />
+                                                <div className={classes.avatarUpload}>
+                                                    <input
+                                                        type="file"
+                                                        accept="image/*"
+                                                        onChange={handleAvatarChange}
+                                                        style={{ display: 'none' }}
+                                                        id="avatar-upload"
+                                                    />
+                                                    <Button
+                                                        appearance="secondary"
+                                                        tabIndex={0}
+                                                        onClick={() => {
+                                                            const fileInput = document.getElementById(
+                                                                'avatar-upload',
+                                                            ) as HTMLInputElement;
+                                                            if (fileInput) {
+                                                                fileInput.click();
+                                                            }
+                                                        }}
+                                                    >
+                                                        {t('auth.changeAvatar', '更换头像')}
+                                                    </Button>
+                                                    {/*<Text size={200} color="neutralSecondary">*/}
+                                                    {/*  {t('auth.supportedImageFormats', '支持 JPG, PNG, GIF 格式')}*/}
+                                                    {/*</Text>*/}
+                                                </div>
+                                            </>
+                                        )}
                                     </div>
 
                                     <Field
