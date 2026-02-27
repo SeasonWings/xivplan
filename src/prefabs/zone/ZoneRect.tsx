@@ -34,7 +34,7 @@ export const ZoneRect: React.FC = () => {
     return (
         <PrefabIcon
             draggable
-            name={t('objects.rectangle', { defaultValue: 'Rectangle' })}
+            name={t('objects.rect', { defaultValue: 'Rectangle' })}
             icon={<Icon />}
             onDragStart={(e) => {
                 const offset = getDragOffset(e);
@@ -500,7 +500,7 @@ const RectangleDetails: React.FC<ListComponentProps<RectangleZone>> = ({ object,
     return (
         <DetailsItem
             icon={<Icon width="100%" height="100%" style={{ [panelVars.colorZoneOrange]: displayColor }} />}
-            name={t('objects.rectangle', { defaultValue: 'Rectangle' })}
+            name={t('objects.rect', { defaultValue: 'Rectangle' })}
             object={object}
             {...props}
         />

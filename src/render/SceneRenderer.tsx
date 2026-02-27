@@ -2,16 +2,18 @@ import Konva from 'konva';
 import { KonvaEventObject } from 'konva/lib/Node';
 import React, { PropsWithChildren, RefAttributes, useContext, useRef, useState } from 'react';
 import { Layer, Rect, Stage } from 'react-konva';
-import { useAnimation } from '../animation/AnimationContext';
 import { DefaultCursorProvider } from '../DefaultCursorProvider';
 import { getDropAction } from '../DropHandler';
 import { useEditActivity } from '../EditActivityContext';
 import { SceneHotkeyHandler } from '../HotkeyHandler';
 import { EditorState, SceneAction, SceneContext, useScene } from '../SceneProvider';
 import { SelectionContext, SelectionState, SpotlightContext } from '../SelectionContext';
+import { useAnimation } from '../animation/AnimationContext';
+import { useAnimationV2 } from '../animation/AnimationV2Context';
+import { useVisualEdit } from '../animation/VisualEditContext';
 import { useCollaboration } from '../collaboration/CollaborationProvider';
-import { getCanvasSize, getSceneCoord, getCanvasCoord } from '../coord';
-import { Scene, isMoveable, SceneObject } from '../scene';
+import { getCanvasCoord, getCanvasSize, getSceneCoord } from '../coord';
+import { isMoveable, Scene, SceneObject } from '../scene';
 import { selectNewObjects, selectNone, useSelection } from '../selection';
 import { UndoContext } from '../undo/undoContext';
 import { usePanelDrag } from '../usePanelDrag';
@@ -37,6 +39,7 @@ export const SceneRenderer: React.FC = () => {
     const selectionStartRef = useRef<{ x: number; y: number } | null>(null);
     const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
     const hasMovedRef = useRef(false);
+    const { pickCallback, setLastPickedPoint } = useVisualEdit();
 
     // 使用协作上下文获取用户权限信息
     const collaboration = useCollaboration();
@@ -46,12 +49,21 @@ export const SceneRenderer: React.FC = () => {
         false;
 
     const onClickStage = (e: KonvaEventObject<MouseEvent>) => {
-        // 如果正在框选，不处理点击事件
+        if (pickCallback) {
+            const stageInstance = e.target.getStage();
+            const pos = stageInstance?.getPointerPosition();
+            if (stageInstance && pos) {
+                const scenePos = getSceneCoord(scene, pos);
+                setLastPickedPoint({ x: scenePos.x, y: scenePos.y });
+                pickCallback({ x: scenePos.x, y: scenePos.y });
+            }
+            return;
+        }
+
         if (isSelecting || hasMovedRef.current) {
             return;
         }
 
-        // Clicking on nothing (with no modifier keys held) should cancel selection.
         if (!e.evt.ctrlKey && !e.evt.shiftKey) {
             setSelection(selectNone());
         }
@@ -316,10 +328,46 @@ const SceneContents: React.FC<SceneContentsProps> = ({
 }) => {
     listening = listening ?? true;
 
-    const { animatedObjects } = useAnimation();
+    const { animatedObjects: legacyAnimatedObjects } = useAnimation();
 
-    // 如果通过props传入了objects，则使用传入的对象；否则使用动画后的对象
-    const objects = propObjects !== undefined ? propObjects : animatedObjects;
+    // 安全地使用 useAnimationV2，如果不在 Provider 内部则使用默认值
+    let v2AnimatedObjects: readonly SceneObject[] = [];
+    let v2PlayerState: { state: 'stopped' | 'playing' | 'paused' } = { state: 'stopped' };
+
+    try {
+        const v2Context = useAnimationV2();
+        v2AnimatedObjects = v2Context.animatedObjects;
+        v2PlayerState = v2Context.playerState;
+    } catch {
+        // 如果 useAnimationV2 抛出错误（不在 Provider 内部），使用默认值
+        console.warn('AnimationV2Provider not found, using default animation state');
+    }
+
+    const { isVisualEditing, editingObjectId } = useVisualEdit();
+
+    // 优先使用 V2 动画系统的对象（如果正在播放），否则使用传入的对象或旧版动画对象
+    let objects: readonly SceneObject[];
+    if (propObjects !== undefined) {
+        objects = propObjects;
+    } else if (v2PlayerState.state !== 'stopped') {
+        // V2 动画正在播放
+        objects = v2AnimatedObjects;
+    } else {
+        // 使用旧版动画或默认状态
+        objects = legacyAnimatedObjects;
+    }
+
+    // 如果处于可视化编辑模式
+    if (isVisualEditing && editingObjectId !== null) {
+        const editingObj = objects.find((obj) => obj.id === editingObjectId);
+        const groupId = (editingObj as (SceneObject & { groupId?: string }) | undefined)?.groupId;
+
+        if (groupId) {
+            objects = objects.filter((obj) => (obj as SceneObject & { groupId?: string }).groupId === groupId);
+        } else {
+            objects = objects.filter((obj) => obj.id === editingObjectId);
+        }
+    }
 
     return (
         <>

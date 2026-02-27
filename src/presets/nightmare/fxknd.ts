@@ -1,5 +1,4 @@
-// @ts-ignore
-import { ArenaPreset, ArenaShape, DEFAULT_ARENA_PADDING, GridType } from '../../scene';
+import { ArenaPreset, ArenaShape, GridType } from '../../scene';
 
 const BATTLE_1: ArenaPreset = {
     name: '伏凶夔牛岛-万毒三老',

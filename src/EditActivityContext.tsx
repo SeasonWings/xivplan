@@ -9,6 +9,7 @@ interface EditActivityContextType {
 
 const EditActivityContext = createContext<EditActivityContextType | undefined>(undefined);
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useEditActivity = () => {
     const context = useContext(EditActivityContext);
     if (context === undefined) {

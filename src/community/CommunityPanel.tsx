@@ -1,22 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import { Button, Input, Select, Spinner, Text, Card, makeStyles, tokens, Badge } from '@fluentui/react-components';
+import { Badge, Button, Card, Input, makeStyles, Select, Spinner, Text, tokens } from '@fluentui/react-components';
 import {
-    ArrowUploadFilled,
     ArrowDownloadFilled,
+    ArrowUploadFilled,
+    EyeFilled,
     HeartFilled,
     HeartRegular,
-    EyeFilled,
     SearchFilled,
 } from '@fluentui/react-icons';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLoadScene } from '../SceneProvider';
-import { textToScene } from '../file';
-import { config } from '../config';
 import { useAuth } from '../auth/AuthContext';
-import { UploadDialog } from './UploadDialog';
+import { config } from '../config';
+import { textToScene } from '../file';
 import { PlanDetailDialog } from './PlanDetailDialog';
-import type { CommunityPlan } from './types';
+import { UploadDialog } from './UploadDialog';
 import { GAME_CATEGORIES, getCategoryByValue, getGameByValue } from './categoryConfig';
+import type { CommunityPlan } from './types';
 
 const API_BASE = config.api.baseUrl;
 
@@ -45,7 +45,7 @@ export const CommunityPanel: React.FC<CommunityPanelProps> = ({ onDownloadSucces
     const [selectedPlan, setSelectedPlan] = useState<CommunityPlan | null>(null);
 
     // 获取战术板列表
-    const fetchPlans = async () => {
+    const fetchPlans = React.useCallback(async () => {
         setLoading(true);
         try {
             const params = new URLSearchParams({
@@ -93,11 +93,11 @@ export const CommunityPanel: React.FC<CommunityPanelProps> = ({ onDownloadSucces
         } finally {
             setLoading(false);
         }
-    };
+    }, [page, sortBy, selectedGame, category, searchQuery, userId]);
 
     useEffect(() => {
         fetchPlans();
-    }, [page, selectedGame, category, sortBy]);
+    }, [fetchPlans]);
 
     const handleSearch = () => {
         setPage(1);
@@ -419,7 +419,6 @@ const useStyles = makeStyles({
         padding: tokens.spacingHorizontalXL,
         paddingTop: tokens.spacingVerticalL,
         paddingBottom: tokens.spacingVerticalL,
-        scrollbarWidth: 'thin',
         minHeight: 0,
     },
     grid: {

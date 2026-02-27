@@ -32,7 +32,6 @@ const useStyles = makeStyles({
         gap: tokens.spacingVerticalM,
         maxHeight: 'calc(80vh - 180px)', // 减去标题和按钮的高度
         overflowY: 'auto',
-        scrollbarWidth: 'thin',
     },
     announcement: {
         padding: tokens.spacingVerticalM,

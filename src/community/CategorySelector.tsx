@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Select, Field } from '@fluentui/react-components';
+import { Field, Select } from '@fluentui/react-components';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { GAME_CATEGORIES, getGameByCategory } from './categoryConfig';
 
@@ -28,7 +28,11 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
     useEffect(() => {
         const game = getGameByCategory(value);
         if (game && game.value !== selectedGame) {
-            setSelectedGame(game.value);
+            // 使用 setTimeout 避免在 effect 中同步调用 setState 导致的警告
+            const timer = setTimeout(() => {
+                setSelectedGame(game.value);
+            }, 0);
+            return () => clearTimeout(timer);
         }
     }, [value, selectedGame]);
 

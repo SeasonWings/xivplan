@@ -3,6 +3,7 @@ import React, { PropsWithChildren, Suspense } from 'react';
 import { HotkeysProvider } from 'react-hotkeys-hook';
 import { createBrowserRouter, createRoutesFromElements, Outlet, Route, RouterProvider } from 'react-router-dom';
 import { AnimationProvider } from './animation/AnimationContext';
+import { AnimationV2Provider } from './animation/AnimationV2Context';
 import { CollaborationProvider } from './collaboration/CollaborationProvider';
 import { DirtyProvider } from './DirtyProvider';
 import { EditActivityProvider } from './EditActivityContext';
@@ -65,7 +66,9 @@ const BaseProviders: React.FC<PropsWithChildren> = ({ children }) => {
                             <EditActivityProvider>
                                 <CollaborationProvider>
                                     <AnimationProvider>
-                                        <DirtyProvider>{children}</DirtyProvider>
+                                        <AnimationV2Provider>
+                                            <DirtyProvider>{children}</DirtyProvider>
+                                        </AnimationV2Provider>
                                     </AnimationProvider>
                                 </CollaborationProvider>
                             </EditActivityProvider>

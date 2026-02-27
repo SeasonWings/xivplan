@@ -3,7 +3,14 @@ import { useSearchParams } from 'react-router-dom';
 import { useEditActivity } from '../EditActivityContext';
 import { MessageToast } from '../MessageToast';
 import { useLoadScene, useScene } from '../SceneProvider';
-import { webSocketService } from './WebSocketService';
+import {
+    ChatMessageData,
+    HostChangedData,
+    HostInfoData,
+    RoomJoinedData,
+    UserInfoData,
+    webSocketService,
+} from './WebSocketService';
 
 interface User {
     id: string;
@@ -37,6 +44,7 @@ interface CollaborationContextType {
 
 const CollaborationContext = createContext<CollaborationContextType | undefined>(undefined);
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useCollaboration = () => {
     const context = useContext(CollaborationContext);
     if (context === undefined) {
@@ -102,6 +110,7 @@ export const CollaborationProvider: React.FC<CollaborationProviderProps> = ({ ch
         if (savedName && savedName !== userName) {
             setUserName(savedName);
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     // 连接到WebSocket服务器
@@ -137,8 +146,10 @@ export const CollaborationProvider: React.FC<CollaborationProviderProps> = ({ ch
         connectWebSocket();
 
         // 注册事件监听器
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const handleUserInfo = (data: any) => {
-            setUserId(data.userId);
+            const userInfo = data as UserInfoData;
+            setUserId(userInfo.userId);
 
             // 获取保存的用户名
             const savedName = getSavedUserName();
@@ -151,24 +162,29 @@ export const CollaborationProvider: React.FC<CollaborationProviderProps> = ({ ch
                 }
                 // 确保服务器也使用这个用户名
                 webSocketService.setUserName(savedName);
-            } else if (data.userName && !userName) {
+            } else if (userInfo.userName && !userName) {
                 // 如果没有保存的用户名，但服务器提供了一个，且当前没有用户名，则使用服务器的
-                setUserName(data.userName);
+                setUserName(userInfo.userName);
             }
         };
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const handleRoomJoined = (data: any) => {
-            setRoomId(data.roomId);
+            const roomData = data as RoomJoinedData;
+            setRoomId(roomData.roomId);
             // 房主状态将由服务器通过host_info事件来决定
             // 不再在客户端自行设置房主状态
         };
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const handleSceneSync = (sceneData: any) => {
-            loadScene(sceneData);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            loadScene(sceneData as any);
             // 移除这里的setIsHost(false)，让房主状态由服务器通过host_info事件决定
         };
 
-        const handleUsersUpdated = (users: User[]) => {
+        const handleUsersUpdated = (data: unknown) => {
+            const users = data as User[];
             setConnectedUsers(users);
         };
 
@@ -180,8 +196,9 @@ export const CollaborationProvider: React.FC<CollaborationProviderProps> = ({ ch
             setConnected(false);
         };
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const handleChatMessage = (message: any) => {
-            setChatMessages((prev) => [...prev, message]);
+            setChatMessages((prev) => [...prev, message as ChatMessageData]);
         };
 
         webSocketService.on('user_info', handleUserInfo);
@@ -203,17 +220,20 @@ export const CollaborationProvider: React.FC<CollaborationProviderProps> = ({ ch
             webSocketService.off('chat_message', handleChatMessage);
             webSocketService.disconnect();
         };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [serverUrl, loadScene]);
 
     // 单独处理房主相关事件，确保依赖于userId
     useEffect(() => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const handleHostChanged = (data: any) => {
+            const hostData = data as HostChangedData;
             // 更新房主ID和当前用户的房主状态
             // 首先更新hostId状态
-            setHostId(data.hostId);
+            setHostId(hostData.hostId);
             // 然后检查userId是否存在，更新isHost状态
             if (userId) {
-                const isNowHost = data.hostId === userId;
+                const isNowHost = hostData.hostId === userId;
                 setIsHost(isNowHost);
                 if (isNowHost) {
                     // 用户成为房主
@@ -223,12 +243,14 @@ export const CollaborationProvider: React.FC<CollaborationProviderProps> = ({ ch
             }
         };
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const handleHostInfo = (data: any) => {
+            const hostInfo = data as HostInfoData;
             // 检查userId是否存在
             if (userId) {
                 // 更新hostId和isHost状态
-                setHostId(data.hostId);
-                const isNowHost = data.hostId === userId;
+                setHostId(hostInfo.hostId);
+                const isNowHost = hostInfo.hostId === userId;
                 setIsHost(isNowHost);
             } else {
                 // userId尚未获取，无法设置房主状态
@@ -238,7 +260,8 @@ export const CollaborationProvider: React.FC<CollaborationProviderProps> = ({ ch
         // 移除访客编辑权限变更处理，使用用户级权限
 
         // 定义错误处理回调函数
-        const handleError = (message: string) => {
+        const handleError = (data: unknown) => {
+            const message = data as string;
             setError(message);
             // 3秒后自动清除错误消息
             setTimeout(() => setError(null), 3000);
@@ -263,14 +286,17 @@ export const CollaborationProvider: React.FC<CollaborationProviderProps> = ({ ch
 
     // 单独处理scene_update事件中对userId的依赖
     useEffect(() => {
-        const handleSceneUpdate = ({ data, senderId }: { data: any; senderId: string }) => {
+        const handleSceneUpdate = (payload: unknown) => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const { data, senderId } = payload as { data: any; senderId: string };
             // 如果更新不是由当前用户发起的，则更新场景
             if (senderId !== userId) {
                 setActiveEdit(false); // 设置为非主动编辑
                 // 保存当前选中的stepIndex
                 const currentStepIndex = stepIndex;
                 // 加载更新的场景
-                loadScene(data);
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                loadScene(data as any);
                 // 恢复原来选中的stepIndex
                 dispatch({ type: 'setStep', index: currentStepIndex });
                 // 定期重置为不活动状态
@@ -289,7 +315,7 @@ export const CollaborationProvider: React.FC<CollaborationProviderProps> = ({ ch
         return () => {
             webSocketService.off('scene_update', handleSceneUpdate);
         };
-    }, [userId, loadScene, stepIndex, dispatch]);
+    }, [userId, loadScene, stepIndex, dispatch, setActiveEdit]);
 
     useEffect(() => {
         if (connected && roomId && scene && isActiveEdit) {
@@ -341,10 +367,12 @@ export const CollaborationProvider: React.FC<CollaborationProviderProps> = ({ ch
         setHostId('');
 
         // 临时添加一个特定的host_info监听器，确保我们能捕获到加入房间后的房主信息
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const tempHostInfoHandler = (data: any) => {
-            setHostId(data.hostId);
+            const hostInfo = data as HostInfoData;
+            setHostId(hostInfo.hostId);
             if (userId) {
-                setIsHost(data.hostId === userId);
+                setIsHost(hostInfo.hostId === userId);
             } else {
                 // userId尚未获取，无法设置房主状态
             }

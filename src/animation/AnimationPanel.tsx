@@ -1,3 +1,7 @@
+/**
+ * 旧版动画面板 - Legacy
+ * 新版请使用 AnimationV2Panel
+ */
 import {
     Button,
     Dialog,
@@ -21,9 +25,9 @@ import { Add24Regular, Settings24Regular, VideoRecordingRegular } from '@fluentu
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAnimation } from './AnimationContext';
-import { Animation, EasingType } from './animationTypes';
-import { AnimationTimeline } from './AnimationTimeline';
-import { KeyframePanel } from './KeyframePanel';
+import { AnimationTimelineLegacy } from './AnimationTimeline';
+import { Animation, EasingType } from './animationTypesLegacy';
+import { KeyframePanelLegacy } from './KeyframePanel';
 
 const useStyles = makeStyles({
     container: {
@@ -37,7 +41,7 @@ const useStyles = makeStyles({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: tokens.spacingVerticalM,
+        padding: `${tokens.spacingVerticalS} ${tokens.spacingHorizontalM}`,
         borderBottom: `1px solid ${tokens.colorNeutralStroke1}`,
     },
     title: {
@@ -121,6 +125,7 @@ export const AnimationPanel: React.FC = () => {
 
         setAnimation(updatedAnimation);
         setSettingsOpen(false);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [animation, animationName, loop, setAnimation]);
 
     const handleDeleteAnimation = useCallback(() => {
@@ -136,7 +141,7 @@ export const AnimationPanel: React.FC = () => {
                 <div className={classes.header}>
                     <div className={classes.title}>
                         <VideoRecordingRegular />
-                        {t('animation.title', '动画')}
+                        {t('animation.title', '动画')} (Legacy - 旧版)
                     </div>
                 </div>
                 <div className={classes.noAnimation}>
@@ -180,7 +185,7 @@ export const AnimationPanel: React.FC = () => {
                             ))}
                         </Dropdown>
                     ) : (
-                        <span>{t('animation.title', '动画')}</span>
+                        <span>{t('animation.title', '动画')} (Legacy - 旧版)</span>
                     )}
                 </div>
                 <div style={{ display: 'flex', gap: tokens.spacingHorizontalS }}>
@@ -215,8 +220,8 @@ export const AnimationPanel: React.FC = () => {
                     </TabList>
 
                     <div className={classes.tabContent}>
-                        {activeTab === 'timeline' && <AnimationTimeline />}
-                        {activeTab === 'keyframes' && <KeyframePanel />}
+                        {activeTab === 'timeline' && <AnimationTimelineLegacy />}
+                        {activeTab === 'keyframes' && <KeyframePanelLegacy />}
                     </div>
                 </div>
             ) : (

@@ -42,6 +42,5 @@ const useStyles = makeStyles({
     },
     light: {
         colorScheme: 'light',
-        scrollbarColor: '#636363 #f2ebd9',
     },
 });

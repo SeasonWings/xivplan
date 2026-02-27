@@ -31,7 +31,7 @@ export const ZoneRotateClockwise: React.FC = () => {
     return (
         <PrefabIcon
             draggable
-            name={t('objects.rotatingClockwise', { defaultValue: 'Rotating clockwise' })}
+            name={t('objects.rotateCW', { defaultValue: 'Rotating clockwise' })}
             icon={<ClockwiseIcon />}
             onDragStart={(e) => {
                 setDragObject({
@@ -52,7 +52,7 @@ export const ZoneRotateCounterClockwise: React.FC = () => {
     return (
         <PrefabIcon
             draggable
-            name={t('objects.rotatingCounterClockwise', { defaultValue: 'Rotating counter-clockwise' })}
+            name={t('objects.rotateCCW', { defaultValue: 'Rotating counter-clockwise' })}
             icon={<CounterClockwiseIcon />}
             onDragStart={(e) => {
                 setDragObject({

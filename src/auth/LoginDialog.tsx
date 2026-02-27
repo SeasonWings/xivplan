@@ -1,19 +1,19 @@
-import React, { useEffect, useState } from 'react';
 import {
+    Button,
     Dialog,
-    DialogSurface,
-    DialogTitle,
+    DialogActions,
     DialogBody,
     DialogContent,
-    DialogActions,
-    Button,
+    DialogSurface,
+    DialogTitle,
+    Field,
     Input,
     makeStyles,
-    tokens,
     Spinner,
     Text,
-    Field,
+    tokens,
 } from '@fluentui/react-components';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from './AuthContext';
 
@@ -133,9 +133,10 @@ export const LoginDialog: React.FC<LoginDialogProps> = ({
                 setErrors({});
                 onClose();
             }, 0);
-        } catch (error: any) {
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : t('auth.loginFailed', '登录失败');
             setErrors({
-                general: error.message || t('auth.loginFailed', '登录失败'),
+                general: errorMessage,
             });
             setSubmitting(false);
         }
@@ -145,8 +146,12 @@ export const LoginDialog: React.FC<LoginDialogProps> = ({
     useEffect(() => {
         if (open) {
             // 对话框打开时，重置所有状态
-            setErrors({});
-            setSubmitting(false);
+            // 使用 setTimeout 避免在 effect 中同步调用 setState 导致的警告
+            const timer = setTimeout(() => {
+                setErrors({});
+                setSubmitting(false);
+            }, 0);
+            return () => clearTimeout(timer);
         }
     }, [open]);
 

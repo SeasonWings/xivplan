@@ -1,5 +1,5 @@
-import { Text } from '@fluentui/react-components';
-import React from 'react';
+import { Tab, TabList, Text } from '@fluentui/react-components';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { HotkeyName } from '../HotkeyName';
 import { MarkerArrow } from '../prefabs/Arrow';
@@ -16,12 +16,19 @@ import {
     PartyDps,
     PartyDragoon,
     PartyFenXiangGu,
+    PartyFenXiangYan,
+    PartyFenXiangZhou,
+    PartyGuiWangGang,
+    PartyGuiWangSha,
     PartyGuiWangZong,
     PartyGunbreaker,
     PartyHealer,
+    PartyHeHuanYing,
+    PartyHeHuanYue,
     PartyHeHuanZong,
-    PartyLingXiLing,
     PartyLingXiGe,
+    PartyLingXiLing,
+    PartyLingXiXi,
     PartyMachinist,
     PartyMagicRanged,
     PartyMelee,
@@ -30,6 +37,8 @@ import {
     PartyPaladin,
     PartyPhysicalRanged,
     PartyPictomancer,
+    PartyQingYunJian,
+    PartyQingYunLei,
     PartyQingYunMen,
     PartyRanged,
     PartyReaper,
@@ -40,21 +49,12 @@ import {
     PartySummoner,
     PartySupport,
     PartyTank,
+    PartyTianYinGe,
+    PartyTianYinJing,
+    PartyTianYinZhen,
     PartyViper,
     PartyWarrior,
     PartyWhiteMage,
-    PartyLingXiXi,
-    PartyFenXiangYan,
-    PartyFenXiangZhou,
-    PartyGuiWangGang,
-    PartyGuiWangSha,
-    PartyHeHuanYing,
-    PartyHeHuanYue,
-    PartyQingYunJian,
-    PartyQingYunLei,
-    PartyTianYinGe,
-    PartyTianYinZhen,
-    PartyTianYinJing,
 } from '../prefabs/Party';
 import {
     TetherClose,
@@ -85,16 +85,21 @@ import { ZoneStack } from '../prefabs/zone/ZoneStack';
 import { ZoneStarburst } from '../prefabs/zone/ZoneStarburst';
 import { ZoneTower } from '../prefabs/zone/ZoneTower';
 import { ZoneTriangle } from '../prefabs/zone/ZoneTriangle';
+import { StatusJian } from '../prefabs/zxsj/StatusJian';
+import { StatusJu } from '../prefabs/zxsj/StatusJu';
+import { StatusShangDeath } from '../prefabs/zxsj/StatusShangDeath';
+import { ZoneProximityZXSJ } from '../prefabs/zxsj/ZoneProximityZXSJ';
+import { ZoneTowerZXSJ } from '../prefabs/zxsj/ZoneTowerZXSJ';
 import { useControlStyles } from '../useControlStyles';
 import { ObjectGroup, Section } from './Section';
-import { StatusShangDeath } from '../prefabs/Status.tsx';
 
-export const PrefabsPanel: React.FC = () => {
-    const controlClasses = useControlStyles();
+const ZonesAndWaymarksSection: React.FC<{ extraZones?: React.ReactNode; type: 'ff14' | 'zxsj' }> = ({
+    extraZones,
+    type,
+}) => {
     const { t } = useTranslation();
-
     return (
-        <div className={controlClasses.panel}>
+        <>
             <Section title={t('prefabs.zones')}>
                 <ObjectGroup>
                     <ZoneRightTriangle />
@@ -111,7 +116,7 @@ export const PrefabsPanel: React.FC = () => {
 
                 <ObjectGroup>
                     <ZoneKnockback />
-                    <ZoneProximity />
+                    {type === 'ff14' ? <ZoneProximity /> : <ZoneProximityZXSJ />}
                     <ZoneLineStack />
                     <ZoneStack />
                     <ZoneLineKnockback />
@@ -120,11 +125,17 @@ export const PrefabsPanel: React.FC = () => {
                 </ObjectGroup>
 
                 <ObjectGroup>
-                    <ZoneTower />
-                    <ZoneEye />
-                    <StatusShangDeath />
+                    {type === 'ff14' && <ZoneEye />}
+                    {type === 'zxsj' && (
+                        <>
+                            <StatusShangDeath />
+                            <StatusJu />
+                            <StatusJian />
+                        </>
+                    )}
                     <ZoneRotateClockwise />
                     <ZoneRotateCounterClockwise />
+                    {extraZones}
                 </ObjectGroup>
             </Section>
 
@@ -144,88 +155,14 @@ export const PrefabsPanel: React.FC = () => {
                     <Waymark4 />
                 </ObjectGroup>
             </Section>
-            <Section title={t('prefabs.party')}>
-                <Section title={t('prefabs.FF14')}>
-                    <ObjectGroup>
-                        <PartySupport />
-                        <PartyTank />
-                        <PartyHealer />
-                        <PartyDps />
-                        <PartyAny />
-                    </ObjectGroup>
+        </>
+    );
+};
 
-                    <ObjectGroup>
-                        <PartyMelee />
-                        <PartyRanged />
-                        <PartyMagicRanged />
-                        <PartyPhysicalRanged />
-                    </ObjectGroup>
-
-                    <ObjectGroup>
-                        <PartyPaladin />
-                        <PartyWarrior />
-                        <PartyDarkKnight />
-                        <PartyGunbreaker />
-                    </ObjectGroup>
-
-                    <ObjectGroup>
-                        <PartyWhiteMage />
-                        <PartyScholar />
-                        <PartyAstrologian />
-                        <PartySage />
-                    </ObjectGroup>
-
-                    <ObjectGroup>
-                        <PartyMonk />
-                        <PartyDragoon />
-                        <PartySamurai />
-                        <PartyReaper />
-                        <PartyNinja />
-                        <PartyViper />
-                    </ObjectGroup>
-
-                    <ObjectGroup>
-                        <PartyBlueMage />
-                        <PartyBlackMage />
-                        <PartySummoner />
-                        <PartyRedMage />
-                        <PartyPictomancer />
-                    </ObjectGroup>
-
-                    <ObjectGroup>
-                        <PartyBard />
-                        <PartyMachinist />
-                        <PartyDancer />
-                    </ObjectGroup>
-                </Section>
-                <Section title={t('prefabs.ZXSJ')}>
-                    <ObjectGroup>
-                        <PartyFenXiangGu />
-                        <PartyGuiWangZong />
-                        <PartyHeHuanZong />
-                        <PartyLingXiGe />
-                        <PartyQingYunMen />
-                        <PartyTianYinGe />
-                    </ObjectGroup>
-                    <ObjectGroup>
-                        <PartyFenXiangYan />
-                        <PartyGuiWangSha />
-                        <PartyHeHuanYing />
-                        <PartyLingXiLing />
-                        <PartyQingYunLei />
-                        <PartyTianYinZhen />
-                    </ObjectGroup>
-                    <ObjectGroup>
-                        <PartyFenXiangZhou />
-                        <PartyGuiWangGang />
-                        <PartyHeHuanYue />
-                        <PartyLingXiXi />
-                        <PartyQingYunJian />
-                        <PartyTianYinJing />
-                    </ObjectGroup>
-                </Section>
-            </Section>
-
+const EnemiesAndTethersSection: React.FC<{ type: 'ff14' | 'zxsj' }> = ({ type }) => {
+    const { t } = useTranslation();
+    return (
+        <>
             <Section title={t('prefabs.enemies')}>
                 <ObjectGroup>
                     <EnemyCircle />
@@ -235,21 +172,138 @@ export const PrefabsPanel: React.FC = () => {
                     <EnemyHuge />
                 </ObjectGroup>
             </Section>
+
             <Section title={t('prefabs.tethers')}>
                 <ObjectGroup>
                     <TetherLine />
                     <TetherClose />
                     <TetherFar />
 
-                    <TetherPlusMinus />
-                    <TetherPlusPlus />
-                    <TetherMinusMinus />
+                    {type === 'ff14' && (
+                        <>
+                            <TetherPlusMinus />
+                            <TetherPlusPlus />
+                            <TetherMinusMinus />
+                        </>
+                    )}
                 </ObjectGroup>
                 <Text block size={200} data-nosnippet>
                     {t('prefabs.tethersHelp.part1')} <HotkeyName keys="esc" /> {t('prefabs.tethersHelp.part2')}{' '}
                     <HotkeyName keys="ctrl" /> {t('prefabs.tethersHelp.part3')}
                 </Text>
             </Section>
+        </>
+    );
+};
+
+export const PrefabsPanel: React.FC = () => {
+    const controlClasses = useControlStyles();
+    const { t } = useTranslation();
+    const [selectedTab, setSelectedTab] = useState<'ff14' | 'zxsj'>('ff14');
+
+    return (
+        <div className={controlClasses.panel}>
+            <TabList
+                selectedValue={selectedTab}
+                onTabSelect={(_, data) => setSelectedTab(data.value as 'ff14' | 'zxsj')}
+                style={{ marginBottom: '10px' }}
+            >
+                <Tab value="ff14">{t('prefabs.FF14')}</Tab>
+                <Tab value="zxsj">{t('prefabs.ZXSJ')}</Tab>
+            </TabList>
+
+            {selectedTab === 'ff14' && (
+                <>
+                    <ZonesAndWaymarksSection type="ff14" extraZones={<ZoneTower />} />
+                    <Section title={t('prefabs.party')}>
+                        <ObjectGroup>
+                            <PartySupport />
+                            <PartyTank />
+                            <PartyHealer />
+                            <PartyDps />
+                            <PartyAny />
+                        </ObjectGroup>
+
+                        <ObjectGroup>
+                            <PartyMelee />
+                            <PartyRanged />
+                            <PartyMagicRanged />
+                            <PartyPhysicalRanged />
+                        </ObjectGroup>
+
+                        <ObjectGroup>
+                            <PartyPaladin />
+                            <PartyWarrior />
+                            <PartyDarkKnight />
+                            <PartyGunbreaker />
+                        </ObjectGroup>
+
+                        <ObjectGroup>
+                            <PartyWhiteMage />
+                            <PartyScholar />
+                            <PartyAstrologian />
+                            <PartySage />
+                        </ObjectGroup>
+
+                        <ObjectGroup>
+                            <PartyMonk />
+                            <PartyDragoon />
+                            <PartySamurai />
+                            <PartyReaper />
+                            <PartyNinja />
+                            <PartyViper />
+                        </ObjectGroup>
+
+                        <ObjectGroup>
+                            <PartyBlueMage />
+                            <PartyBlackMage />
+                            <PartySummoner />
+                            <PartyRedMage />
+                            <PartyPictomancer />
+                        </ObjectGroup>
+
+                        <ObjectGroup>
+                            <PartyBard />
+                            <PartyMachinist />
+                            <PartyDancer />
+                        </ObjectGroup>
+                    </Section>
+                    <EnemiesAndTethersSection type="zxsj" />
+                </>
+            )}
+
+            {selectedTab === 'zxsj' && (
+                <>
+                    <ZonesAndWaymarksSection type="zxsj" extraZones={<ZoneTowerZXSJ />} />
+                    <Section title={t('prefabs.party')}>
+                        <ObjectGroup>
+                            <PartyFenXiangGu />
+                            <PartyGuiWangZong />
+                            <PartyHeHuanZong />
+                            <PartyLingXiGe />
+                            <PartyQingYunMen />
+                            <PartyTianYinGe />
+                        </ObjectGroup>
+                        <ObjectGroup>
+                            <PartyFenXiangYan />
+                            <PartyGuiWangSha />
+                            <PartyHeHuanYing />
+                            <PartyLingXiLing />
+                            <PartyQingYunLei />
+                            <PartyTianYinZhen />
+                        </ObjectGroup>
+                        <ObjectGroup>
+                            <PartyFenXiangZhou />
+                            <PartyGuiWangGang />
+                            <PartyHeHuanYue />
+                            <PartyLingXiXi />
+                            <PartyQingYunJian />
+                            <PartyTianYinJing />
+                        </ObjectGroup>
+                    </Section>
+                    <EnemiesAndTethersSection type="zxsj" />
+                </>
+            )}
         </div>
     );
 };

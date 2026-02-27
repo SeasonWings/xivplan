@@ -187,6 +187,7 @@ interface LineRendererProps extends RendererProps<LineZone> {
     rotation: number;
     isDragging?: boolean;
     isResizing?: boolean;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     scene: any;
 }
 

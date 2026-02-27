@@ -29,7 +29,7 @@ export const ZoneTower: React.FC = () => {
     return (
         <PrefabIcon
             draggable
-            name={t('objects.meteorTower', { defaultValue: 'Meteor/tower' })}
+            name={t('objects.tower', { defaultValue: 'Meteor/tower' })}
             icon={<Icon />}
             onDragStart={(e) => {
                 setDragObject({
@@ -113,7 +113,7 @@ const TowerDetails: React.FC<ListComponentProps<TowerZone>> = ({ object, ...prop
     return (
         <DetailsItem
             icon={<Icon width="100%" height="100%" style={{ [panelVars.colorZoneOrange]: object.color }} />}
-            name={t('objects.meteorTower', { defaultValue: 'Meteor/tower' })}
+            name={t('objects.tower', { defaultValue: 'Meteor/tower' })}
             object={object}
             {...props}
         />

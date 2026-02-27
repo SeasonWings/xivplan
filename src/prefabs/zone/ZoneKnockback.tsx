@@ -25,7 +25,7 @@ export const ZoneKnockback: React.FC = () => {
     return (
         <PrefabIcon
             draggable
-            name={t('objects.circularKnockback', { defaultValue: 'Circular knockback' })}
+            name={t('objects.knockback', { defaultValue: 'Circular knockback' })}
             icon={<Icon />}
             onDragStart={(e) => {
                 setDragObject({
@@ -222,7 +222,7 @@ const KnockbackDetails: React.FC<ListComponentProps<CircleZone>> = ({ object, ..
     return (
         <DetailsItem
             icon={<Icon width="100%" height="100%" style={{ [panelVars.colorZoneOrange]: object.color }} />}
-            name={t('objects.circularKnockback', { defaultValue: 'Circular knockback' })}
+            name={t('objects.knockback', { defaultValue: 'Circular knockback' })}
             object={object}
             {...props}
         />

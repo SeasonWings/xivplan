@@ -27,7 +27,7 @@ export const ZoneProximity: React.FC = () => {
     return (
         <PrefabIcon
             draggable
-            name={t('objects.proximityAoe', { defaultValue: 'Proximity AOE' })}
+            name={t('objects.proximity', { defaultValue: 'Proximity AOE' })}
             icon={<Icon />}
             onDragStart={(e) => {
                 setDragObject({
@@ -276,7 +276,7 @@ const ProximityDetails: React.FC<ListComponentProps<CircleZone>> = ({ object, ..
     return (
         <DetailsItem
             icon={<Icon width="100%" height="100%" style={{ [panelVars.colorZoneOrange]: object.color }} />}
-            name={t('objects.proximityAoe', { defaultValue: 'Proximity AOE' })}
+            name={t('objects.proximity', { defaultValue: 'Proximity AOE' })}
             object={object}
             {...props}
         />

@@ -1,6 +1,6 @@
+import { useTranslation } from 'react-i18next';
 import { makeDisplayName } from '../util';
 import { StatusIcon } from './StatusIcon';
-import { useTranslation } from 'react-i18next';
 
 function makeIcon(defaultNameKey: string, icon: string, scale?: number) {
     const Component: React.FC = () => {
@@ -60,6 +60,3 @@ export const StatusUltimateCircle = makeIcon('statusIcons.circle', 'ultimate/cir
 export const StatusUltimateCross = makeIcon('statusIcons.cross', 'ultimate/cross.png');
 export const StatusUltimateSquare = makeIcon('statusIcons.square', 'ultimate/square.png');
 export const StatusUltimateTriangle = makeIcon('statusIcons.triangle', 'ultimate/triangle.png');
-
-// ZXSJ
-export const StatusShangDeath = makeIcon('statusIcons.shang', 'zxsj/shang.png');

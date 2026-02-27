@@ -1,31 +1,31 @@
-import React, { useState, useEffect } from 'react';
 import {
+    Badge,
+    Button,
     Dialog,
+    DialogActions,
+    DialogBody,
+    DialogContent,
     DialogSurface,
     DialogTitle,
-    DialogBody,
-    DialogActions,
-    DialogContent,
-    Button,
-    Text,
-    Badge,
     makeStyles,
-    tokens,
     Spinner,
     Tab,
     TabList,
+    Text,
+    tokens,
 } from '@fluentui/react-components';
-import { ArrowDownloadFilled, EyeFilled, HeartFilled, CommentMultipleFilled } from '@fluentui/react-icons';
+import { ArrowDownloadFilled, CommentMultipleFilled, EyeFilled, HeartFilled } from '@fluentui/react-icons';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { CommunityPlan } from './types';
-import { getCategoryByValue, getGameByValue } from './categoryConfig';
+import { AnimationProvider } from '../animation/AnimationContext';
+import { config } from '../config';
+import { getCanvasSize } from '../coord';
 import { textToScene } from '../file';
 import { ScenePreview } from '../render/SceneRenderer';
-import { getCanvasSize } from '../coord';
-import { config } from '../config';
-import { AnimationProvider } from '../animation/AnimationContext';
-import { CommentSection } from './CommentSection';
 import type { Scene } from '../scene';
+import { getCategoryByValue, getGameByValue } from './categoryConfig';
+import { CommentSection } from './CommentSection';
+import type { CommunityPlan } from './types';
 
 const API_BASE = config.api.baseUrl;
 
@@ -331,21 +331,6 @@ const useStyles = makeStyles({
         overflowY: 'auto',
         overflowX: 'hidden',
         padding: `${tokens.spacingVerticalS} 0`,
-        // 自定义滚动条样式
-        '::-webkit-scrollbar': {
-            width: '6px',
-        },
-        '::-webkit-scrollbar-track': {
-            backgroundColor: tokens.colorNeutralBackground3,
-            borderRadius: '3px',
-        },
-        '::-webkit-scrollbar-thumb': {
-            backgroundColor: tokens.colorNeutralStroke1,
-            borderRadius: '3px',
-            ':hover': {
-                backgroundColor: tokens.colorNeutralStroke2,
-            },
-        },
     },
     description: {
         display: 'block',
@@ -381,22 +366,6 @@ const useStyles = makeStyles({
         borderRadius: tokens.borderRadiusMedium,
         overflow: 'hidden', // 隐藏滚动条，展示全貌
         padding: tokens.spacingVerticalL,
-        // 自定义滚动条样式
-        '::-webkit-scrollbar': {
-            width: '6px',
-            height: '6px',
-        },
-        '::-webkit-scrollbar-track': {
-            backgroundColor: tokens.colorNeutralBackground3,
-            borderRadius: '3px',
-        },
-        '::-webkit-scrollbar-thumb': {
-            backgroundColor: tokens.colorNeutralStroke1,
-            borderRadius: '3px',
-            ':hover': {
-                backgroundColor: tokens.colorNeutralStroke2,
-            },
-        },
     },
     previewWrapper: {
         maxWidth: '100%',

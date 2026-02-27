@@ -1,4 +1,4 @@
-import { Avatar, Button, makeStyles, Spinner, Text, tokens, Textarea } from '@fluentui/react-components';
+import { Avatar, Button, makeStyles, Spinner, Text, Textarea, tokens } from '@fluentui/react-components';
 import { Delete20Regular, Send20Regular } from '@fluentui/react-icons';
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../auth/AuthContext';
@@ -69,7 +69,6 @@ const useStyles = makeStyles({
         padding: `${tokens.spacingVerticalM} ${tokens.spacingVerticalL} ${tokens.spacingVerticalL}`,
         overflowY: 'auto', // 添加滚动
         flex: 1, // 占据剩余空间
-        scrollbarWidth: 'thin',
     },
     comment: {
         display: 'flex',
@@ -227,7 +226,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ shareId, onComme
     };
 
     // 加载评论列表
-    const loadComments = async () => {
+    const loadComments = React.useCallback(async () => {
         try {
             setLoading(true);
             const response = await fetch(`${config.api.baseUrl}/community/${shareId}/comments?order=${sortOrder}`);
@@ -241,11 +240,11 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ shareId, onComme
         } finally {
             setLoading(false);
         }
-    };
+    }, [shareId, sortOrder]);
 
     useEffect(() => {
         loadComments();
-    }, [shareId, sortOrder]); // 添加 sortOrder 依赖
+    }, [loadComments]);
 
     // 发表评论或回复
     const handleSubmit = async () => {

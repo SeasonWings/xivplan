@@ -1,11 +1,11 @@
 import { Button, makeStyles, PopoverSurface, tokens, typographyStyles } from '@fluentui/react-components';
 import { Dismiss24Regular } from '@fluentui/react-icons';
 import React, { useCallback, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { TutorialContext, TutorialActionContext } from './TutorialContext';
-import { useScene } from '../SceneProvider';
 import { SceneObject } from '../scene';
-import { useSelection, toggleSelection } from '../selection';
+import { useScene } from '../SceneProvider';
+import { toggleSelection, useSelection } from '../selection';
 import { SceneSelection } from '../SelectionContext';
+import { TutorialActionContext, TutorialContext } from './TutorialContext';
 
 const pulseKeyframes = {
     from: { opacity: 1 },
@@ -223,6 +223,11 @@ export const TutorialOverlay: React.FC = () => {
             return;
         }
 
+        // 如果action已经在运行，则不重复执行
+        if (isActionRunning) {
+            return;
+        }
+
         // 检查 demo 对象是否已经被添加到 step 中
         const demoObjectIds = currentStep.demoObjects.map((obj) => obj.id);
         const allDemoObjectsPresent = demoObjectIds.every((id) => step.objects.some((obj) => obj.id === id));
@@ -244,7 +249,7 @@ export const TutorialOverlay: React.FC = () => {
 
             return () => clearTimeout(timeoutId);
         }
-    }, [isActive, currentStep, step.objects]);
+    }, [isActive, currentStep, step.objects, isActionRunning]);
 
     // 处理按钮高亮
     useEffect(() => {

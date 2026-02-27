@@ -43,6 +43,7 @@ export enum ObjectType {
     Party = 'party',
     Polygon = 'polygon',
     Proximity = 'proximity',
+    ProximityZXSJ = 'proximityZXSJ',
     Rect = 'rect',
     RightTriangle = 'rightTriangle',
     RotateCCW = 'rotateCCW',
@@ -52,6 +53,7 @@ export enum ObjectType {
     Tether = 'tether',
     Text = 'text',
     Tower = 'tower',
+    TowerZXSJ = 'towerZXSJ',
     Triangle = 'triangle',
 }
 
@@ -239,6 +241,8 @@ export interface IconObject extends ImageObject, NamedObject, BaseObject {
     readonly iconId?: number;
     readonly maxStacks?: number;
     readonly time?: number;
+    readonly color?: string; // 添加 color 属性以支持图标染色
+    readonly shape?: 'circle' | 'square'; // 支持圆形/方形高亮框
 }
 export const isIcon = makeObjectTest<IconObject>(ObjectType.Icon);
 
@@ -269,6 +273,7 @@ export interface CircleZone extends RadiusObject, ColoredObject, ZoneStyleObject
     readonly type:
         | ObjectType.Circle
         | ObjectType.Proximity
+        | ObjectType.ProximityZXSJ
         | ObjectType.Knockback
         | ObjectType.RotateCW
         | ObjectType.RotateCCW;
@@ -277,6 +282,7 @@ export interface CircleZone extends RadiusObject, ColoredObject, ZoneStyleObject
 export const isCircleZone = makeObjectTest<CircleZone>(
     ObjectType.Circle,
     ObjectType.Proximity,
+    ObjectType.ProximityZXSJ,
     ObjectType.Knockback,
     ObjectType.RotateCW,
     ObjectType.RotateCCW,
@@ -370,6 +376,11 @@ export interface TowerZone extends RadiusObject, ColoredObject, StackCountObject
 }
 export const isTowerZone = makeObjectTest<TowerZone>(ObjectType.Tower);
 
+export interface TowerZoneZXSJ extends RadiusObject, ColoredObject, StackCountObject, BaseObject {
+    readonly type: ObjectType.TowerZXSJ;
+}
+export const isTowerZoneZXSJ = makeObjectTest<TowerZoneZXSJ>(ObjectType.TowerZXSJ);
+
 export type Zone =
     | CircleZone
     | DonutZone
@@ -379,7 +390,8 @@ export type Zone =
     | RectangleZone
     | ExaflareZone
     | StarburstZone
-    | TowerZone;
+    | TowerZone
+    | TowerZoneZXSJ;
 export function isZone(object: UnknownObject): object is Zone {
     return (
         isCircleZone(object) ||
@@ -390,7 +402,8 @@ export function isZone(object: UnknownObject): object is Zone {
         isRectangleZone(object) ||
         isExaflareZone(object) ||
         isStarburstZone(object) ||
-        isTowerZone(object)
+        isTowerZone(object) ||
+        isTowerZoneZXSJ(object)
     );
 }
 
@@ -504,10 +517,14 @@ export interface Scene {
     readonly nextId: number;
     readonly arena: Arena;
     readonly steps: SceneStep[];
-    /** 动画列表 */
+    /** 动画列表 (Legacy) */
     readonly animations?: readonly Animation[];
-    /** 当前激活的动画ID */
+    /** 当前激活的动画ID (Legacy) */
     readonly currentAnimationId?: string;
+    /** 动画列表 V2 */
+    readonly animationsV2?: readonly unknown[];
+    /** 当前激活的动画ID V2 */
+    readonly currentAnimationV2Id?: string;
 }
 
 export const NO_GRID: NoGrid = {

@@ -23,6 +23,7 @@ import { useShowResizer } from './highlight';
 interface ControlPointProps {
     allowRotate?: boolean;
     allowInnerRadius?: boolean;
+    minRadius?: number;
 }
 
 export interface RadiusObjectState {
@@ -48,6 +49,7 @@ export const RadiusObjectContainer: React.FC<RadiusObjectContainerProps> = ({
     children,
     allowRotate,
     allowInnerRadius,
+    minRadius,
 }) => {
     const { step, dispatch } = useScene();
     const showResizer = useShowResizer(object);
@@ -111,6 +113,7 @@ export const RadiusObjectContainer: React.FC<RadiusObjectContainerProps> = ({
                     onTransformEnd={handleTransformEnd}
                     allowRotate={allowRotate}
                     allowInnerRadius={allowInnerRadius}
+                    minRadius={minRadius}
                 >
                     {(props) => children({ ...props, isDragging, isResizing })}
                 </RadiusControlPoints>
@@ -147,9 +150,13 @@ const ROTATE_HANDLE_OFFSET = 50;
 const ROTATE_SNAP_DIVISION = 15;
 const ROTATE_SNAP_TOLERANCE = 2;
 
-function getRadius(object: RadiusObject, { pointerPos, activeHandleId }: HandleFuncProps) {
+function getRadius(
+    object: RadiusObject,
+    { pointerPos, activeHandleId }: HandleFuncProps,
+    { minRadius }: ControlPointProps = {},
+) {
     if (pointerPos && activeHandleId === HandleId.Radius) {
-        return Math.max(MIN_RADIUS, Math.round(distance(pointerPos) - OUTSET));
+        return Math.max(minRadius ?? MIN_RADIUS, Math.round(distance(pointerPos) - OUTSET));
     }
 
     return object.radius;
@@ -219,7 +226,7 @@ function getInnerRadiusHandles(r: number): Handle[] {
 const RadiusControlPoints = createControlPointManager<RadiusObject, RadiusObjectState, ControlPointProps>({
     handleFunc: (object, handle, props) => {
         if (props.allowInnerRadius) {
-            let radius = getRadius(object, handle) + OUTSET;
+            let radius = getRadius(object, handle, props) + OUTSET;
             let innerRadius = getInnerRadius(object, handle, props) - OUTSET;
 
             if (handle.activeHandleId === HandleId.Radius) {
@@ -241,7 +248,7 @@ const RadiusControlPoints = createControlPointManager<RadiusObject, RadiusObject
 
             return handles;
         } else {
-            const radius = getRadius(object, handle) + OUTSET;
+            const radius = getRadius(object, handle, props) + OUTSET;
             const rotation = isRotateable(object) ? object.rotation : 0;
             const handles = getNormalHandles(radius, rotation);
 
@@ -254,7 +261,7 @@ const RadiusControlPoints = createControlPointManager<RadiusObject, RadiusObject
     },
     getRotation: getRotation,
     stateFunc: (object, handle, props) => {
-        let radius = getRadius(object, handle);
+        let radius = getRadius(object, handle, props);
         let innerRadius = getInnerRadius(object, handle, props);
         const rotation = getRotation(object, handle, props);
 

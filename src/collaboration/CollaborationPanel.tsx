@@ -84,7 +84,7 @@ const CollaborationPanel: React.FC = () => {
         try {
             await joinRoom();
             setNewRoomId('');
-        } catch (error) {
+        } catch {
             alert('创建房间失败，请检查服务器连接');
         }
     };
@@ -94,7 +94,7 @@ const CollaborationPanel: React.FC = () => {
         if (newRoomId.trim()) {
             try {
                 await joinRoom(newRoomId.trim());
-            } catch (error) {
+            } catch {
                 alert('加入房间失败，请检查房间ID是否正确');
             }
         }

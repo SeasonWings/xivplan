@@ -2,6 +2,7 @@ import { KonvaEventObject } from 'konva/lib/Node';
 import React, { Dispatch, ReactNode } from 'react';
 import { getCanvasCoord, getSceneCoord } from '../coord';
 import { CursorGroup } from '../CursorGroup';
+import { useEditActivity } from '../EditActivityContext';
 import { EditMode } from '../editMode';
 import { moveObjectsBy } from '../groupOperations';
 import { MoveableObject, Scene, SceneStep, UnknownObject } from '../scene';
@@ -19,7 +20,6 @@ import { useEditMode } from '../useEditMode';
 import { vecSub } from '../vector';
 import { SelectableObject } from './SelectableObject';
 import { TetherTarget } from './TetherTarget';
-import { useEditActivity } from '../EditActivityContext';
 
 export interface DraggableObjectProps {
     object: MoveableObject & UnknownObject;
@@ -96,11 +96,10 @@ function updatePosition(
     e: KonvaEventObject<DragEvent>,
     dispatch: Dispatch<SceneAction>,
 ) {
-    // Konva automatically moves the object to e.target.position() in canvas
-    // coordinates. Subtracting the object's original position gives the offset
-    // that needs to be applied to all objects being dragged.
     const pos = getSceneCoord(scene, e.target.position());
-    const offset = vecSub(pos, targetObject);
+    const baseTarget =
+        step.objects.find((obj): obj is MoveableObject & UnknownObject => obj.id === targetObject.id) ?? targetObject;
+    const offset = vecSub(pos, baseTarget);
 
     if (offset.x === 0 && offset.y === 0) {
         return;

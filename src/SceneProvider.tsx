@@ -76,6 +76,16 @@ export interface SetCurrentAnimationIdAction {
     animationId: string | undefined;
 }
 
+export interface SetAnimationsV2Action {
+    type: 'setAnimationsV2';
+    animations: readonly unknown[];
+}
+
+export interface SetCurrentAnimationV2IdAction {
+    type: 'setCurrentAnimationV2Id';
+    animationId: string | undefined;
+}
+
 export type ArenaAction =
     | SetArenaAction
     | SetArenaShapeAction
@@ -87,7 +97,9 @@ export type ArenaAction =
     | SetArenaBackgroundAction
     | SetArenaBackgroundOpacityAction
     | SetAnimationsAction
-    | SetCurrentAnimationIdAction;
+    | SetCurrentAnimationIdAction
+    | SetAnimationsV2Action
+    | SetCurrentAnimationV2IdAction;
 
 export interface ObjectUpdateAction {
     type: 'update';
@@ -416,6 +428,8 @@ function updateStep(scene: Readonly<Scene>, index: number, step: SceneStep): Sce
         steps: [...scene.steps],
         animations: scene.animations, // 保留 animations 字段
         currentAnimationId: scene.currentAnimationId, // 保留 currentAnimationId 字段
+        animationsV2: scene.animationsV2, // 保留 animationsV2 字段
+        currentAnimationV2Id: scene.currentAnimationV2Id, // 保留 currentAnimationV2Id 字段
     };
     result.steps[index] = step;
     return result;
@@ -655,6 +669,24 @@ function sceneReducer(state: Readonly<EditorState>, action: SceneAction): Editor
                 scene: {
                     ...state.scene,
                     currentAnimationId: action.animationId,
+                },
+            };
+
+        case 'setAnimationsV2':
+            return {
+                ...state,
+                scene: {
+                    ...state.scene,
+                    animationsV2: action.animations,
+                },
+            };
+
+        case 'setCurrentAnimationV2Id':
+            return {
+                ...state,
+                scene: {
+                    ...state.scene,
+                    currentAnimationV2Id: action.animationId,
                 },
             };
 

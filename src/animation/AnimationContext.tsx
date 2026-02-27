@@ -1,10 +1,13 @@
+/**
+ * 旧版动画系统 - Legacy
+ * 新版请使用 AnimationV2Context
+ */
 /* eslint-disable react-refresh/only-export-components */
-/* eslint-disable react-hooks/preserve-manual-memoization */
 import React, { createContext, PropsWithChildren, useContext, useEffect, useRef, useState } from 'react';
 import { SceneObject } from '../scene';
 import { useScene } from '../SceneProvider';
-import { getObjectsAtTime } from './animationEngine';
-import { Animation, AnimationPlayerState, EasingType, Keyframe, PlaybackState } from './animationTypes';
+import { getObjectsAtTime } from './animationEngineLegacy';
+import { Animation, AnimationPlayerState, EasingType, Keyframe, PlaybackState } from './animationTypesLegacy';
 
 interface AnimationContextValue {
     /** 当前动画配置 */
@@ -65,7 +68,7 @@ export const AnimationProvider: React.FC<PropsWithChildren> = ({ children }) => 
     const { step, scene, dispatch } = useScene();
 
     // 获取所有动画和当前动画ID
-    const animations = scene.animations ?? [];
+    const animations = React.useMemo(() => scene.animations ?? [], [scene.animations]);
     const currentAnimationId = scene.currentAnimationId;
 
     // 获取当前激活的动画

@@ -7,6 +7,7 @@ import { HelpContext } from './HelpContext';
 import { HelpDialog } from './HelpDialog';
 import { GroupMoveAction, SceneAction, getObjectById, useScene } from './SceneProvider';
 import { SceneSelection } from './SelectionContext';
+import { useAnimationV2 } from './animation/AnimationV2Context';
 import { getSceneCoord, rotateCoord } from './coord';
 import { copyObjects, getGroupCenter } from './copy';
 import { EditMode } from './editMode';
@@ -117,6 +118,7 @@ const SelectionActionHandler: React.FC = () => {
     const { scene, step, dispatch } = useScene();
     const stage = useStage();
     const { t } = useTranslation();
+    const { isTimelineFocused, canPasteEffect } = useAnimationV2();
 
     useHotkeys(
         'ctrl+a',
@@ -164,18 +166,24 @@ const SelectionActionHandler: React.FC = () => {
         'ctrl+c',
         { category: CATEGORY_SELECTION, help: t('hotkeys.copySelected') },
         (e) => {
+            if (isTimelineFocused) {
+                return;
+            }
             if (!selection.size || editMode !== EditMode.Normal) {
                 return;
             }
             setClipboard(getSelectedObjects(step, selection));
             e.preventDefault();
         },
-        [step, selection, editMode],
+        [step, selection, editMode, isTimelineFocused],
     );
     useHotkeys(
         'ctrl+x',
         { category: CATEGORY_SELECTION, help: t('hotkeys.cutSelected') },
         (e) => {
+            if (isTimelineFocused) {
+                return;
+            }
             if (!selection.size || editMode !== EditMode.Normal) {
                 return;
             }
@@ -186,32 +194,38 @@ const SelectionActionHandler: React.FC = () => {
 
             e.preventDefault();
         },
-        [step, dispatch, setSelection, selection, editMode],
+        [step, dispatch, setSelection, selection, editMode, isTimelineFocused],
     );
     useHotkeys(
         'ctrl+v',
         { category: CATEGORY_SELECTION, help: t('hotkeys.pasteAtMouse') },
         (e) => {
+            if (isTimelineFocused && canPasteEffect) {
+                return;
+            }
             if (!clipboard.length || !stage || editMode !== EditMode.Normal) {
                 return;
             }
             pasteObjects(stage, scene, dispatch, setSelection, clipboard);
             e.preventDefault();
         },
-        [stage, scene, dispatch, setSelection, clipboard, editMode],
+        [stage, scene, dispatch, setSelection, clipboard, editMode, isTimelineFocused, canPasteEffect],
     );
 
     useHotkeys(
         'ctrl+shift+v',
         { category: CATEGORY_SELECTION, help: t('hotkeys.pasteAtOriginal') },
         (e) => {
+            if (isTimelineFocused && canPasteEffect) {
+                return;
+            }
             if (!clipboard.length || !stage || editMode !== EditMode.Normal) {
                 return;
             }
             pasteObjects(stage, scene, dispatch, setSelection, clipboard, false);
             e.preventDefault();
         },
-        [stage, scene, dispatch, setSelection, clipboard, editMode],
+        [stage, scene, dispatch, setSelection, clipboard, editMode, isTimelineFocused, canPasteEffect],
     );
 
     useHotkeys(

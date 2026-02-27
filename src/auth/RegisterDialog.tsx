@@ -1,19 +1,19 @@
-import React, { useEffect, useState } from 'react';
 import {
+    Button,
     Dialog,
-    DialogSurface,
-    DialogTitle,
+    DialogActions,
     DialogBody,
     DialogContent,
-    DialogActions,
-    Button,
+    DialogSurface,
+    DialogTitle,
+    Field,
     Input,
     makeStyles,
-    tokens,
     Spinner,
     Text,
-    Field,
+    tokens,
 } from '@fluentui/react-components';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from './AuthContext';
 
@@ -187,9 +187,10 @@ export const RegisterDialog: React.FC<RegisterDialogProps> = ({ open, onClose, o
                     verificationCode: data.error || t('auth.failedToSendCode', '发送验证码失败'),
                 });
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : t('auth.failedToSendCode', '发送验证码失败');
             setErrors({
-                verificationCode: error.message || t('auth.failedToSendCode', '发送验证码失败'),
+                verificationCode: errorMessage,
             });
         } finally {
             setSendingCode(false);
@@ -219,9 +220,10 @@ export const RegisterDialog: React.FC<RegisterDialogProps> = ({ open, onClose, o
                 setCountdown(0);
                 onClose();
             }, 0);
-        } catch (error: any) {
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : t('auth.registrationFailed', '注册失败');
             setErrors({
-                general: error.message || t('auth.registrationFailed', '注册失败'),
+                general: errorMessage,
             });
             setSubmitting(false);
         }

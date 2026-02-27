@@ -1,19 +1,19 @@
-import React, { useState } from 'react';
 import {
+    Button,
     Dialog,
-    DialogSurface,
-    DialogTitle,
+    DialogActions,
     DialogBody,
     DialogContent,
-    DialogActions,
-    Button,
+    DialogSurface,
+    DialogTitle,
+    Field,
     Input,
     makeStyles,
-    tokens,
     Spinner,
     Text,
-    Field,
+    tokens,
 } from '@fluentui/react-components';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 const useStyles = makeStyles({
@@ -130,9 +130,10 @@ export const ResetPasswordDialog: React.FC<ResetPasswordDialogProps> = ({ open, 
                     general: data.error || t('auth.invalidCode', '验证码无效或已过期'),
                 });
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : t('auth.verificationFailed', '验证失败');
             setErrors({
-                general: error.message || t('auth.verificationFailed', '验证失败'),
+                general: errorMessage,
             });
         } finally {
             setSubmitting(false);
@@ -188,9 +189,10 @@ export const ResetPasswordDialog: React.FC<ResetPasswordDialogProps> = ({ open, 
                     general: data.error || t('auth.resetFailed', '密码重置失败'),
                 });
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : t('auth.resetFailed', '密码重置失败');
             setErrors({
-                general: error.message || t('auth.resetFailed', '密码重置失败'),
+                general: errorMessage,
             });
         } finally {
             setSubmitting(false);

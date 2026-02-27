@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useCurrentStep } from '../SceneProvider';
 import { shouldUseNativeStyleControls } from '../lib/aoe/nativeStyleSupport';
 import {
+    ObjectType,
     SceneObject,
     UnknownObject,
     isArcZone,
@@ -20,7 +21,7 @@ import {
     isLineZone,
     isMarker,
     isMoveable,
-    isNamed,
+    // isNamed,
     isParty,
     isPolygonZone,
     isRadiusObject,
@@ -33,7 +34,6 @@ import {
     supportsHollow,
     supportsNativeStyle,
     supportsStackCount,
-    ObjectType,
 } from '../scene';
 import { getSelectedObjects, useSelection } from '../selection';
 import { useControlStyles } from '../useControlStyles';
@@ -43,10 +43,12 @@ import { AoeGlobalOpacityControl } from './properties/AoeGlobalOpacityControl';
 import { ArrowPointersControl } from './properties/ArrowControls';
 import { DrawObjectBrushControl } from './properties/BrushControl';
 // import { ColorControl, ColorSwatchControl } from './properties/ColorControl';
+import { AnimatedControl } from './properties/AnimatedControl';
 import { ConeAngleControl } from './properties/ConeControls';
 import { EnemyRingControl } from './properties/EnemyControls';
 import { ExaflareLengthControl, ExaflareSpacingControl } from './properties/ExaflareControls';
 import { EyeInvertControl } from './properties/EyeControls';
+import { GroupControl } from './properties/GroupControl';
 import { HideControl } from './properties/HideControl';
 import { HollowControl } from './properties/HollowControl';
 import { IconStacksControl, IconTimeControl } from './properties/IconControls';
@@ -68,8 +70,6 @@ import { StarburstSpokeCountControl, StarburstSpokeWidthControl } from './proper
 import { TetherTypeControl, TetherWidthControl } from './properties/TetherControls';
 import { TextLayoutControl, TextOutlineControl, TextValueControl } from './properties/TextControls';
 import { ZoneStyleTypeControl } from './properties/ZoneStyleTypeControl';
-import { AnimatedControl } from './properties/AnimatedControl';
-import { GroupControl } from './properties/GroupControl';
 
 export interface PropertiesPanelProps {
     className?: string;
@@ -124,7 +124,7 @@ const Controls: React.FC = () => {
 
     return (
         <>
-            <ControlCondition objects={objects} test={isNamed} control={NameControl} />
+            <NameControl objects={objects} />
             <ControlCondition objects={objects} test={isImageObject} control={ImageControl} />
             <ControlCondition objects={objects} test={supportsNativeStyle} control={ZoneStyleTypeControl} />
 
@@ -206,6 +206,7 @@ const Controls: React.FC = () => {
                     obj.type === ObjectType.LineKnockback ||
                     obj.type === ObjectType.LineKnockAway ||
                     obj.type === ObjectType.Proximity ||
+                    obj.type === ObjectType.ProximityZXSJ ||
                     obj.type === ObjectType.Knockback ||
                     obj.type === ObjectType.RotateCW ||
                     obj.type === ObjectType.RotateCCW
@@ -216,7 +217,16 @@ const Controls: React.FC = () => {
             <ControlCondition objects={objects} test={isText} control={TextValueControl} />
             <div className={mergeClasses(classes.row, classes.rightGap)}>
                 <ControlCondition objects={objects} test={isIcon} control={IconStacksControl} />
-                <ControlCondition objects={objects} test={isIcon} control={IconTimeControl} />
+                <ControlCondition
+                    objects={objects}
+                    test={(obj) =>
+                        isIcon(obj) &&
+                        !obj.image.includes('shang.png') &&
+                        !obj.image.includes('ju.png') &&
+                        !obj.image.includes('jian.png')
+                    }
+                    control={IconTimeControl}
+                />
             </div>
 
             {/* 组控制 */}

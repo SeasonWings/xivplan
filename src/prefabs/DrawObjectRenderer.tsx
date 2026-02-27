@@ -59,7 +59,7 @@ export const DrawDetails: React.FC<ListComponentProps<DrawObject>> = (props) => 
     return (
         <DetailsItem
             icon={<DrawImageRegular color={props.object.color} />}
-            name={t('objects.drawing', { defaultValue: 'Drawing' })}
+            name={t('objects.draw', { defaultValue: 'Drawing' })}
             {...props}
         />
     );

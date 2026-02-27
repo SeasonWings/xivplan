@@ -1,9 +1,13 @@
+/**
+ * 旧版动画时间轴 - Legacy
+ * 新版请使用 TimelineV2
+ */
 import { Button, makeStyles, Slider, tokens, Tooltip } from '@fluentui/react-components';
 import { Pause24Regular, Play24Regular, Stop24Regular } from '@fluentui/react-icons';
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAnimation } from './AnimationContext';
-import { PlaybackState } from './animationTypes';
+import { PlaybackState } from './animationTypesLegacy';
 
 const useStyles = makeStyles({
     container: {
@@ -49,7 +53,7 @@ const useStyles = makeStyles({
     },
 });
 
-export const AnimationTimeline: React.FC = () => {
+export const AnimationTimelineLegacy: React.FC = () => {
     const classes = useStyles();
     const { t } = useTranslation();
     const { animation, playerState, play, pause, stop, seekTo, setPlaybackSpeed } = useAnimation();

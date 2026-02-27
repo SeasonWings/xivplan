@@ -1,6 +1,30 @@
 // WebSocket服务用于管理与服务器的实时通信
 import { config } from '../config';
 
+export interface UserInfoData {
+    userId: string;
+    userName: string;
+}
+
+export interface RoomJoinedData {
+    roomId: string;
+}
+
+export interface HostInfoData {
+    hostId: string;
+}
+
+export interface HostChangedData {
+    hostId: string;
+}
+
+export interface ChatMessageData {
+    userId: string;
+    userName: string;
+    message: string;
+    timestamp: number;
+}
+
 class WebSocketService {
     private ws: WebSocket | null = null;
     private reconnectAttempts = 0;
@@ -8,7 +32,7 @@ class WebSocketService {
     private reconnectInterval = 2000;
     private maxReconnectDelay = 10000;
     private reconnectTimer: NodeJS.Timeout | null = null;
-    private eventListeners: Map<string, Array<(data: any) => void>> = new Map();
+    private eventListeners: Map<string, Array<(data: unknown) => void>> = new Map();
     private isConnecting = false;
     private userId: string = '';
     private userName: string = '';
@@ -192,18 +216,20 @@ class WebSocketService {
     }
 
     // 日志打印方法，受debugMode控制
-    private log(...args: any[]): void {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    private log(...args: unknown[]): void {
         //  if (this.debugMode) {
         //     console.log(...args);
         // }
     }
 
     // 错误日志打印方法，不受debugMode控制
-    private error(...args: any[]): void {
+    private error(...args: unknown[]): void {
         console.error(...args);
     }
 
     // 处理接收到的消息
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     private handleMessage(data: any): void {
         switch (data.type) {
             case 'user_info':
@@ -283,6 +309,7 @@ class WebSocketService {
     }
 
     // 发送消息到服务器
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     send(type: string, payload?: any): void {
         if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
             console.warn('WebSocket未连接，无法发送消息');
@@ -306,6 +333,7 @@ class WebSocketService {
     }
 
     // 更新场景数据
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     updateScene(scene: any, isHost: boolean): void {
         // 只有房主或用户有编辑权限时才能发送场景更新
         const currentUser = this.connectedUsers.find((user) => user.id === this.userId);
@@ -361,7 +389,7 @@ class WebSocketService {
     }
 
     // 添加事件监听器
-    on(event: string, callback: (data: any) => void): void {
+    on(event: string, callback: (data: unknown) => void): void {
         if (!this.eventListeners.has(event)) {
             this.eventListeners.set(event, []);
         }
@@ -369,7 +397,7 @@ class WebSocketService {
     }
 
     // 移除事件监听器
-    off(event: string, callback: (data: any) => void): void {
+    off(event: string, callback: (data: unknown) => void): void {
         if (this.eventListeners.has(event)) {
             const listeners = this.eventListeners.get(event)!;
             const index = listeners.indexOf(callback);
@@ -380,6 +408,7 @@ class WebSocketService {
     }
 
     // 触发事件
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     private trigger(event: string, data?: any): void {
         if (this.eventListeners.has(event)) {
             const listeners = this.eventListeners.get(event)!;

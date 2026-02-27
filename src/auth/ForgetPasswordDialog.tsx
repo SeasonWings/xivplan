@@ -1,19 +1,19 @@
-import React, { useState } from 'react';
 import {
+    Button,
     Dialog,
-    DialogSurface,
-    DialogTitle,
+    DialogActions,
     DialogBody,
     DialogContent,
-    DialogActions,
-    Button,
+    DialogSurface,
+    DialogTitle,
+    Field,
     Input,
     makeStyles,
-    tokens,
     Spinner,
     Text,
-    Field,
+    tokens,
 } from '@fluentui/react-components';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 const useStyles = makeStyles({
@@ -121,9 +121,10 @@ export const ForgetPasswordDialog: React.FC<ForgetPasswordDialogProps> = ({
                     general: data.error || t('auth.failedToSendCode', '发送验证码失败'),
                 });
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : t('auth.failedToSendCode', '发送验证码失败');
             setErrors({
-                general: error.message || t('auth.failedToSendCode', '发送验证码失败'),
+                general: errorMessage,
             });
         } finally {
             setSubmitting(false);

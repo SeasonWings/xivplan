@@ -1,3 +1,7 @@
+/**
+ * 旧版关键帧面板 - Legacy
+ * 新版请使用 TimelineV2 集成的可视化时间线
+ */
 import {
     Button,
     Input,
@@ -86,7 +90,7 @@ interface KeyframeRowData {
     objectCount: number;
 }
 
-export const KeyframePanel: React.FC = () => {
+export const KeyframePanelLegacy: React.FC = () => {
     const classes = useStyles();
     const { t } = useTranslation();
     const {

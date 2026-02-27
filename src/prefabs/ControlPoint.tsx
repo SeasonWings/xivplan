@@ -3,12 +3,12 @@ import { KonvaEventObject } from 'konva/lib/Node';
 import { Vector2d } from 'konva/lib/types';
 import React, { useLayoutEffect, useRef, useState } from 'react';
 import { Group } from 'react-konva';
+import { useEditActivity } from '../EditActivityContext';
 import { useScene } from '../SceneProvider';
 import { getCanvasCoord, rotateCoord } from '../coord';
 import { ControlsPortal } from '../render/Portals';
 import { useStage } from '../render/stage';
 import { Handle } from './Handle';
-import { useEditActivity } from '../EditActivityContext';
 
 export const CONTROL_POINT_BORDER_COLOR = '#00a1ff';
 
@@ -204,6 +204,7 @@ export function createControlPointManager<T extends Vector2d, S, P = unknown>(
             onTransformMove,
             getPointerPos,
             props,
+            endEditActivity,
         ]);
 
         const setCursor = (cursor: string) => {

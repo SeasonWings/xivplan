@@ -9,7 +9,12 @@ export function getZoneStyle(
     opacity: number,
     size = 0,
     hollow = false,
-): { fill: string; stroke: string; strokeWidth: number } {
+): {
+    dash: number[] | undefined;
+    fill: string;
+    stroke: string;
+    strokeWidth: number;
+} {
     const strokeWidth = getStrokeWidth(size);
     const c = new Color(color);
 
@@ -22,7 +27,7 @@ export function getZoneStyle(
     stroke.alpha = opacity / 50;
     const strokeStr = stroke.display();
 
-    return { fill: fillStr, stroke: strokeStr, strokeWidth };
+    return { fill: fillStr, stroke: strokeStr, strokeWidth, dash: undefined };
 }
 
 export function getArrowStyle(color: string, opacity: number): { fill: string } {
