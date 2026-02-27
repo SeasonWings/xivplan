@@ -68,6 +68,13 @@ interface AnnouncementItem {
 // 公告数据
 const announcements: AnnouncementItem[] = [
     {
+        id: '6',
+        date: '2026-02-28',
+        title: 'v2.1.0 更新日志',
+        content:
+            '1. 动画引擎完全重构，欢迎体验V2版本动画编辑器\n2. 诛仙世界选项新增殇，惧，剑，距离衰减元素\n3. 新增炎烬锁锋刃地图支持\n4. 新增建议反馈功能，欢迎给本站提出建议捏',
+    },
+    {
         id: '5',
         date: '2026-01-23',
         title: 'v2.0.0 更新日志',

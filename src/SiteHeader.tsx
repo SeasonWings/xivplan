@@ -1,4 +1,5 @@
 import {
+    Avatar,
     Button,
     Link,
     Menu,
@@ -18,22 +19,24 @@ import { useTranslation } from 'react-i18next';
 import { OutPortal } from 'react-reverse-portal';
 import { AboutDialog } from './AboutDialog';
 import { AnnouncementDialog } from './AnnouncementDialog';
+import { useAuth } from './auth/AuthContext';
+import { ForgetPasswordDialog } from './auth/ForgetPasswordDialog';
+import { LoginDialog } from './auth/LoginDialog';
+import { RegisterDialog } from './auth/RegisterDialog';
+import { ResetPasswordDialog } from './auth/ResetPasswordDialog';
+import { UserProfileDialog } from './auth/UserProfileDialog';
 import { ExternalLink } from './ExternalLink';
+import { FeedbackDialog } from './feedback/FeedbackDialog';
 import { HelpContext } from './HelpContext';
 import { PANEL_WIDTH } from './panel/PanelStyles';
 import { FileSource, useScene } from './SceneProvider';
 import { DarkModeContext } from './ThemeContext';
 import { ToolbarContext } from './ToolbarContext';
+import { TutorialDialog } from './tutorial/TutorialDialog';
 import { useIsDirty } from './useIsDirty';
 import { removeFileExtension } from './util';
-import { TutorialDialog } from './tutorial/TutorialDialog';
-import { useAuth } from './auth/AuthContext';
-import { LoginDialog } from './auth/LoginDialog';
-import { RegisterDialog } from './auth/RegisterDialog';
-import { UserProfileDialog } from './auth/UserProfileDialog';
-import { ForgetPasswordDialog } from './auth/ForgetPasswordDialog';
-import { ResetPasswordDialog } from './auth/ResetPasswordDialog';
-import { Avatar } from '@fluentui/react-components';
+
+import { useNavigate } from 'react-router-dom';
 
 const GAP = tokens.spacingHorizontalL;
 const HEADER_HEIGHT = '48px';
@@ -104,6 +107,7 @@ export const SiteHeader: React.FC<HTMLAttributes<HTMLElement>> = ({ className, .
     const [darkMode, setDarkMode] = useContext(DarkModeContext);
     const { t, i18n } = useTranslation();
     const { state: authState, logout } = useAuth();
+    const navigate = useNavigate();
 
     // 认证对话框状态
     const [showLoginDialog, setShowLoginDialog] = React.useState(false);
@@ -112,6 +116,7 @@ export const SiteHeader: React.FC<HTMLAttributes<HTMLElement>> = ({ className, .
     const [showForgetPasswordDialog, setShowForgetPasswordDialog] = React.useState(false);
     const [showResetPasswordDialog, setShowResetPasswordDialog] = React.useState(false);
     const [forgetPasswordEmail, setForgetPasswordEmail] = React.useState('');
+    const [showFeedbackDialog, setShowFeedbackDialog] = React.useState(false);
 
     const handleLogout = async () => {
         await logout();
@@ -136,6 +141,9 @@ export const SiteHeader: React.FC<HTMLAttributes<HTMLElement>> = ({ className, .
             </Link>
             <Link onClick={() => setTutorialOpen(true)} className={classes.link}>
                 {t('tutorial.title', '使用教程')}
+            </Link>
+            <Link onClick={() => setShowFeedbackDialog(true)} className={classes.link}>
+                {t('header.feedback', '意见反馈')}
             </Link>
             <AnnouncementDialog className={classes.link} />
             <AboutDialog className={classes.link} />
@@ -209,6 +217,11 @@ export const SiteHeader: React.FC<HTMLAttributes<HTMLElement>> = ({ className, .
                                 </>
                             ) : (
                                 <>
+                                    {authState.user?.role === 'admin' && (
+                                        <MenuItem onClick={() => navigate('/admin')}>
+                                            {t('toolbar.admin', '后台管理')}
+                                        </MenuItem>
+                                    )}
                                     <MenuItem onClick={() => setShowProfileDialog(true)}>
                                         {t('toolbar.profile', '个人资料')}
                                     </MenuItem>
@@ -278,6 +291,9 @@ export const SiteHeader: React.FC<HTMLAttributes<HTMLElement>> = ({ className, .
                 }}
                 email={forgetPasswordEmail}
             />
+
+            {/* 反馈对话框 */}
+            <FeedbackDialog open={showFeedbackDialog} onClose={() => setShowFeedbackDialog(false)} />
         </header>
     );
 };

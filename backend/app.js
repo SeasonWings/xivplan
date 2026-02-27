@@ -12,6 +12,7 @@ const { testConnection } = require('./db');
 const { testEmailConnection } = require('./email');
 const communityRoutes = require('./routes/community');
 const authRoutes = require('./routes/auth');
+const feedbackRoutes = require('./routes/feedback');
 const logger = require('./services/logger');
 
 // 创建Express应用
@@ -43,6 +44,7 @@ app.use(logger.createMiddleware());
 // API路由
 app.use('/api/auth', authRoutes);
 app.use('/api/community', communityRoutes);
+app.use('/api/feedback', feedbackRoutes);
 
 // 健康检查端点
 app.get('/api/health', (req, res) => {

@@ -2,8 +2,10 @@ import { makeStyles, Spinner, Toaster, tokens } from '@fluentui/react-components
 import React, { PropsWithChildren, Suspense } from 'react';
 import { HotkeysProvider } from 'react-hotkeys-hook';
 import { createBrowserRouter, createRoutesFromElements, Outlet, Route, RouterProvider } from 'react-router-dom';
+import { AdminDashboard } from './admin/AdminDashboard';
 import { AnimationProvider } from './animation/AnimationContext';
 import { AnimationV2Provider } from './animation/AnimationV2Context';
+import { AuthProvider } from './auth/AuthContext';
 import { CollaborationProvider } from './collaboration/CollaborationProvider';
 import { DirtyProvider } from './DirtyProvider';
 import { EditActivityProvider } from './EditActivityContext';
@@ -14,10 +16,9 @@ import { MainPage } from './MainPage';
 import { SceneProvider } from './SceneProvider';
 import { SiteHeader } from './SiteHeader';
 import { ThemeProvider } from './ThemeProvider';
+import { TutorialProvider } from './tutorial/TutorialProvider';
 import { useFileLoaderDropTarget } from './useFileLoader';
 import { HotkeyScopes } from './useHotkeys';
-import { TutorialProvider } from './tutorial/TutorialProvider';
-import { AuthProvider } from './auth/AuthContext';
 
 const useStyles = makeStyles({
     root: {
@@ -124,6 +125,7 @@ const router = createBrowserRouter(
         <Route path="/" element={<Layout />}>
             <Route index element={<MainPage />} />
             <Route path="open" element={<FileOpenPage />} />
+            <Route path="admin" element={<AdminDashboard />} />
         </Route>,
     ),
 );

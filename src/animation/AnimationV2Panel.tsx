@@ -462,7 +462,7 @@ export const AnimationV2Panel: React.FC<AnimationV2PanelProps> = ({ onMinimize, 
                 <div className={classes.header}>
                     <div className={classes.title}>
                         <VideoRecordingRegular />
-                        {t('animation.title', '动画')} V2 (新版)
+                        {t('animation.title', '动画')} V2
                     </div>
                 </div>
                 <div className={classes.noAnimation}>
