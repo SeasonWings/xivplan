@@ -176,10 +176,10 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
     }, [onDragEnd]);
 
     // 跨track拖拽由TimelineV2统一处理，这里只需要监听鼠标移动来更新高亮状态
-    useEffect(() => {
-        const shouldListen = globalDraggingItem && globalDraggingItem.fromTrackId !== track.id;
+    const isDraggingFromOtherTrack = !!(globalDraggingItem && globalDraggingItem.fromTrackId !== track.id);
 
-        if (shouldListen) {
+    useEffect(() => {
+        if (isDraggingFromOtherTrack) {
             const handleGlobalMouseMove = (e: MouseEvent) => {
                 const rect = trackRef.current?.getBoundingClientRect();
                 if (rect) {
@@ -191,17 +191,10 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
             window.addEventListener('mousemove', handleGlobalMouseMove);
             return () => {
                 window.removeEventListener('mousemove', handleGlobalMouseMove);
-                // 使用 setTimeout 避免在 effect 中同步调用 setState
-                setTimeout(() => setIsDragOver(false), 0);
+                setIsDragOver(false);
             };
-        } else {
-            // 如果不需要监听，确保清理isDragOver状态
-            if (isDragOver) {
-                // 使用 setTimeout 避免在 effect 中同步调用 setState
-                setTimeout(() => setIsDragOver(false), 0);
-            }
         }
-    }, [globalDraggingItem, track.id, isDragOver]); // 只依赖fromTrackId，避免频繁重建
+    }, [isDraggingFromOtherTrack]);
 
     const disabledItemIds = useMemo(() => {
         const ids = new Set<string>();
