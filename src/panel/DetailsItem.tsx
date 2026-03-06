@@ -10,7 +10,6 @@ import {
     EyeRegular,
 } from '@fluentui/react-icons';
 import React, { ReactNode, useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
 import { useScene } from '../SceneProvider';
 import { PrefabIcon } from '../prefabs/PrefabIcon';
 import { SceneObject, UnknownObject } from '../scene';
