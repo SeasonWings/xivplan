@@ -8,6 +8,8 @@ import {
     ArenaShape,
     DEFAULT_SCENE,
     Grid,
+    isMoveable,
+    isRotateable,
     isTether,
     Scene,
     SceneObject,
@@ -19,7 +21,8 @@ import {
 import { createUndoContext } from './undo/undoContext';
 import { StateActionBase, UndoRedoAction } from './undo/undoReducer';
 import { useSetSavedState } from './useIsDirty';
-import { asArray, clamp } from './util';
+import { asArray, clamp, mod360 } from './util';
+import { vecAngle, vecSub } from './vector';
 
 export interface SetArenaAction {
     type: 'arena';
@@ -475,18 +478,30 @@ function addObjects(
 function removeObjects(state: Readonly<EditorState>, ids: readonly number[]): EditorState {
     const currentStep = getCurrentStep(state);
 
-    const objects = currentStep.objects.filter((object) => {
-        if (ids.includes(object.id)) {
-            return false;
-        }
+    const objects = currentStep.objects
+        .filter((object) => {
+            if (ids.includes(object.id)) {
+                return false;
+            }
 
-        if (isTether(object)) {
-            // Delete any tether that is tethered to a deleted object.
-            return !ids.includes(object.startId) && !ids.includes(object.endId);
-        }
+            if (isTether(object)) {
+                // Delete any tether that is tethered to a deleted object.
+                return !ids.includes(object.startId) && !ids.includes(object.endId);
+            }
 
-        return true;
-    });
+            return true;
+        })
+        .map((o) => {
+            if (o.rotationLock && (ids.includes(o.rotationLock.targetId) || ids.includes(o.id))) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const copy = { ...(o as any) };
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                delete (copy as any).rotationLock;
+                copy.pinned = false;
+                return copy as SceneObject;
+            }
+            return o;
+        });
 
     return updateCurrentStep(state, { objects });
 }
@@ -574,8 +589,57 @@ function moveGroupToBottom(state: Readonly<EditorState>, ids: readonly number[])
 function updateObjects(state: Readonly<EditorState>, values: readonly SceneObject[]): EditorState {
     const currentStep = getCurrentStep(state);
     const objects = currentStep.objects.slice();
+    const original = new Map(currentStep.objects.map((o) => [o.id, o]));
+    const enforced: SceneObject[] = [];
+    const movedTargets = new Set<number>();
 
-    for (const update of asArray(values)) {
+    for (const raw of asArray(values)) {
+        const prev = original.get(raw.id);
+        let update = raw;
+        if (prev && 'rotationLock' in prev && prev.rotationLock) {
+            if (isMoveable(prev) && isMoveable(update)) {
+                if (update.x !== prev.x || update.y !== prev.y) {
+                    update = { ...update, x: prev.x, y: prev.y } as SceneObject;
+                }
+            }
+            if (isRotateable(prev) && isRotateable(update)) {
+                if (update.rotation !== prev.rotation) {
+                    update = { ...update, rotation: prev.rotation } as SceneObject;
+                }
+            }
+        }
+        const prevT = prev;
+        if (prevT && isMoveable(prevT) && isMoveable(update)) {
+            if (update.x !== prevT.x || update.y !== prevT.y) {
+                movedTargets.add(update.id);
+            }
+        }
+        enforced.push(update);
+    }
+
+    const lockAffected: SceneObject[] = [];
+    if (movedTargets.size > 0) {
+        for (const locked of currentStep.objects) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const rl = (locked as any).rotationLock as { targetId: number; delta: number } | undefined;
+            if (!rl) continue;
+            if (!movedTargets.has(rl.targetId)) continue;
+            const lockedPrev = original.get(locked.id);
+            const targetAfter =
+                enforced.find((u) => u.id === rl.targetId) ?? currentStep.objects.find((o) => o.id === rl.targetId);
+            if (!lockedPrev || !targetAfter) continue;
+            if (!isMoveable(lockedPrev) || !isMoveable(targetAfter)) continue;
+            const v = vecSub({ x: targetAfter.x, y: targetAfter.y }, { x: lockedPrev.x, y: lockedPrev.y });
+            const angle = vecAngle(v);
+            const rotation = mod360(angle - rl.delta);
+            if (isRotateable(lockedPrev)) {
+                lockAffected.push({ ...lockedPrev, rotation } as SceneObject);
+            }
+        }
+    }
+
+    const allUpdates = [...enforced, ...lockAffected];
+    for (const update of allUpdates) {
         const index = objects.findIndex((o) => o.id === update.id);
         if (index >= 0) {
             objects[index] = update;

@@ -63,6 +63,8 @@ import { PolygonOrientationControl, PolygonSidesControl } from './properties/Pol
 import { PositionControl } from './properties/PositionControl';
 import { InnerRadiusControl, RadiusControl } from './properties/RadiusControl';
 import { RotationControl } from './properties/RotationControl';
+import { RotationPivotLockControl } from './properties/RotationPivotLockControl';
+import { RotationStatusBanner } from './properties/RotationStatusBanner';
 import { SimpleColorControl, SimpleColorSwatchControl } from './properties/SimpleColorControls';
 import { SizeControl } from './properties/SizeControl';
 import { StackCountControl } from './properties/StackCountControl';
@@ -124,6 +126,7 @@ const Controls: React.FC = () => {
 
     return (
         <>
+            <RotationStatusBanner objects={objects} />
             <NameControl objects={objects} />
             <ControlCondition objects={objects} test={isImageObject} control={ImageControl} />
             <ControlCondition objects={objects} test={supportsNativeStyle} control={ZoneStyleTypeControl} />
@@ -187,6 +190,8 @@ const Controls: React.FC = () => {
                     control={ConeAngleControl}
                 />
             </div>
+
+            <RotationPivotLockControl objects={objects} />
 
             {/* Special options */}
             <div className={mergeClasses(classes.row, classes.rightGap)}>

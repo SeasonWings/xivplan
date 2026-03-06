@@ -1,5 +1,6 @@
 import { Button, makeStyles, mergeClasses, tokens, typographyStyles } from '@fluentui/react-components';
 import {
+    ArrowFitInFilled,
     bundleIcon,
     DismissFilled,
     DismissRegular,
@@ -7,15 +8,16 @@ import {
     EyeOffFilled,
     EyeOffRegular,
     EyeRegular,
-    ArrowFitInFilled,
 } from '@fluentui/react-icons';
-import React, { ReactNode } from 'react';
+import React, { ReactNode, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useScene } from '../SceneProvider';
 import { PrefabIcon } from '../prefabs/PrefabIcon';
-import { SceneObject } from '../scene';
-import { setOrOmit } from '../util';
-import { detailsItemClassNames } from './detailsItemStyles';
+import { SceneObject, UnknownObject } from '../scene';
 import { selectGroup, useSelection } from '../selection';
+import { setOrOmit } from '../util';
+import { StatusIndicators } from './StatusIndicators';
+import { detailsItemClassNames } from './detailsItemStyles';
 
 export interface DetailsItemProps {
     object: SceneObject;
@@ -63,6 +65,21 @@ export const DetailsItem: React.FC<DetailsItemProps> = ({
     const hasGroup = 'groupId' in object && object.groupId;
     const groupColor = hasGroup ? getGroupColor(object.groupId as string) : undefined;
 
+    const isLocked = !!(object as UnknownObject & { rotationLock?: { targetId: number } }).rotationLock;
+    const lockedSeed = isLocked
+        ? (object as UnknownObject & { rotationLock?: { targetId: number } }).rotationLock?.targetId
+        : undefined;
+
+    const isTarget = useMemo(
+        () =>
+            step.objects.some(
+                (o) =>
+                    (o as UnknownObject & { rotationLock?: { targetId: number } }).rotationLock?.targetId === object.id,
+            ),
+        [step.objects, object.id],
+    );
+    const targetSeed = isTarget ? object.id : undefined;
+
     const handleGroupIconClick = (e: React.MouseEvent) => {
         e.stopPropagation();
         if (hasGroup) {
@@ -73,7 +90,14 @@ export const DetailsItem: React.FC<DetailsItemProps> = ({
     return (
         <div className={mergeClasses(classes.wrapper, isNested && classes.nested)}>
             <div>{icon && <PrefabIcon icon={icon} name={name} width={size} height={size} />}</div>
-            {children ? children : <div className={classes.name}>{name}</div>}
+            {children ? (
+                children
+            ) : (
+                <div className={classes.name}>
+                    <span className={classes.nameText}>{name}</span>
+                    <StatusIndicators lockedSeed={lockedSeed} targetSeed={targetSeed} />
+                </div>
+            )}
             {!isNested && (
                 <div className={classes.buttons}>
                     {hasGroup && groupColor && (
@@ -172,9 +196,18 @@ const useStyles = makeStyles({
 
     name: {
         flexGrow: 1,
+        display: 'flex',
+        alignItems: 'center',
+        minWidth: 0,
+        gap: tokens.spacingHorizontalXS,
+    },
+
+    nameText: {
         overflow: 'hidden',
         textOverflow: 'ellipsis',
         whiteSpace: 'nowrap',
+        flex: '0 1 auto',
+        minWidth: 0,
     },
 
     nested: {

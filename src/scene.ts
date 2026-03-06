@@ -62,6 +62,7 @@ export interface BaseObject {
     readonly opacity: number;
     readonly hide?: boolean;
     readonly groupId?: string; // 元素组ID，同组元素一起移动
+    readonly rotationLock?: RotationLock;
 }
 
 export interface UnknownObject extends BaseObject {
@@ -179,6 +180,12 @@ export interface MoveableObject {
 
 export interface RotateableObject {
     readonly rotation: number;
+}
+
+export interface RotationLock {
+    readonly targetId: number;
+    readonly delta: number;
+    readonly baseRotation: number;
 }
 
 export interface ResizeableObject extends MoveableObject, RotateableObject {

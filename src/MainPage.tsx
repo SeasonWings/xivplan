@@ -18,6 +18,7 @@ import { MainPanel } from './panel/MainPanel';
 import { PanelDragProvider } from './PanelDragProvider';
 import { SceneRenderer } from './render/SceneRenderer';
 import { SceneLoadErrorNotifier } from './SceneLoadErrorNotifier';
+import { RotationLockNotifier } from './RotationLockNotifier';
 import { useScene } from './SceneProvider';
 import { SelectionProvider } from './SelectionProvider';
 import { StepSelect } from './StepSelect';
@@ -34,6 +35,7 @@ export const MainPage: React.FC = () => {
                     <AnimationPanelVisibilityProvider>
                         <VisualEditProvider>
                             <MainPageContent />
+                            <RotationLockNotifier />
                         </VisualEditProvider>
                     </AnimationPanelVisibilityProvider>
                 </PanelDragProvider>

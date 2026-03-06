@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Circle, Line } from 'react-konva';
-import { rotateGroupObjects } from '../groupOperations';
 import { useScene } from '../SceneProvider';
 import { getPointerAngle, snapAngle } from '../coord';
 import { getResizeCursor } from '../cursor';
+import { rotateGroupObjects } from '../groupOperations';
 import { ActivePortal } from '../render/Portals';
 import { InnerRadiusObject, RadiusObject, SceneObject, UnknownObject, isRotateable } from '../scene';
 import { useIsDragging } from '../selection';
@@ -188,7 +188,9 @@ function getRotation(
     { pointerPos, activeHandleId }: HandleFuncProps,
     { allowRotate }: ControlPointProps,
 ) {
-    if (!allowRotate || !isRotateable(object)) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const rotationLocked = (object as any).rotationLock;
+    if (!allowRotate || !isRotateable(object) || rotationLocked) {
         return 0;
     }
 

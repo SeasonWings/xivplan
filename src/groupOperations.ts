@@ -1,15 +1,21 @@
 import { Vector2d } from 'konva/lib/types';
 import { rotateCoord } from './coord';
-import { isMoveable, isRotateable, SceneObject } from './scene';
+import { isMoveable, isRotateable, MoveableObject, SceneObject } from './scene';
 
 export function moveObjectsBy(objects: readonly SceneObject[], offset: Partial<Vector2d>): SceneObject[] {
-    return objects.filter(isMoveable).map((obj) => {
+    return objects.filter(isUnpinnedMoveable).map((obj) => {
         return {
             ...obj,
             x: obj.x + (offset?.x ?? 0),
             y: obj.y + (offset?.y ?? 0),
         };
     });
+}
+
+function isUnpinnedMoveable(obj: SceneObject): obj is SceneObject & MoveableObject & { pinned?: boolean } {
+    if (!isMoveable(obj)) return false;
+    const m = obj as MoveableObject & { pinned?: boolean };
+    return typeof m.pinned !== 'boolean' || !m.pinned;
 }
 
 /**

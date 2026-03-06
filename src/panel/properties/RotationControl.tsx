@@ -17,6 +17,8 @@ export const RotationControl: React.FC<PropertiesControlProps<RotateableObject |
 
     const rotation = commonValue(objects, (obj) => obj.rotation);
     const noDirection = commonValue(objects, (obj) => isEnemy(obj) && obj.ring == EnemyRingStyle.NoDirection);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const rotationLocked = commonValue(objects, (obj) => 'rotationLock' in (obj as any) && !!(obj as any).rotationLock);
 
     const onRotationChanged = useSpinChanged((rotation: number) => {
         // 使用 rotateGroupObjects 同步旋转同组的所有对象
@@ -27,7 +29,7 @@ export const RotationControl: React.FC<PropertiesControlProps<RotateableObject |
     return (
         <Field label={t('properties.rotation')} className={classes.cell}>
             <SpinButtonUnits
-                disabled={noDirection}
+                disabled={noDirection || rotationLocked}
                 value={rotation}
                 onChange={onRotationChanged}
                 step={5}
