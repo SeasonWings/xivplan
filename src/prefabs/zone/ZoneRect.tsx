@@ -433,8 +433,14 @@ const RectangleContainer: React.FC<RendererProps<RectangleZone>> = ({ object }) 
         state.height = Math.round(state.height);
 
         const centerOffset = rotateCoord({ x: state.dx ?? 0, y: state.dy ?? 0 }, state.rotation);
-        const newX = Math.round(object.x + centerOffset.x);
-        const newY = Math.round(object.y + centerOffset.y);
+
+        let newX = object.x + centerOffset.x;
+        let newY = object.y + centerOffset.y;
+
+        if (!transient) {
+            newX = Math.round(newX);
+            newY = Math.round(newY);
+        }
 
         if (!stateChanged(object, state)) {
             return;

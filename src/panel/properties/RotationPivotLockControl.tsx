@@ -15,7 +15,6 @@ import { useTranslation } from 'react-i18next';
 import { useScene } from '../../SceneProvider';
 import { SceneObject, isMoveable, isRotateable } from '../../scene';
 import { useControlStyles } from '../../useControlStyles';
-import { vecAngle, vecSub } from '../../vector';
 import { PropertiesControlProps } from '../PropertiesControl';
 
 function isEligible(o: SceneObject) {
@@ -69,9 +68,7 @@ export const RotationPivotLockControl: React.FC<PropertiesControlProps<SceneObje
             setOpen(false);
             return;
         }
-        const v = vecSub({ x: target.x, y: target.y }, { x: locked.x, y: locked.y });
-        const angle = vecAngle(v);
-        const delta = angle - locked.rotation;
+        const delta = target.rotation - locked.rotation;
         const updatedLocked: SceneObject = {
             ...(locked as SceneObject),
             pinned: true,
