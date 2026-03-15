@@ -8,6 +8,7 @@ import {
     Toolbar,
     ToolbarDivider,
     makeStyles,
+    tokens,
 } from '@fluentui/react-components';
 import {
     ArrowDownloadRegular,
@@ -15,10 +16,10 @@ import {
     ArrowUndoRegular,
     OpenRegular,
     PeopleRegular,
+    PeopleTeamRegular,
     SaveEditRegular,
     SaveRegular,
     VideoRecordingRegular,
-    PeopleTeamRegular,
 } from '@fluentui/react-icons';
 import React, { ReactElement, useContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -27,6 +28,7 @@ import { CollapsableSplitButton, CollapsableToolbarButton } from './CollapsableT
 import { FileSource, useScene, useSceneUndoRedoPossible, useSetSource } from './SceneProvider';
 import { StepScreenshotButton } from './StepScreenshotButton';
 import { ToolbarContext } from './ToolbarContext';
+import { useCollaboration } from './collaboration/CollaborationProvider';
 import { saveFile } from './file';
 import { OpenDialog, SaveAsDialog } from './file/FileDialog';
 import { ShareDialogButton } from './file/ShareDialogButton';
@@ -39,6 +41,31 @@ const useStyles = makeStyles({
     toolbar: {
         paddingLeft: 0,
         paddingRight: 0,
+        backgroundColor: 'transparent',
+        boxShadow: 'none',
+        backdropFilter: 'none',
+        WebkitBackdropFilter: 'none',
+        border: 'none',
+    },
+    collaborationButton: {
+        position: 'relative',
+    },
+    unreadBadge: {
+        position: 'absolute',
+        top: '0px',
+        right: '60px',
+        height: '16px',
+        minWidth: '16px',
+        paddingLeft: '5px',
+        paddingRight: '5px',
+        borderRadius: '999px',
+        backgroundColor: tokens.colorPaletteRedBorderActive,
+        color: tokens.colorNeutralForegroundInverted,
+        fontSize: tokens.fontSizeBase100,
+        lineHeight: '16px',
+        textAlign: 'center',
+        pointerEvents: 'none',
+        zIndex: 1,
     },
 });
 
@@ -62,6 +89,7 @@ export const MainToolbar: React.FC<MainToolbarProps> = ({
     const classes = useStyles();
     const { t } = useTranslation();
     const toolbarNode = useContext(ToolbarContext);
+    const { unreadChatCount } = useCollaboration();
     const { dispatch } = useScene();
     const [undoPossible, redoPossible] = useSceneUndoRedoPossible();
     const [openFileOpen, setOpenFileOpen] = useState(false);
@@ -116,8 +144,15 @@ export const MainToolbar: React.FC<MainToolbarProps> = ({
                     <CollapsableToolbarButton
                         icon={<PeopleRegular />}
                         onClick={() => onToggleCollaborationPanel?.(!showCollaborationPanel)}
-                        className={showCollaborationPanel ? 'active' : undefined}
+                        className={`${classes.collaborationButton}${showCollaborationPanel ? ' active' : ''}`}
                         data-tutorial="collaboration-open"
+                        badge={
+                            unreadChatCount > 0 ? (
+                                <span className={classes.unreadBadge}>
+                                    {unreadChatCount > 99 ? '99+' : unreadChatCount}
+                                </span>
+                            ) : undefined
+                        }
                     >
                         {t('toolbar.collaboration')}
                     </CollapsableToolbarButton>

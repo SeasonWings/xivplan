@@ -14,6 +14,7 @@ const communityRoutes = require('./routes/community');
 const authRoutes = require('./routes/auth');
 const feedbackRoutes = require('./routes/feedback');
 const logger = require('./services/logger');
+const promClient = require('prom-client');
 
 // 创建Express应用
 const app = express();
@@ -26,11 +27,15 @@ app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
     res.setHeader('Access-Control-Allow-Credentials', 'true');
 
-    console.log(`[CORS] ${req.method} ${req.url} from ${req.headers.origin || 'no-origin'}`);
+    logger.log('debug', 'http', 'http.cors', {
+        method: req.method,
+        url: req.url,
+        origin: req.headers.origin || 'no-origin',
+    });
 
     // 处理OPTIONS预检请求
     if (req.method === 'OPTIONS') {
-        console.log('[CORS] OPTIONS preflight handled');
+        logger.log('debug', 'http', 'http.cors_preflight', { method: req.method, url: req.url });
         return res.status(200).end();
     }
 
@@ -51,6 +56,25 @@ app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+promClient.collectDefaultMetrics({ prefix: 'xivplan_' });
+const cursorSyncDelaySeconds = new promClient.Histogram({
+    name: 'cursor_sync_delay_seconds',
+    help: 'Cursor relay delay in seconds (server receive -> server broadcast)',
+    labelNames: ['room_id'],
+    buckets: [0.005, 0.01, 0.02, 0.05, 0.08, 0.12, 0.2, 0.5, 1],
+});
+
+const cursorLostPacketsTotal = new promClient.Counter({
+    name: 'cursor_lost_packets_total',
+    help: 'Estimated lost cursor packets (sequence gaps) observed by server',
+    labelNames: ['room_id'],
+});
+
+app.get('/metrics', async (_req, res) => {
+    res.setHeader('Content-Type', promClient.register.contentType);
+    res.end(await promClient.register.metrics());
+});
+
 // 静态文件服务(开发环境)
 app.use(express.static(path.join(__dirname, 'dist')));
 
@@ -58,7 +82,19 @@ app.use(express.static(path.join(__dirname, 'dist')));
 const server = http.createServer(app);
 
 // 创建WebSocket服务器
-const wss = new WebSocket.Server({ server });
+const wss = new WebSocket.Server({
+    server,
+    perMessageDeflate: {
+        zlibDeflateOptions: {
+            level: 3,
+        },
+        zlibInflateOptions: {},
+        clientNoContextTakeover: true,
+        serverNoContextTakeover: true,
+        concurrencyLimit: 10,
+        threshold: 1024,
+    },
+});
 
 // 房间管理
 const rooms = new Map();
@@ -69,19 +105,44 @@ class Room {
         this.clients = new Set();
         this.hostId = null; // 房主ID
         this.sceneData = null;
+        this.snapshotSeq = 0;
+        this.sceneSeq = 0;
+        this.actionLog = [];
         this.lastUpdated = Date.now();
         this.allowGuestEdit = true; // 默认允许访客编辑
         this.userEditPermissions = new Map(); // 用户编辑权限映射
+        this.nextShortId = 1;
+        this.cursorPackets = new Map(); // shortId -> { payload: Buffer, recvAt: number }
+        this.cursorFecGroupId = 1;
+        this.cursorFecIndex = 0;
+        this.cursorFecBatches = [];
     }
 
     addClient(client) {
+        let candidate = this.nextShortId;
+        const used = new Set(
+            Array.from(this.clients)
+                .map((c) => c.shortId)
+                .filter((x) => typeof x === 'number'),
+        );
+        while (used.has(candidate)) {
+            candidate = (candidate % 255) + 1;
+        }
+        client.shortId = candidate;
+        this.nextShortId = (candidate % 255) + 1;
         this.clients.add(client);
         client.roomId = this.id;
 
         // 确保第一个加入的用户（创建者）总是房主
         if (!this.hostId) {
             this.hostId = client.userId;
-            console.log(`User ${client.userId} (${client.userName}) set as host for room ${this.id}`);
+            logger.ws('info', 'ws.room.host_assigned', {
+                connId: client.connId,
+                roomId: this.id,
+                hostId: this.hostId,
+                userId: client.userId,
+                userName: client.userName,
+            });
         }
 
         // 设置用户编辑权限：房主默认有编辑权限，其他用户默认没有编辑权限
@@ -93,6 +154,17 @@ class Room {
                 JSON.stringify({
                     type: 'scene_sync',
                     data: this.sceneData,
+                    seq: this.snapshotSeq || 0,
+                }),
+            );
+        }
+
+        if (this.actionLog && this.actionLog.length > 0) {
+            client.send(
+                JSON.stringify({
+                    type: 'scene_action_log',
+                    fromSeq: this.snapshotSeq || 0,
+                    actions: this.actionLog,
                 }),
             );
         }
@@ -116,7 +188,9 @@ class Room {
                 users: Array.from(this.clients).map((c) => ({
                     id: c.userId,
                     name: c.userName,
+                    avatar: c.userAvatar,
                     canEdit: this.userEditPermissions.get(c.userId) || false,
+                    shortId: c.shortId,
                 })),
             }),
             client,
@@ -157,7 +231,9 @@ class Room {
                 users: Array.from(this.clients).map((c) => ({
                     id: c.userId,
                     name: c.userName,
+                    avatar: c.userAvatar,
                     canEdit: this.userEditPermissions.get(c.userId) || false,
+                    shortId: c.shortId,
                 })),
             }),
         );
@@ -226,6 +302,8 @@ class Room {
         }
 
         this.sceneData = data;
+        this.snapshotSeq = this.sceneSeq;
+        this.actionLog = [];
         this.lastUpdated = Date.now();
 
         // 广播场景更新
@@ -238,6 +316,21 @@ class Room {
             sender,
         );
     }
+
+    onCursorPacket(sender, payload, seq) {
+        const now = Date.now();
+        const flags = payload && payload.length > 0 ? payload.readUInt8(0) : 0;
+        const isKeepalive = (flags & 0x02) !== 0;
+        const prev = this.cursorPackets.get(sender.shortId);
+        const activeAt = prev ? prev.activeAt : now;
+        this.cursorPackets.set(sender.shortId, {
+            payload,
+            recvAt: now,
+            activeAt: isKeepalive ? activeAt : now,
+            senderId: sender.userId,
+            seq,
+        });
+    }
 }
 
 // 生成唯一ID
@@ -246,12 +339,19 @@ function generateId() {
 }
 
 // WebSocket连接处理
-wss.on('connection', (ws) => {
+wss.on('connection', (ws, req) => {
     // 生成用户ID
     ws.userId = generateId();
     ws.userName = `User_${Math.floor(Math.random() * 1000)}`;
+    ws.userAvatar = null;
+    ws.connId = logger.generateId('ws');
 
-    console.log(`New connection: ${ws.userId}`);
+    logger.ws('info', 'ws.connection.open', {
+        connId: ws.connId,
+        userId: ws.userId,
+        ip: req?.socket?.remoteAddress,
+        userAgent: req?.headers?.['user-agent'],
+    });
 
     // 发送用户信息给客户端
     ws.send(
@@ -259,13 +359,40 @@ wss.on('connection', (ws) => {
             type: 'user_info',
             userId: ws.userId,
             userName: ws.userName,
+            userAvatar: ws.userAvatar,
         }),
     );
 
     // 消息处理
-    ws.on('message', (message) => {
+    ws.on('message', (message, isBinary) => {
         try {
-            const data = JSON.parse(message);
+            if (isBinary) {
+                const buf = Buffer.isBuffer(message) ? message : Buffer.from(message);
+                if (buf.length >= 1 && buf[0] === 0xc1) {
+                    if (ws.roomId) {
+                        const room = rooms.get(ws.roomId);
+                        if (room) {
+                            if (buf.length !== 28) {
+                                return;
+                            }
+                            const seq = buf.readUInt16LE(2);
+                            const prevSeq = ws.lastCursorSeq;
+                            if (typeof prevSeq === 'number') {
+                                const diff = (seq - prevSeq - 1 + 65536) % 65536;
+                                if (diff > 0 && diff < 32768) {
+                                    cursorLostPacketsTotal.inc({ room_id: ws.roomId }, diff);
+                                }
+                            }
+                            ws.lastCursorSeq = seq;
+                            room.onCursorPacket(ws, buf.subarray(1), seq);
+                        }
+                    }
+                }
+                return;
+            }
+
+            const text = typeof message === 'string' ? message : Buffer.from(message).toString('utf8');
+            const data = JSON.parse(text);
 
             switch (data.type) {
                 case 'ping':
@@ -274,6 +401,11 @@ wss.on('connection', (ws) => {
                     break;
 
                 case 'join_room':
+                    logger.ws('info', 'ws.room.join_request', {
+                        connId: ws.connId,
+                        userId: ws.userId,
+                        roomId: data.roomId,
+                    });
                     const roomId = data.roomId || generateId();
                     let room = rooms.get(roomId);
                     const isNewRoom = !room;
@@ -281,7 +413,7 @@ wss.on('connection', (ws) => {
                     if (isNewRoom) {
                         room = new Room(roomId);
                         rooms.set(roomId, room);
-                        console.log(`创建新房间: ${roomId}`);
+                        logger.ws('info', 'ws.room.created', { connId: ws.connId, userId: ws.userId, roomId: roomId });
                     }
 
                     // 如果用户已在其他房间，先离开
@@ -297,7 +429,12 @@ wss.on('connection', (ws) => {
 
                     // 如果是新房间，确保房主信息被正确设置并广播
                     if (isNewRoom && room.hostId) {
-                        console.log(`新房间 ${roomId} 房主设置为: ${room.hostId}`);
+                        logger.ws('info', 'ws.room.host_info_broadcast', {
+                            connId: ws.connId,
+                            userId: ws.userId,
+                            roomId: roomId,
+                            hostId: room.hostId,
+                        });
                         // 再次明确地向所有客户端广播房主信息
                         room.broadcast(
                             JSON.stringify({
@@ -312,10 +449,17 @@ wss.on('connection', (ws) => {
                         JSON.stringify({
                             type: 'room_joined',
                             roomId: roomId,
+                            shortId: ws.shortId,
                         }),
                     );
 
-                    console.log(`User ${ws.userId} joined room ${roomId}`);
+                    logger.ws('info', 'ws.room.joined', {
+                        connId: ws.connId,
+                        userId: ws.userId,
+                        roomId: roomId,
+                        shortId: ws.shortId,
+                        isNewRoom,
+                    });
                     break;
 
                 case 'update_scene':
@@ -326,7 +470,12 @@ wss.on('connection', (ws) => {
                             if (room.userEditPermissions.get(ws.userId)) {
                                 room.updateScene(data.scene, ws);
                             } else {
-                                console.log(`场景更新拒绝: 用户 ${ws.userId} 无权限编辑场景`);
+                                logger.ws('warn', 'ws.scene.update_rejected', {
+                                    connId: ws.connId,
+                                    userId: ws.userId,
+                                    roomId: ws.roomId,
+                                    reason: 'no_permission',
+                                });
                                 ws.send(
                                     JSON.stringify({
                                         type: 'error',
@@ -334,6 +483,78 @@ wss.on('connection', (ws) => {
                                     }),
                                 );
                             }
+                        }
+                    }
+                    break;
+
+                case 'scene_action':
+                    if (ws.roomId && data.action) {
+                        logger.ws('info', 'ws.scene.action', {
+                            connId: ws.connId,
+                            userId: ws.userId,
+                            roomId: ws.roomId,
+                            actionType: data.action?.type,
+                            transient: !!data.action?.transient,
+                        });
+                        const room = rooms.get(ws.roomId);
+                        if (room) {
+                            if (!room.userEditPermissions.get(ws.userId)) {
+                                ws.send(
+                                    JSON.stringify({
+                                        type: 'error',
+                                        message: '您没有权限编辑场景',
+                                    }),
+                                );
+                                break;
+                            }
+
+                            room.sceneSeq = (room.sceneSeq || 0) + 1;
+                            const entry = { seq: room.sceneSeq, senderId: ws.userId, action: data.action };
+                            if (!data.action.transient) {
+                                room.actionLog.push(entry);
+                            }
+                            room.lastUpdated = Date.now();
+
+                            room.broadcast(
+                                JSON.stringify({
+                                    type: 'scene_action',
+                                    ...entry,
+                                }),
+                            );
+                        }
+                    }
+                    break;
+
+                case 'scene_snapshot':
+                    if (ws.roomId && data.scene) {
+                        let snapshotBytes = 0;
+                        try {
+                            snapshotBytes = Buffer.byteLength(JSON.stringify(data.scene));
+                        } catch {}
+                        logger.ws('info', 'ws.scene.snapshot', {
+                            connId: ws.connId,
+                            userId: ws.userId,
+                            roomId: ws.roomId,
+                            seq: typeof data.seq === 'number' ? data.seq : undefined,
+                            bytes: snapshotBytes,
+                        });
+                        const room = rooms.get(ws.roomId);
+                        if (room) {
+                            if (!room.userEditPermissions.get(ws.userId)) {
+                                ws.send(
+                                    JSON.stringify({
+                                        type: 'error',
+                                        message: '您没有权限编辑场景',
+                                    }),
+                                );
+                                break;
+                            }
+
+                            room.sceneData = data.scene;
+                            const seq = typeof data.seq === 'number' ? data.seq : room.sceneSeq || 0;
+                            room.snapshotSeq = seq;
+                            room.actionLog = room.actionLog.filter((x) => x.seq > seq);
+                            room.lastUpdated = Date.now();
                         }
                     }
                     break;
@@ -355,7 +576,9 @@ wss.on('connection', (ws) => {
                                         users: Array.from(room.clients).map((c) => ({
                                             id: c.userId,
                                             name: c.userName,
+                                            avatar: c.userAvatar,
                                             canEdit: room.userEditPermissions.get(c.userId) || false,
+                                            shortId: c.shortId,
                                         })),
                                     }),
                                 );
@@ -364,8 +587,66 @@ wss.on('connection', (ws) => {
                     }
                     break;
 
+                case 'set_user_profile': {
+                    const newName = typeof data.name === 'string' ? data.name.trim() : '';
+                    const hasAvatar = Object.prototype.hasOwnProperty.call(data, 'avatar');
+                    const newAvatar =
+                        hasAvatar && typeof data.avatar === 'string'
+                            ? data.avatar.trim() || null
+                            : hasAvatar
+                              ? null
+                              : undefined;
+
+                    logger.ws('info', 'ws.user.profile', {
+                        connId: ws.connId,
+                        userId: ws.userId,
+                        roomId: ws.roomId,
+                        name: newName || undefined,
+                        hasAvatar: hasAvatar,
+                    });
+
+                    const oldName = ws.userName;
+                    let changed = false;
+                    if (newName) {
+                        ws.userName = newName;
+                        changed = true;
+                    }
+                    if (hasAvatar) {
+                        ws.userAvatar = newAvatar;
+                        changed = true;
+                    }
+
+                    if (changed && ws.roomId) {
+                        const room = rooms.get(ws.roomId);
+                        if (room) {
+                            room.broadcast(
+                                JSON.stringify({
+                                    type: 'user_name_changed',
+                                    userId: ws.userId,
+                                    oldName: oldName,
+                                    newName: ws.userName,
+                                    users: Array.from(room.clients).map((c) => ({
+                                        id: c.userId,
+                                        name: c.userName,
+                                        avatar: c.userAvatar,
+                                        canEdit: room.userEditPermissions.get(c.userId) || false,
+                                        shortId: c.shortId,
+                                    })),
+                                }),
+                            );
+                        }
+                    }
+                    break;
+                }
+
                 case 'chat_message':
                     if (ws.roomId && data.message && data.message.trim()) {
+                        logger.ws('info', 'ws.chat.message', {
+                            connId: ws.connId,
+                            userId: ws.userId,
+                            roomId: ws.roomId,
+                            length: String(data.message).length,
+                        });
                         const room = rooms.get(ws.roomId);
                         if (room) {
                             room.broadcast(
@@ -373,6 +654,7 @@ wss.on('connection', (ws) => {
                                     type: 'chat_message',
                                     userId: ws.userId,
                                     userName: ws.userName,
+                                    userAvatar: ws.userAvatar,
                                     message: data.message.trim(),
                                     timestamp: Date.now(),
                                 }),
@@ -384,24 +666,49 @@ wss.on('connection', (ws) => {
                 case 'transfer_host':
                     if (ws.roomId && data.newHostId) {
                         const room = rooms.get(ws.roomId);
-                        console.log(
-                            `收到房主移交请求 - 房间ID: ${ws.roomId}, 当前用户ID: ${ws.userId}, 目标用户ID: ${data.newHostId}`,
-                        );
+                        logger.ws('info', 'ws.room.transfer_host', {
+                            connId: ws.connId,
+                            userId: ws.userId,
+                            roomId: ws.roomId,
+                            newHostId: data.newHostId,
+                        });
 
                         // 只有当前房主可以移交权限
                         if (!room) {
-                            console.log(`房主移交失败 - 房间不存在: ${ws.roomId}`);
+                            logger.ws('warn', 'ws.room.transfer_host_failed', {
+                                connId: ws.connId,
+                                userId: ws.userId,
+                                roomId: ws.roomId,
+                                reason: 'room_not_found',
+                            });
                         } else if (ws.userId !== room.hostId) {
-                            console.log(`房主移交失败 - 用户不是房主: ${ws.userId}`);
+                            logger.ws('warn', 'ws.room.transfer_host_failed', {
+                                connId: ws.connId,
+                                userId: ws.userId,
+                                roomId: ws.roomId,
+                                reason: 'not_host',
+                            });
                         } else {
                             // 检查新房主是否在房间内
                             const newHostClient = Array.from(room.clients).find((c) => c.userId === data.newHostId);
                             if (!newHostClient) {
-                                console.log(`房主移交失败 - 目标用户不在房间内: ${data.newHostId}`);
+                                logger.ws('warn', 'ws.room.transfer_host_failed', {
+                                    connId: ws.connId,
+                                    userId: ws.userId,
+                                    roomId: ws.roomId,
+                                    newHostId: data.newHostId,
+                                    reason: 'target_not_in_room',
+                                });
                             } else {
                                 const oldHostId = room.hostId;
                                 room.hostId = data.newHostId;
-                                console.log(`房主权限从 ${oldHostId} 成功移交给 ${data.newHostId}，房间: ${ws.roomId}`);
+                                logger.ws('info', 'ws.room.transfer_host_succeeded', {
+                                    connId: ws.connId,
+                                    userId: ws.userId,
+                                    roomId: ws.roomId,
+                                    oldHostId,
+                                    newHostId: data.newHostId,
+                                });
 
                                 // 更新新房主的编辑权限为true
                                 room.userEditPermissions.set(room.hostId, true);
@@ -420,8 +727,12 @@ wss.on('connection', (ws) => {
                                     roomId: ws.roomId,
                                 });
 
-                                // 确保广播到所有客户端
-                                console.log(`向房间内所有用户(${room.clients.size}人)广播房主变更事件`);
+                                logger.ws('info', 'ws.room.host_broadcast', {
+                                    connId: ws.connId,
+                                    userId: ws.userId,
+                                    roomId: ws.roomId,
+                                    clients: room.clients.size,
+                                });
                                 room.broadcast(hostChangedMessage);
                                 room.broadcast(hostInfoMessage);
 
@@ -432,7 +743,12 @@ wss.on('connection', (ws) => {
                             }
                         }
                     } else {
-                        console.log('房主移交失败 - 参数不完整');
+                        logger.ws('warn', 'ws.room.transfer_host_failed', {
+                            connId: ws.connId,
+                            userId: ws.userId,
+                            roomId: ws.roomId,
+                            reason: 'missing_params',
+                        });
                     }
                     break;
 
@@ -442,9 +758,14 @@ wss.on('connection', (ws) => {
                         const room = rooms.get(ws.roomId);
                         if (room && ws.userId === room.hostId) {
                             const result = room.setUserEditPermission(data.userId, Boolean(data.canEdit));
-                            console.log(
-                                `设置用户编辑权限: 房间=${room.id}, 用户=${data.userId}, 允许编辑=${Boolean(data.canEdit)}`,
-                            );
+                            logger.ws('info', 'ws.room.user_edit_permission', {
+                                connId: ws.connId,
+                                userId: ws.userId,
+                                roomId: room.id,
+                                targetUserId: data.userId,
+                                canEdit: Boolean(data.canEdit),
+                                ok: result,
+                            });
 
                             if (!result) {
                                 // 发送错误消息给请求者
@@ -456,7 +777,12 @@ wss.on('connection', (ws) => {
                                 );
                             }
                         } else {
-                            console.log(`设置编辑权限拒绝: 用户 ${ws.userId} 不是房主`);
+                            logger.ws('warn', 'ws.room.user_edit_permission_rejected', {
+                                connId: ws.connId,
+                                userId: ws.userId,
+                                roomId: ws.roomId,
+                                reason: 'not_host',
+                            });
                             // 发送错误消息给请求者
                             ws.send(
                                 JSON.stringify({
@@ -467,15 +793,34 @@ wss.on('connection', (ws) => {
                         }
                     }
                     break;
+                default:
+                    logger.ws('warn', 'ws.message.unknown', {
+                        connId: ws.connId,
+                        userId: ws.userId,
+                        roomId: ws.roomId,
+                        type: data.type,
+                    });
+                    break;
             }
         } catch (error) {
-            console.error('Error processing message:', error);
+            logger.ws('error', 'ws.message.error', {
+                connId: ws.connId,
+                userId: ws.userId,
+                roomId: ws.roomId,
+                error: { name: error.name, message: error.message, stack: error.stack },
+            });
         }
     });
 
     // 连接关闭处理
-    ws.on('close', () => {
-        console.log(`Connection closed: ${ws.userId}`);
+    ws.on('close', (code, reason) => {
+        logger.ws('info', 'ws.connection.close', {
+            connId: ws.connId,
+            userId: ws.userId,
+            roomId: ws.roomId,
+            code,
+            reason: reason ? reason.toString() : undefined,
+        });
 
         if (ws.roomId) {
             const room = rooms.get(ws.roomId);
@@ -487,33 +832,156 @@ wss.on('connection', (ws) => {
 
     // 错误处理
     ws.on('error', (error) => {
-        console.error(`WebSocket error: ${error}`);
+        logger.ws('error', 'ws.connection.error', {
+            connId: ws.connId,
+            userId: ws.userId,
+            roomId: ws.roomId,
+            error: { name: error.name, message: error.message, stack: error.stack },
+        });
     });
 });
 
+function buildCursorBatch(room) {
+    const ACTIVE_MS = parseInt(process.env.CURSOR_ACTIVE_MS || '300', 10);
+    const PURGE_MS = parseInt(process.env.CURSOR_PURGE_MS || '5000', 10);
+    const now = Date.now();
+    const records = [];
+    const toDelete = [];
+    room.cursorPackets.forEach((v, shortId) => {
+        if (!v) return;
+        if (now - v.recvAt > PURGE_MS) {
+            toDelete.push(shortId);
+            return;
+        }
+        const activeAt = typeof v.activeAt === 'number' ? v.activeAt : v.recvAt;
+        if (now - activeAt > ACTIVE_MS) {
+            return;
+        }
+        records.push({ shortId, payload: v.payload, recvAt: v.recvAt });
+    });
+    for (const id of toDelete) {
+        room.cursorPackets.delete(id);
+    }
+    if (records.length === 0) return null;
+
+    const recordSize = 1 + 1 + 2 + 8 + 16;
+    const headerSize = 1 + 2 + 1 + 1;
+    const buf = Buffer.allocUnsafe(headerSize + records.length * recordSize);
+    let offset = 0;
+    buf[offset++] = 0xd1;
+    buf.writeUInt16LE(room.cursorFecGroupId, offset);
+    offset += 2;
+    buf[offset++] = room.cursorFecIndex;
+    buf[offset++] = records.length;
+
+    for (const r of records) {
+        buf[offset++] = r.shortId & 0xff;
+        buf[offset++] = r.payload.readUInt8(0);
+        buf.writeUInt16LE(r.payload.readUInt16LE(1), offset);
+        offset += 2;
+        r.payload.copy(buf, offset, 3, 3 + 8 + 16);
+        offset += 8 + 16;
+        const delaySeconds = (Date.now() - r.recvAt) / 1000;
+        cursorSyncDelaySeconds.observe({ room_id: room.id }, delaySeconds);
+    }
+
+    return buf;
+}
+
+function buildCursorFecParity(room, b0, b1, b2) {
+    const maxLen = Math.max(b0.length, b1.length, b2.length);
+    const parity = Buffer.allocUnsafe(maxLen);
+    parity.fill(0);
+    for (let i = 0; i < maxLen; i++) {
+        const v0 = i < b0.length ? b0[i] : 0;
+        const v1 = i < b1.length ? b1[i] : 0;
+        const v2 = i < b2.length ? b2[i] : 0;
+        parity[i] = v0 ^ v1 ^ v2;
+    }
+
+    const header = Buffer.allocUnsafe(1 + 2 + 6);
+    header[0] = 0xd2;
+    header.writeUInt16LE(room.cursorFecGroupId, 1);
+    header.writeUInt16LE(b0.length, 3);
+    header.writeUInt16LE(b1.length, 5);
+    header.writeUInt16LE(b2.length, 7);
+    return Buffer.concat([header, parity]);
+}
+
+setInterval(() => {
+    rooms.forEach((room) => {
+        if (room.clients.size === 0) return;
+        const batch = buildCursorBatch(room);
+        if (!batch) return;
+        room.cursorFecBatches[room.cursorFecIndex] = batch;
+
+        for (const client of room.clients) {
+            if (client.readyState === WebSocket.OPEN) {
+                client.send(batch);
+            }
+        }
+
+        room.cursorFecIndex++;
+        if (room.cursorFecIndex >= 3) {
+            const b0 = room.cursorFecBatches[0];
+            const b1 = room.cursorFecBatches[1];
+            const b2 = room.cursorFecBatches[2];
+            if (b0 && b1 && b2) {
+                const parity = buildCursorFecParity(room, b0, b1, b2);
+                for (const client of room.clients) {
+                    if (client.readyState === WebSocket.OPEN) {
+                        client.send(parity);
+                    }
+                }
+            }
+            room.cursorFecIndex = 0;
+            room.cursorFecGroupId = (room.cursorFecGroupId + 1) % 65536;
+            if (room.cursorFecGroupId === 0) room.cursorFecGroupId = 1;
+            room.cursorFecBatches = [];
+        }
+    });
+}, 20);
+
 // 启动服务器
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
+
+server.on('error', (err) => {
+    if (err && err.code === 'EADDRINUSE') {
+        logger.log('error', 'server', 'server.listen_failed', { port: PORT, code: err.code, message: err.message });
+    } else {
+        logger.log('error', 'server', 'server.error', {
+            port: PORT,
+            error: { name: err.name, message: err.message, stack: err.stack },
+        });
+    }
+    process.exit(1);
+});
+
+wss.on('error', (err) => {
+    logger.log('error', 'ws', 'ws.server.error', { error: { name: err.name, message: err.message, stack: err.stack } });
+});
 
 // 测试数据库连接
 testConnection().then((connected) => {
     if (!connected) {
-        console.warn('⚠️  Database connection failed. Community features will not be available.');
-        console.warn('⚠️  Please configure database settings in environment variables or db.js');
+        logger.log('warn', 'db', 'db.connection_failed', { feature: 'community' });
     }
 });
 
 // 测试邮件服务连接
 testEmailConnection().then((connected) => {
     if (!connected) {
-        console.warn('⚠️  Email service connection failed. Email features will not be available.');
-        console.warn('⚠️  Please configure email settings in environment variables or email.js');
+        logger.log('warn', 'email', 'email.connection_failed', { feature: 'email' });
     }
 });
 
 server.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-    console.log(`WebSocket server available at ws://localhost:${PORT}`);
-    console.log(`REST API available at http://localhost:${PORT}/api`);
+    logger.log('info', 'server', 'server.listen', { port: PORT });
+    logger.log('info', 'server', 'server.endpoints', {
+        websocket: `ws://localhost:${PORT}`,
+        api: `http://localhost:${PORT}/api`,
+        metrics: `http://localhost:${PORT}/metrics`,
+    });
 });
 
 // 定期清理长时间未活跃的房间（超过1小时）
@@ -522,7 +990,7 @@ setInterval(() => {
     rooms.forEach((room, roomId) => {
         if (now - room.lastUpdated > 3600000 && room.clients.size === 0) {
             rooms.delete(roomId);
-            console.log(`Room ${roomId} cleaned up due to inactivity`);
+            logger.ws('info', 'ws.room.cleanup', { roomId });
         }
     });
 }, 300000); // 每5分钟检查一次

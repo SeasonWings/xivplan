@@ -4,6 +4,7 @@ import { rotateGroupObjects } from '../../groupOperations';
 import { useScene } from '../../SceneProvider';
 import { getPointerAngle, rotateCoord, snapAngle } from '../../coord';
 import { getResizeCursor } from '../../cursor';
+import { CANVAS_CROSSHAIR_CURSOR } from '../../cursorIcon';
 import { ActivePortal } from '../../render/Portals';
 import { StarburstZone, UnknownObject } from '../../scene';
 import { useIsDragging } from '../../selection';
@@ -173,7 +174,13 @@ const StarburstControlPoints = createControlPointManager<StarburstZone, Starburs
             { id: HandleId.Radius, style: HandleStyle.Square, cursor: getResizeCursor(rotation + 180), x: 0, y: r },
             { id: HandleId.Radius, style: HandleStyle.Square, cursor: getResizeCursor(rotation + 270), x: -r, y: 0 },
             { id: HandleId.Radius, style: HandleStyle.Square, cursor: getResizeCursor(rotation + 90), x: r, y: 0 },
-            { id: HandleId.Rotate, style: HandleStyle.Square, cursor: 'crosshair', x: 0, y: -r - ROTATE_HANDLE_OFFSET },
+            {
+                id: HandleId.Rotate,
+                style: HandleStyle.Square,
+                cursor: CANVAS_CROSSHAIR_CURSOR,
+                x: 0,
+                y: -r - ROTATE_HANDLE_OFFSET,
+            },
             {
                 id: HandleId.SpokeWidth,
                 style: HandleStyle.Diamond,

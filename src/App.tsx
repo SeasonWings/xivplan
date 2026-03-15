@@ -11,6 +11,7 @@ import { DirtyProvider } from './DirtyProvider';
 import { EditActivityProvider } from './EditActivityContext';
 import { useSceneFromUrl } from './file/share';
 import { FileOpenPage } from './FileOpenPage';
+import { GlobalCursor } from './GlobalCursor';
 import { HelpProvider } from './HelpProvider';
 import { MainPage } from './MainPage';
 import { SceneProvider } from './SceneProvider';
@@ -36,7 +37,19 @@ const useStyles = makeStyles({
                 "left-panel content right-panel"
             `,
 
-        background: tokens.colorNeutralBackground3,
+        padding: '12px',
+        columnGap: '12px',
+        rowGap: '12px',
+
+        backgroundColor: tokens.colorNeutralBackground3,
+        backgroundImage: `linear-gradient(135deg, var(--app-gradient-from), var(--app-gradient-to))`,
+        backgroundAttachment: 'fixed',
+
+        '@media (max-width: 700px)': {
+            padding: '12px',
+            columnGap: '12px',
+            rowGap: '12px',
+        },
     },
     header: {
         gridArea: 'header',
@@ -95,6 +108,7 @@ const LoadingFallback: React.FC = () => {
 const Layout: React.FC = () => {
     return (
         <ThemeProvider>
+            <GlobalCursor />
             <Suspense fallback={<LoadingFallback />}>
                 <BaseProviders>
                     <Root />

@@ -15,6 +15,7 @@ import { useDrawConfig } from '../useDrawConfig';
 import { useEditMode } from '../useEditMode';
 import { useStage } from './stage';
 import { useEditActivity } from '../EditActivityContext';
+import { CANVAS_CROSSHAIR_CURSOR, CANVAS_POINTER_CURSOR } from '../cursorIcon';
 
 const SIMPLIFY_THRESHOLD = 2.0;
 const SIMPLIFY_HIGH_QUALITY = true;
@@ -75,12 +76,12 @@ const DrawTargetLayer: React.FC = () => {
 
     useLayoutEffect(() => {
         if (stage) {
-            setDefaultCursor('crosshair');
-            stage.container().style.cursor = 'crosshair';
+            setDefaultCursor(CANVAS_CROSSHAIR_CURSOR);
+            stage.container().style.cursor = CANVAS_CROSSHAIR_CURSOR;
 
             return () => {
-                setDefaultCursor('default');
-                stage.container().style.cursor = 'default';
+                setDefaultCursor(CANVAS_POINTER_CURSOR);
+                stage.container().style.cursor = CANVAS_POINTER_CURSOR;
             };
         }
     }, [stage, setDefaultCursor]);

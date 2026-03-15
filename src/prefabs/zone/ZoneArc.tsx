@@ -7,6 +7,7 @@ import { useScene } from '../../SceneProvider';
 import Icon from '../../assets/zone/arc.svg?react';
 import { getPointerAngle, snapAngle } from '../../coord';
 import { getResizeCursor } from '../../cursor';
+import { CANVAS_CROSSHAIR_CURSOR } from '../../cursorIcon';
 import { rotateGroupObjects } from '../../groupOperations';
 import AoeArc from '../../lib/aoe/AoeArc';
 import { DetailsItem } from '../../panel/DetailsItem';
@@ -391,8 +392,8 @@ const ArcControlPoints = createControlPointManager<ArcZone, ArcState>({
                 x: 0,
                 y: -innerRadius,
             },
-            { id: HandleId.Angle1, style: HandleStyle.Diamond, cursor: 'crosshair', x: x, y: -y },
-            { id: HandleId.Angle2, style: HandleStyle.Diamond, cursor: 'crosshair', x: -x, y: -y },
+            { id: HandleId.Angle1, style: HandleStyle.Diamond, cursor: CANVAS_CROSSHAIR_CURSOR, x: x, y: -y },
+            { id: HandleId.Angle2, style: HandleStyle.Diamond, cursor: CANVAS_CROSSHAIR_CURSOR, x: -x, y: -y },
         ];
     },
     getRotation: getRotation,

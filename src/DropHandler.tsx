@@ -2,7 +2,7 @@ import { Vector2d } from 'konva/lib/types';
 import React from 'react';
 import { PanelDragObject } from './PanelDragContext';
 import { SceneAction } from './SceneProvider';
-import { SceneObject } from './scene';
+import { SceneObject, SceneObjectWithoutId, UserLayer } from './scene';
 import { asArray, round } from './util';
 
 export type DropHandler<T extends SceneObject> = (object: Partial<T>, position: Vector2d) => SceneAction;
@@ -21,7 +21,21 @@ export function getDropAction(object: PanelDragObject, position: Vector2d): Scen
 
     const handler = dropHandlers[object.object.type];
     if (handler) {
-        return handler(object.object as SceneObject, position);
+        const action = handler(object.object as SceneObject, position);
+        if (action.type === 'add') {
+            const ensureLayer = (obj: SceneObjectWithoutId) => {
+                const layer = obj.layer as UserLayer | undefined;
+                return layer ? obj : { ...obj, layer: 'main' as const };
+            };
+            const isArray = (
+                value: SceneObjectWithoutId | readonly SceneObjectWithoutId[],
+            ): value is readonly SceneObjectWithoutId[] => Array.isArray(value);
+            if (isArray(action.object)) {
+                return { ...action, object: action.object.map((o) => ensureLayer(o)) };
+            }
+            return { ...action, object: ensureLayer(action.object as SceneObjectWithoutId) };
+        }
+        return action;
     }
     return undefined;
 }

@@ -1,6 +1,7 @@
 import { ShapeConfig } from 'konva/lib/Shape';
 import { EllipseConfig } from 'konva/lib/shapes/Ellipse';
-import * as React from 'react';
+import React, { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Ellipse, Group, Image, Rect } from 'react-konva';
 import { getDragOffset, registerDropHandler } from '../DropHandler';
 import { ALIGN_TO_PIXEL } from '../coord';
@@ -23,7 +24,6 @@ import { HideGroup } from './HideGroup';
 import { PrefabIcon } from './PrefabIcon';
 import { ResizeableObjectContainer } from './ResizeableObjectContainer';
 import { useHighlightProps } from './highlight';
-import { useTranslation } from 'react-i18next';
 
 const DEFAULT_SIZE = 42;
 const ICON_RATIO = 32 / DEFAULT_SIZE;
@@ -179,6 +179,8 @@ const RectangleOutline: React.FC<OutlineProps> = ({
 const MarkerRenderer: React.FC<RendererProps<MarkerObject>> = ({ object }) => {
     const highlightProps = useHighlightProps(object);
     const [image] = useImageTracked(object.image);
+    const isZxsjWaymark = !!object.defaultNameKey && object.defaultNameKey.startsWith('objects.zxsjWaymark');
+    const coloredImage = useColoredCanvas(image, isZxsjWaymark ? object.color : undefined);
 
     const iconWidth = object.width * ICON_RATIO;
     const iconHeight = object.height * ICON_RATIO;
@@ -232,7 +234,7 @@ const MarkerRenderer: React.FC<RendererProps<MarkerObject>> = ({ object }) => {
                     )}
                     <HideGroup>
                         <Image
-                            image={image}
+                            image={isZxsjWaymark && object.color ? coloredImage : image}
                             x={iconX}
                             y={iconY}
                             width={iconWidth}
@@ -251,10 +253,52 @@ registerRenderer<MarkerObject>(ObjectType.Marker, LayerName.Ground, MarkerRender
 const MarkerDetails: React.FC<ListComponentProps<MarkerObject>> = ({ object, ...props }) => {
     const { t } = useTranslation();
     const name = object.name ?? (object.defaultNameKey ? t(object.defaultNameKey) : '');
-    return <DetailsItem icon={object.image} name={name} object={object} {...props} />;
+    const isZxsjWaymark = !!object.defaultNameKey && object.defaultNameKey.startsWith('objects.zxsjWaymark');
+    const icon =
+        isZxsjWaymark && object.color ? (
+            <div
+                style={{
+                    width: '100%',
+                    height: '100%',
+                    backgroundColor: object.color,
+                    maskImage: `url(${object.image})`,
+                    WebkitMaskImage: `url(${object.image})`,
+                    maskSize: 'contain',
+                    WebkitMaskSize: 'contain',
+                    maskRepeat: 'no-repeat',
+                    WebkitMaskRepeat: 'no-repeat',
+                    maskPosition: 'center',
+                    WebkitMaskPosition: 'center',
+                }}
+            />
+        ) : (
+            object.image
+        );
+
+    return <DetailsItem icon={icon} name={name} object={object} {...props} />;
 };
 
 registerListComponent<MarkerObject>(ObjectType.Marker, MarkerDetails);
+
+function useColoredCanvas(image: HTMLImageElement | undefined, color: string | undefined) {
+    return useMemo(() => {
+        if (!image) return undefined;
+        if (!color) return image;
+        if (image.width <= 0 || image.height <= 0) return image;
+
+        const c = document.createElement('canvas');
+        c.width = image.width;
+        c.height = image.height;
+        const ctx = c.getContext('2d');
+        if (!ctx) return image;
+
+        ctx.fillStyle = color;
+        ctx.fillRect(0, 0, c.width, c.height);
+        ctx.globalCompositeOperation = 'destination-in';
+        ctx.drawImage(image, 0, 0);
+        return c;
+    }, [image, color]);
+}
 
 export const WaymarkA = makeIcon('objects.waymarkA', 'waymark_a.png', 'circle', COLOR_MARKER_RED);
 export const WaymarkB = makeIcon('objects.waymarkB', 'waymark_b.png', 'circle', COLOR_MARKER_YELLOW);

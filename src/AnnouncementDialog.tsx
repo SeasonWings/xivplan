@@ -68,6 +68,13 @@ interface AnnouncementItem {
 // 公告数据
 const announcements: AnnouncementItem[] = [
     {
+        id: '7',
+        date: '2026-03-16',
+        title: 'v2.2.0 更新日志',
+        content:
+            '1. UI 视效重构，统一为透明毛玻璃卡片风格\n2. 新增图层功能，元素属性栏新增胶囊选择图层\n3. 协作功能2.0：现在可以实时看到队友的光标及状态，UI更加现代\n4.新增诛仙世界风格的场标元素',
+    },
+    {
         id: '6',
         date: '2026-02-28',
         title: 'v2.1.0 更新日志',

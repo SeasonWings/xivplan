@@ -27,6 +27,7 @@ import { ResetPasswordDialog } from './auth/ResetPasswordDialog';
 import { UserProfileDialog } from './auth/UserProfileDialog';
 import { ExternalLink } from './ExternalLink';
 import { FeedbackDialog } from './feedback/FeedbackDialog';
+import { glassToolbar } from './glassStyles';
 import { HelpContext } from './HelpContext';
 import { PANEL_WIDTH } from './panel/PanelStyles';
 import { FileSource, useScene } from './SceneProvider';
@@ -49,6 +50,7 @@ const useStyles = makeStyles({
         columnGap: GAP,
         minHeight: HEADER_HEIGHT,
         paddingInlineEnd: tokens.spacingHorizontalS,
+        ...glassToolbar,
     },
     title: {
         display: 'flex',

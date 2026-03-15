@@ -8,17 +8,18 @@ import {
 } from './animation/AnimationPanelVisibilityContext';
 import { AnimationV2Panel } from './animation/AnimationV2Panel';
 import { VisualEditProvider, useVisualEdit } from './animation/VisualEditContext';
-import CollaborationPanel from './collaboration/CollaborationPanel';
+import { CollaborationDialog } from './collaboration/CollaborationDialog';
 import { CommunityDialog } from './community/CommunityDialog';
 import { EditModeProvider } from './EditModeProvider';
+import { glassSurfaceStrong } from './glassStyles';
 import { RegularHotkeyHandler } from './HotkeyHandler';
 import { MainToolbar } from './MainToolbar';
 import { DetailsPanel } from './panel/DetailsPanel';
 import { MainPanel } from './panel/MainPanel';
 import { PanelDragProvider } from './PanelDragProvider';
 import { SceneRenderer } from './render/SceneRenderer';
-import { SceneLoadErrorNotifier } from './SceneLoadErrorNotifier';
 import { RotationLockNotifier } from './RotationLockNotifier';
+import { SceneLoadErrorNotifier } from './SceneLoadErrorNotifier';
 import { useScene } from './SceneProvider';
 import { SelectionProvider } from './SelectionProvider';
 import { StepSelect } from './StepSelect';
@@ -139,12 +140,11 @@ const MainPageContent: React.FC = () => {
                 setAnimationPanelHeight(Math.max(126, Math.min(800, newHeight)));
             } else {
                 // 旧版动画：横向向左拖拽，调整宽度
-                const collaborationWidth = showCollaborationPanel ? 380 : 0;
-                const newWidth = window.innerWidth - e.clientX - collaborationWidth;
+                const newWidth = window.innerWidth - e.clientX;
                 setAnimationPanelWidth(Math.max(300, Math.min(800, newWidth)));
             }
         },
-        [isDragging, useNewAnimation, showCollaborationPanel],
+        [isDragging, useNewAnimation],
     );
 
     const handleMouseUp = React.useCallback(() => {
@@ -183,7 +183,7 @@ const MainPageContent: React.FC = () => {
 
             <StepSelect />
 
-            <div className={showCollaborationPanel ? classes.stageWithCollaboration : classes.stage}>
+            <div className={classes.stage}>
                 <SceneRenderer />
             </div>
 
@@ -192,7 +192,11 @@ const MainPageContent: React.FC = () => {
 
             {/* 动画面板：新版在底部，旧版在右侧 - 使用 CSS 隐藏而不是卸载，以保持弹窗状态 */}
             <div
-                className={useNewAnimation ? classes.animationWrapperBottom : classes.animationWrapperRight}
+                className={[
+                    useNewAnimation ? classes.animationWrapperBottom : classes.animationWrapperRight,
+                    classes.animationPanelMotion,
+                    showAnimationPanel ? classes.animationPanelOpen : classes.animationPanelClosed,
+                ].join(' ')}
                 style={{
                     // 新版：只控制高度，横向自动铺满（left: 0, right: 0）
                     // 旧版：只控制宽度和right位置，纵向自动铺满（height: calc(100vh - 48px)）
@@ -200,10 +204,8 @@ const MainPageContent: React.FC = () => {
                         ? { height: `${animationPanelHeight}px` }
                         : {
                               width: `${animationPanelWidth}px`,
-                              right: showCollaborationPanel ? '380px' : '0',
+                              right: '0',
                           }),
-                    // 使用 CSS 隐藏而不是卸载，以保持 EffectEditDialog 的状态
-                    display: showAnimationPanel ? 'flex' : 'none',
                 }}
             >
                 {/* 拖拽手柄：新版在顶部，旧版在左侧 */}
@@ -261,12 +263,7 @@ const MainPageContent: React.FC = () => {
                 </div>
             </div>
 
-            {/* 协作面板固定在最右侧 */}
-            {showCollaborationPanel && (
-                <div className={classes.collaborationWrapper}>
-                    <CollaborationPanel />
-                </div>
-            )}
+            <CollaborationDialog open={showCollaborationPanel} onClose={() => setShowCollaborationPanel(false)} />
 
             {/* 社区弹窗 */}
             <CommunityDialog open={showCommunityPanel} onClose={() => setShowCommunityPanel(false)} />
@@ -347,23 +344,8 @@ const useStyles = makeStyles({
         overflow: 'auto',
         minWidth: MIN_STAGE_WIDTH,
         backgroundColor: tokens.colorNeutralBackground1,
-    },
-    stageWithCollaboration: {
-        gridArea: 'content',
-        display: 'flex',
-        flexFlow: 'row',
-        justifyContent: 'center',
-        overflow: 'auto',
-        minWidth: MIN_STAGE_WIDTH,
-        backgroundColor: tokens.colorNeutralBackground1,
-        // 不挤占其他元素，保持原样
-    },
-    collaborationWrapper: {
-        position: 'fixed',
-        top: '48px',
-        right: '0',
-        height: 'calc(100vh - 48px)',
-        zIndex: 100,
+        backgroundImage: `linear-gradient(135deg, var(--app-gradient-from, #bfd5e6), var(--app-gradient-to, #ffffff))`,
+        backgroundAttachment: 'fixed',
     },
     animationWrapperRight: {
         position: 'fixed',
@@ -371,8 +353,7 @@ const useStyles = makeStyles({
         right: '0',
         height: 'calc(100vh - 48px)',
         zIndex: 100,
-        backgroundColor: tokens.colorNeutralBackground1,
-        boxShadow: tokens.shadow16,
+        ...glassSurfaceStrong,
         display: 'flex',
         flexDirection: 'row',
         transition: 'right 0.2s ease',
@@ -383,10 +364,25 @@ const useStyles = makeStyles({
         left: '0',
         right: '0',
         zIndex: 100,
-        backgroundColor: tokens.colorNeutralBackground1,
-        boxShadow: tokens.shadow16,
+        ...glassSurfaceStrong,
         display: 'flex',
         flexDirection: 'column',
+    },
+    animationPanelMotion: {
+        willChange: 'transform, opacity',
+        transitionProperty: 'transform, opacity',
+        transitionDuration: '200ms',
+        transitionTimingFunction: tokens.curveEasyEase,
+    },
+    animationPanelOpen: {
+        opacity: 1,
+        transform: 'translateY(0)',
+        pointerEvents: 'auto',
+    },
+    animationPanelClosed: {
+        opacity: 0,
+        transform: 'translateY(16px)',
+        pointerEvents: 'none',
     },
     resizeHandleLeft: {
         width: '4px',
@@ -412,15 +408,14 @@ const useStyles = makeStyles({
         bottom: '20px',
         left: '50%',
         transform: 'translateX(-50%)',
-        backgroundColor: tokens.colorNeutralBackground1,
+        ...glassSurfaceStrong,
         borderRadius: tokens.borderRadiusLarge,
         padding: `${tokens.spacingVerticalM} ${tokens.spacingHorizontalL}`,
-        boxShadow: tokens.shadow16,
         zIndex: 10000,
         display: 'flex',
         alignItems: 'center',
         gap: tokens.spacingHorizontalM,
-        border: `2px solid ${tokens.colorBrandBackground}`,
+        border: `1px solid color-mix(in srgb, ${tokens.colorBrandStroke1} 60%, transparent)`,
     },
     bubbleContent: {
         display: 'flex',

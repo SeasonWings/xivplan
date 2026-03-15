@@ -57,12 +57,15 @@ export enum ObjectType {
     Triangle = 'triangle',
 }
 
+export type UserLayer = 'background' | 'main' | 'foreground';
+
 export interface BaseObject {
     readonly id: number;
     readonly opacity: number;
     readonly hide?: boolean;
     readonly groupId?: string; // 元素组ID，同组元素一起移动
     readonly rotationLock?: RotationLock;
+    readonly layer?: UserLayer;
 }
 
 export interface UnknownObject extends BaseObject {

@@ -6,6 +6,7 @@ import { Group } from 'react-konva';
 import { useEditActivity } from '../EditActivityContext';
 import { useScene } from '../SceneProvider';
 import { getCanvasCoord, rotateCoord } from '../coord';
+import { CANVAS_POINTER_CURSOR } from '../cursorIcon';
 import { ControlsPortal } from '../render/Portals';
 import { useStage } from '../render/stage';
 import { Handle } from './Handle';
@@ -230,8 +231,8 @@ export function createControlPointManager<T extends Vector2d, S, P = unknown>(
                                     x={handle.x}
                                     y={handle.y}
                                     style={handle.style ?? HandleStyle.Square}
-                                    onMouseEnter={() => setCursor(handle.cursor ?? 'default')}
-                                    onMouseLeave={() => setCursor('default')}
+                                    onMouseEnter={() => setCursor(handle.cursor ?? CANVAS_POINTER_CURSOR)}
+                                    onMouseLeave={() => setCursor(CANVAS_POINTER_CURSOR)}
                                     onMouseDown={getTransformStart(i)}
                                     onTouchStart={getTransformStart(i)}
                                 />

@@ -28,9 +28,26 @@ interface ThemeProviderInnerProps extends PropsWithChildren {
 const ThemeProviderInner: React.FC<ThemeProviderInnerProps> = ({ darkMode, children }) => {
     const sceneStyles = useSceneThemeStyle();
     const panelStyles = usePanelThemeStyle();
+    const glassVars: React.CSSProperties = darkMode
+        ? {
+              '--glass-bg-rgb': '18 24 32',
+              '--glass-alpha': '0.22',
+              '--glass-blur': '12px',
+              '--glass-radius': '12px',
+              '--glass-border': 'rgba(255,255,255,0.2)',
+              '--glass-shadow': '0 8px 16px rgba(0,0,0,0.35)',
+          }
+        : {
+              '--glass-bg-rgb': '255 255 255',
+              '--glass-alpha': '0.18',
+              '--glass-blur': '10px',
+              '--glass-radius': '12px',
+              '--glass-border': 'rgba(255,255,255,0.2)',
+              '--glass-shadow': '0 8px 16px rgba(0,0,0,0.12)',
+          };
 
     return (
-        <FluentProvider theme={getFluentTheme(darkMode)} style={{ ...sceneStyles, ...panelStyles }}>
+        <FluentProvider theme={getFluentTheme(darkMode)} style={{ ...sceneStyles, ...panelStyles, ...glassVars }}>
             {children}
         </FluentProvider>
     );
@@ -39,8 +56,14 @@ const ThemeProviderInner: React.FC<ThemeProviderInnerProps> = ({ darkMode, child
 const useStyles = makeStyles({
     dark: {
         colorScheme: 'dark',
+        '--app-gradient-from': '#0b1622',
+        '--app-gradient-to': '#1a2b3b',
+        '--app-glass-tint': '#1b2f44',
     },
     light: {
         colorScheme: 'light',
+        '--app-gradient-from': '#bfd5e6',
+        '--app-gradient-to': '#ffffff',
+        '--app-glass-tint': '#bfd5e6',
     },
 });

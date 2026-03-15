@@ -4,6 +4,7 @@ import { Circle, Group, Line, Rect } from 'react-konva';
 import Icon from '../../assets/zone/square.svg?react';
 import { getPointerAngle, rotateCoord, snapAngle } from '../../coord';
 import { getResizeCursor } from '../../cursor';
+import { CANVAS_CROSSHAIR_CURSOR } from '../../cursorIcon';
 import { getDragOffset, registerDropHandler } from '../../DropHandler';
 import { rotateGroupObjects } from '../../groupOperations';
 import AoeRect from '../../lib/aoe/AoeRect';
@@ -264,7 +265,7 @@ const RectangleControlPoints = createControlPointManager<RectangleZone, Rectangl
             {
                 id: HandleId.Rotation,
                 style: HandleStyle.Square,
-                cursor: 'crosshair',
+                cursor: CANVAS_CROSSHAIR_CURSOR,
                 x: 0 + dx,
                 y: -(hh + ROTATE_HANDLE_DISTANCE) - dy,
             },

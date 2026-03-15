@@ -209,7 +209,7 @@ registerDropHandler<CircleZone>(ObjectType.ProximityZXSJ, (object, position) => 
             opacity: 100,
             radius: 200,
             // CircleZone interface doesn't strictly include innerRadius but runtime supports it
-            innerRadius: 80,
+            innerRadius: 40,
             rotation: 0,
             animated: true,
             ...object,

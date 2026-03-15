@@ -1,8 +1,18 @@
 import React, { createContext, ReactNode, useContext, useEffect, useRef, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { unstable_batchedUpdates } from 'react-dom';
+import { useLocation, useSearchParams } from 'react-router-dom';
+import { useAuth } from '../auth/AuthContext';
 import { useEditActivity } from '../EditActivityContext';
 import { MessageToast } from '../MessageToast';
-import { useLoadScene, useScene } from '../SceneProvider';
+import type { Scene } from '../scene';
+import {
+    type EditorState,
+    type SceneAction,
+    useAddSceneDispatchListener,
+    useLoadScene,
+    useScene,
+} from '../SceneProvider';
+import type { UndoRedoAction } from '../undo/undoReducer';
 import {
     ChatMessageData,
     HostChangedData,
@@ -15,13 +25,17 @@ import {
 interface User {
     id: string;
     name: string;
+    avatar?: string | null;
     canEdit?: boolean;
+    shortId?: number;
 }
 
 interface CollaborationContextType {
     connected: boolean;
     userId: string;
     userName: string;
+    userAvatar: string | null;
+    usingAccountProfile: boolean;
     roomId: string;
     connectedUsers: User[];
     isHost: boolean;
@@ -32,9 +46,14 @@ interface CollaborationContextType {
     sendChatMessage: (message: string) => void;
     transferHost: (newHostId: string) => void;
     setUserEditPermission: (userId: string, canEdit: boolean) => void; // 设置用户编辑权限
+    unreadChatCount: number;
+    markChatRead: () => void;
+    setCollaborationDialogOpen: (open: boolean) => void;
+    setChatTabActive: (active: boolean) => void;
     chatMessages: Array<{
         userId: string;
         userName: string;
+        userAvatar?: string | null;
         message: string;
         timestamp: number;
     }>;
@@ -75,34 +94,91 @@ export const CollaborationProvider: React.FC<CollaborationProviderProps> = ({ ch
     const { scene, stepIndex, dispatch } = useScene();
     const loadScene = useLoadScene();
     const [searchParams] = useSearchParams();
+    const { hash } = useLocation();
+    const { state: authState } = useAuth();
 
     const [connected, setConnected] = useState(false);
     const [userId, setUserId] = useState('');
     // 初始化时直接从localStorage读取用户名
     const [userName, setUserName] = useState(getSavedUserName());
+    const [userAvatar, setUserAvatar] = useState<string | null>(null);
+    const [userNameOverride, setUserNameOverride] = useState<string | null>(null);
     const [roomId, setRoomId] = useState('');
     const [connectedUsers, setConnectedUsers] = useState<User[]>([]);
     const [chatMessages, setChatMessages] = useState<
         Array<{
             userId: string;
             userName: string;
+            userAvatar?: string | null;
             message: string;
             timestamp: number;
         }>
     >([]);
+    const [unreadChatCount, setUnreadChatCount] = useState(0);
     const [isHost, setIsHost] = useState(false);
     const [hostId, setHostId] = useState(''); // 存储房主ID
     // 使用EditActivityContext中的isActiveEdit状态
-    const { isActiveEdit, setActiveEdit } = useEditActivity();
+    const { setActiveEdit } = useEditActivity();
 
     const [error, setError] = useState<string | null>(null);
     // 场景更新计数器，用于实现每5次更新才发送一次请求
     // Removed unused updateCounter state
     // 控制是否启用场景更新延时功能
     const [enableUpdateDelay, setEnableUpdateDelay] = useState(false);
-    // 使用useRef存储定时器引用，避免触发不必要的重渲染
-    const updateTimerRef = useRef<NodeJS.Timeout | null>(null);
-    const lastUpdateTimeRef = useRef<number>(Date.now());
+    const userIdRef = useRef('');
+    const stepIndexRef = useRef(stepIndex);
+    const dialogOpenRef = useRef(false);
+    const chatTabActiveRef = useRef(false);
+    const autoJoinAttemptRef = useRef<{ roomId: string; at: number } | null>(null);
+    const isApplyingRemoteRef = useRef(false);
+    const lastSceneSeqRef = useRef(0);
+    const sceneRef = useRef(scene);
+    const snapshotTimerRef = useRef<number | null>(null);
+    const transientSendTimerRef = useRef<number | null>(null);
+    const pendingTransientActionRef = useRef<SceneAction | null>(null);
+
+    const remoteQueueRef = useRef<Array<{ seq: number; senderId: string; action: unknown }>>([]);
+    const remoteFlushRafRef = useRef<number | null>(null);
+
+    const usingAccountProfile = authState.isAuthenticated && !!authState.user;
+
+    const preferredProfileRef = useRef<{ name: string; avatar: string | null }>({ name: '', avatar: null });
+
+    useEffect(() => {
+        if (!usingAccountProfile) {
+            setUserNameOverride(null);
+        }
+    }, [usingAccountProfile]);
+
+    useEffect(() => {
+        if (authState.isAuthenticated && authState.user) {
+            const override = userNameOverride?.trim();
+            preferredProfileRef.current = {
+                name: override || authState.user.username,
+                avatar: authState.user.avatar ?? null,
+            };
+            return;
+        }
+        const savedName = getSavedUserName();
+        preferredProfileRef.current = {
+            name: savedName || userName || '',
+            avatar: null,
+        };
+    }, [authState.isAuthenticated, authState.user, userName, userNameOverride]);
+
+    const getPreferredProfile = () => preferredProfileRef.current;
+
+    useEffect(() => {
+        userIdRef.current = userId;
+    }, [userId]);
+
+    useEffect(() => {
+        stepIndexRef.current = stepIndex;
+    }, [stepIndex]);
+
+    useEffect(() => {
+        sceneRef.current = scene;
+    }, [scene]);
 
     // 组件加载时再次确认localStorage中的用户名
     useEffect(() => {
@@ -113,59 +189,21 @@ export const CollaborationProvider: React.FC<CollaborationProviderProps> = ({ ch
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    // 连接到WebSocket服务器
     useEffect(() => {
-        const connectWebSocket = async () => {
-            try {
-                await webSocketService.connect(serverUrl);
-                setConnected(true);
-
-                // 连接成功后，立即发送用户名到服务器
-                // 获取保存的用户名
-                const savedName = getSavedUserName();
-                // 无论是否有保存的用户名，都发起一次set_user_name请求
-                setTimeout(() => {
-                    webSocketService.setUserName(savedName || '');
-                }, 1000); // 短暂延迟确保连接完全建立
-
-                // 检查URL中是否有房间参数，如果有则加入房间
-                const roomIdFromUrl = searchParams.get('room');
-                if (roomIdFromUrl) {
-                    setTimeout(() => {
-                        joinRoom(roomIdFromUrl).catch((error) => {
-                            console.error('自动加入房间失败:', error);
-                        });
-                    }, 200); // 确保连接和用户名设置完成后再加入房间
-                }
-            } catch (error) {
-                console.error('连接WebSocket服务器失败:', error);
-                setConnected(false);
-            }
-        };
-
-        connectWebSocket();
-
         // 注册事件监听器
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const handleUserInfo = (data: any) => {
             const userInfo = data as UserInfoData;
             setUserId(userInfo.userId);
 
-            // 获取保存的用户名
-            const savedName = getSavedUserName();
-
-            // 如果有保存的用户名，优先使用它
-            if (savedName) {
-                // 如果当前userName和保存的用户名不同，更新它
-                if (savedName !== userName) {
-                    setUserName(savedName);
-                }
-                // 确保服务器也使用这个用户名
-                webSocketService.setUserName(savedName);
+            const profile = getPreferredProfile();
+            if (profile.name) {
+                setUserName(profile.name);
             } else if (userInfo.userName && !userName) {
-                // 如果没有保存的用户名，但服务器提供了一个，且当前没有用户名，则使用服务器的
                 setUserName(userInfo.userName);
             }
+            setUserAvatar(profile.avatar);
+            webSocketService.setUserProfile({ name: profile.name || userInfo.userName || '', avatar: profile.avatar });
         };
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -176,11 +214,101 @@ export const CollaborationProvider: React.FC<CollaborationProviderProps> = ({ ch
             // 不再在客户端自行设置房主状态
         };
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const handleSceneSync = (sceneData: any) => {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            loadScene(sceneData as any);
-            // 移除这里的setIsHost(false)，让房主状态由服务器通过host_info事件决定
+        const handleSceneSync = (payload: unknown) => {
+            const data = payload as { scene?: unknown; seq?: number } | undefined;
+            const nextScene = data?.scene ?? payload;
+            const seq = typeof data?.seq === 'number' ? data.seq : 0;
+            lastSceneSeqRef.current = Math.max(lastSceneSeqRef.current, seq);
+
+            setActiveEdit(false);
+            const currentStepIndex = stepIndexRef.current;
+            isApplyingRemoteRef.current = true;
+            loadScene(nextScene as Scene);
+            dispatch({ type: 'setStep', index: currentStepIndex });
+            isApplyingRemoteRef.current = false;
+        };
+
+        const flushRemoteQueue = () => {
+            if (remoteFlushRafRef.current !== null) return;
+            remoteFlushRafRef.current = window.requestAnimationFrame(() => {
+                remoteFlushRafRef.current = null;
+                const batch: Array<{ seq: number; senderId: string; action: unknown }> = remoteQueueRef.current.splice(
+                    0,
+                    80,
+                );
+                if (batch.length === 0) return;
+
+                isApplyingRemoteRef.current = true;
+                unstable_batchedUpdates(() => {
+                    const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null;
+                    let mergedUpdate: Map<number, unknown> | null = null;
+                    let mergedTransient = false;
+
+                    const flushMergedUpdate = () => {
+                        if (!mergedUpdate || mergedUpdate.size === 0) {
+                            mergedUpdate = null;
+                            mergedTransient = false;
+                            return;
+                        }
+                        const mergedAction = {
+                            type: 'update',
+                            value: Array.from(mergedUpdate.values()),
+                            transient: mergedTransient,
+                        } as unknown as SceneAction;
+                        dispatch(mergedAction);
+                        mergedUpdate = null;
+                        mergedTransient = false;
+                    };
+
+                    for (const a of batch) {
+                        lastSceneSeqRef.current = Math.max(lastSceneSeqRef.current, a.seq);
+                        if (a.senderId && a.senderId === userIdRef.current) {
+                            continue;
+                        }
+
+                        const act = a.action;
+                        if (!isRecord(act)) {
+                            flushMergedUpdate();
+                            dispatch(act as SceneAction | UndoRedoAction<EditorState>);
+                            continue;
+                        }
+
+                        const actType = typeof act.type === 'string' ? act.type : undefined;
+                        const actTransient = act.transient === true;
+
+                        if (actType === 'update' && actTransient) {
+                            if (!mergedUpdate) mergedUpdate = new Map();
+                            mergedTransient = true;
+                            const rawValue = 'value' in act ? act.value : undefined;
+                            const items = Array.isArray(rawValue) ? rawValue : [rawValue];
+                            for (const it of items) {
+                                if (!isRecord(it)) continue;
+                                const id = it.id;
+                                if (typeof id === 'number') {
+                                    mergedUpdate.set(id, it);
+                                }
+                            }
+                            continue;
+                        }
+
+                        if (actType === 'commit' || actType === 'rollback') {
+                            flushMergedUpdate();
+                            dispatch(act as unknown as SceneAction | UndoRedoAction<EditorState>);
+                            continue;
+                        }
+
+                        flushMergedUpdate();
+                        dispatch(act as unknown as SceneAction | UndoRedoAction<EditorState>);
+                    }
+
+                    flushMergedUpdate();
+                });
+                isApplyingRemoteRef.current = false;
+
+                if (remoteQueueRef.current.length > 0) {
+                    flushRemoteQueue();
+                }
+            });
         };
 
         const handleUsersUpdated = (data: unknown) => {
@@ -198,7 +326,12 @@ export const CollaborationProvider: React.FC<CollaborationProviderProps> = ({ ch
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const handleChatMessage = (message: any) => {
-            setChatMessages((prev) => [...prev, message as ChatMessageData]);
+            const msg = message as ChatMessageData;
+            setChatMessages((prev) => [...prev, msg]);
+            const isSelfMessage = !!msg.userId && msg.userId === userIdRef.current;
+            if (isSelfMessage) return;
+            if (dialogOpenRef.current && chatTabActiveRef.current) return;
+            setUnreadChatCount((c) => c + 1);
         };
 
         webSocketService.on('user_info', handleUserInfo);
@@ -207,7 +340,24 @@ export const CollaborationProvider: React.FC<CollaborationProviderProps> = ({ ch
         webSocketService.on('users_updated', handleUsersUpdated);
         webSocketService.on('connected', handleConnected);
         webSocketService.on('disconnected', handleDisconnected);
+        const handleSceneAction = (m: unknown) => {
+            const msg = m as { seq: number; senderId: string; action: unknown };
+            if (!msg || typeof msg.seq !== 'number') return;
+            remoteQueueRef.current.push(msg);
+            flushRemoteQueue();
+        };
+
+        const handleSceneActionLog = (m: unknown) => {
+            const msg = m as { actions?: Array<{ seq: number; senderId: string; action: unknown }> };
+            const actions = msg.actions ?? [];
+            if (actions.length === 0) return;
+            remoteQueueRef.current.push(...actions);
+            flushRemoteQueue();
+        };
+
         webSocketService.on('chat_message', handleChatMessage);
+        webSocketService.on('scene_action', handleSceneAction);
+        webSocketService.on('scene_action_log', handleSceneActionLog);
 
         // 清理函数
         return () => {
@@ -218,10 +368,12 @@ export const CollaborationProvider: React.FC<CollaborationProviderProps> = ({ ch
             webSocketService.off('connected', handleConnected);
             webSocketService.off('disconnected', handleDisconnected);
             webSocketService.off('chat_message', handleChatMessage);
+            webSocketService.off('scene_action', handleSceneAction);
+            webSocketService.off('scene_action_log', handleSceneActionLog);
             webSocketService.disconnect();
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [serverUrl, loadScene]);
+    }, [loadScene]);
 
     // 单独处理房主相关事件，确保依赖于userId
     useEffect(() => {
@@ -282,85 +434,76 @@ export const CollaborationProvider: React.FC<CollaborationProviderProps> = ({ ch
         };
     }, [userId]); // 依赖于userId，确保函数获取最新的userId值
 
-    // 已经从useScene获取了scene、stepIndex和dispatch
+    const onLocalDispatch = React.useCallback(
+        (action: SceneAction | UndoRedoAction<EditorState>) => {
+            if (isApplyingRemoteRef.current) return;
+            if (!connected || !roomId) return;
+            const type = (action as { type: string }).type;
+            if (type === 'reset' || type === 'setSource') return;
+            if (type === 'setStep' || type === 'nextStep' || type === 'previousStep') return;
 
-    // 单独处理scene_update事件中对userId的依赖
+            const flushPendingTransient = () => {
+                if (!pendingTransientActionRef.current) return;
+                webSocketService.sendSceneAction(pendingTransientActionRef.current);
+                pendingTransientActionRef.current = null;
+            };
+
+            const transient = (action as SceneAction).transient === true;
+            if (transient) {
+                pendingTransientActionRef.current = action as SceneAction;
+                if (transientSendTimerRef.current === null) {
+                    transientSendTimerRef.current = window.requestAnimationFrame(() => {
+                        transientSendTimerRef.current = null;
+                        flushPendingTransient();
+                    });
+                }
+                return;
+            }
+
+            flushPendingTransient();
+            webSocketService.sendSceneAction(action);
+
+            if (isHost) {
+                if (snapshotTimerRef.current !== null) {
+                    window.clearTimeout(snapshotTimerRef.current);
+                }
+                snapshotTimerRef.current = window.setTimeout(() => {
+                    webSocketService.sendSceneSnapshot(sceneRef.current, lastSceneSeqRef.current);
+                    snapshotTimerRef.current = null;
+                }, 800);
+            }
+        },
+        [connected, isHost, roomId],
+    );
+
+    useAddSceneDispatchListener(onLocalDispatch);
+
     useEffect(() => {
-        const handleSceneUpdate = (payload: unknown) => {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const { data, senderId } = payload as { data: any; senderId: string };
-            // 如果更新不是由当前用户发起的，则更新场景
-            if (senderId !== userId) {
-                setActiveEdit(false); // 设置为非主动编辑
-                // 保存当前选中的stepIndex
-                const currentStepIndex = stepIndex;
-                // 加载更新的场景
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                loadScene(data as any);
-                // 恢复原来选中的stepIndex
-                dispatch({ type: 'setStep', index: currentStepIndex });
-                // 定期重置为不活动状态
-                setTimeout(() => {
-                    setActiveEdit(false);
-                }, 500);
-            } else {
-                // 忽略自己发送的场景更新
-            }
-        };
-
-        // 添加新的场景更新监听器
-        webSocketService.on('scene_update', handleSceneUpdate);
-
-        // 清理时移除监听器
-        return () => {
-            webSocketService.off('scene_update', handleSceneUpdate);
-        };
-    }, [userId, loadScene, stepIndex, dispatch, setActiveEdit]);
-
-    useEffect(() => {
-        if (connected && roomId && scene && isActiveEdit) {
-            // if (enableUpdateDelay) {
-            //     const currentTime = Date.now();
-            //     const timeSinceLastUpdate = currentTime - lastUpdateTimeRef.current;
-            //     // 如果达到5次更新或者时间间隔超过200ms，发送场景数据
-            //     if (timeSinceLastUpdate > 100) {
-            //         webSocketService.updateScene(scene, isHost);
-            //         lastUpdateTimeRef.current = currentTime; // 更新时间戳
-            //     }
-            // } else {
-            //     // 不启用延时，直接发送
-            //     webSocketService.updateScene(scene, isHost);
-            // }
-            const currentTime = Date.now();
-            const timeSinceLastUpdate = currentTime - lastUpdateTimeRef.current;
-            // 如果达到5次更新或者时间间隔超过200ms，发送场景数据
-            if (timeSinceLastUpdate > 50) {
-                webSocketService.updateScene(scene, isHost);
-                lastUpdateTimeRef.current = currentTime; // 更新时间戳
-            }
-        }
-
-        // 清理函数：清除定时器
-        return () => {
-            if (updateTimerRef.current) {
-                clearTimeout(updateTimerRef.current);
-            }
-        };
-    }, [scene, connected, roomId, isHost, isActiveEdit, enableUpdateDelay]);
+        if (!connected || !roomId || !isHost) return;
+        webSocketService.sendSceneSnapshot(sceneRef.current, lastSceneSeqRef.current);
+    }, [connected, isHost, roomId]);
 
     // 加入房间
     const joinRoom = async (roomId?: string) => {
         if (!connected) {
             try {
                 await webSocketService.connect(serverUrl);
+                const profile = getPreferredProfile();
+                setUserName(profile.name || userName || '');
+                setUserAvatar(profile.avatar);
+                webSocketService.setUserProfile({ name: profile.name || userName || '', avatar: profile.avatar });
             } catch (error) {
                 console.error('连接服务器失败:', error);
+                setError(error instanceof Error ? error.message : '连接服务器失败');
                 throw error;
             }
         }
 
+        lastSceneSeqRef.current = 0;
+
         // 清除之前的聊天记录
         setChatMessages([]);
+        setUnreadChatCount(0);
 
         // 清除之前的房主状态
         setIsHost(false);
@@ -411,33 +554,90 @@ export const CollaborationProvider: React.FC<CollaborationProviderProps> = ({ ch
         }, 3000);
     };
 
+    useEffect(() => {
+        const roomIdFromSearch = searchParams.get('room');
+        const roomIdFromHash = (() => {
+            const m = hash.match(/[?&]room=([^&]+)/);
+            if (!m || !m[1]) return null;
+            try {
+                return decodeURIComponent(m[1]);
+            } catch {
+                return m[1];
+            }
+        })();
+        const roomIdFromUrl = roomIdFromSearch || roomIdFromHash;
+        if (!roomIdFromUrl) return;
+        if (roomId && roomId === roomIdFromUrl) return;
+        const now = Date.now();
+        if (autoJoinAttemptRef.current?.roomId === roomIdFromUrl && now - autoJoinAttemptRef.current.at < 5000) {
+            return;
+        }
+        autoJoinAttemptRef.current = { roomId: roomIdFromUrl, at: now };
+
+        setTimeout(() => {
+            joinRoom(roomIdFromUrl).catch((error) => {
+                console.error('自动加入房间失败:', error);
+            });
+        }, 200); // 确保连接和用户名设置完成后再加入房间
+
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [searchParams, hash, roomId]);
+
     // 离开房间
     const leaveRoom = () => {
         setRoomId('');
         setConnectedUsers([]);
         setChatMessages([]);
+        setUnreadChatCount(0);
         setIsHost(false);
-        // 清除定时器
-        if (updateTimerRef.current) {
-            clearTimeout(updateTimerRef.current);
-            updateTimerRef.current = null;
+        setHostId('');
+        pendingTransientActionRef.current = null;
+        if (transientSendTimerRef.current !== null) {
+            window.cancelAnimationFrame(transientSendTimerRef.current);
+            transientSendTimerRef.current = null;
         }
+        if (snapshotTimerRef.current !== null) {
+            window.clearTimeout(snapshotTimerRef.current);
+            snapshotTimerRef.current = null;
+        }
+        if (remoteFlushRafRef.current !== null) {
+            window.cancelAnimationFrame(remoteFlushRafRef.current);
+            remoteFlushRafRef.current = null;
+        }
+        remoteQueueRef.current = [];
         // 重置延时设置
         setEnableUpdateDelay(false);
-        // 这里可以添加离开房间的逻辑，例如重新连接WebSocket
+        webSocketService.disconnect();
+        setConnected(false);
+        setUserId('');
     };
 
     // 更改用户名
     const changeUserName = (name: string) => {
-        if (name.trim()) {
-            webSocketService.setUserName(name);
-            setUserName(name);
-            // 保存用户名到localStorage
-            try {
-                localStorage.setItem(USER_NAME_STORAGE_KEY, name);
-            } catch (error) {
-                console.error('保存用户名失败:', error);
+        const next = name.trim();
+        if (usingAccountProfile) {
+            if (next) {
+                setUserNameOverride(next);
+                setUserName(next);
+                webSocketService.setUserProfile({ name: next, avatar: userAvatar });
+                return;
             }
+            setUserNameOverride(null);
+            const fallback = authState.user?.username ?? '';
+            if (fallback) {
+                setUserName(fallback);
+                webSocketService.setUserProfile({ name: fallback, avatar: userAvatar });
+            }
+            return;
+        }
+
+        if (!next) return;
+        webSocketService.setUserName(next);
+        setUserName(next);
+        try {
+            localStorage.setItem(USER_NAME_STORAGE_KEY, next);
+        } catch (error) {
+            console.error('保存用户名失败:', error);
         }
     };
 
@@ -464,10 +664,30 @@ export const CollaborationProvider: React.FC<CollaborationProviderProps> = ({ ch
         }
     };
 
+    const markChatRead = () => {
+        setUnreadChatCount(0);
+    };
+
+    const setCollaborationDialogOpen = (open: boolean) => {
+        dialogOpenRef.current = open;
+        if (!open) {
+            chatTabActiveRef.current = false;
+        }
+    };
+
+    const setChatTabActive = (active: boolean) => {
+        chatTabActiveRef.current = active;
+        if (active) {
+            setUnreadChatCount(0);
+        }
+    };
+
     const value = {
         connected,
         userId,
         userName,
+        userAvatar,
+        usingAccountProfile,
         roomId,
         connectedUsers,
         isHost,
@@ -478,6 +698,10 @@ export const CollaborationProvider: React.FC<CollaborationProviderProps> = ({ ch
         sendChatMessage,
         transferHost,
         setUserEditPermission,
+        unreadChatCount,
+        markChatRead,
+        setCollaborationDialogOpen,
+        setChatTabActive,
         chatMessages,
         enableUpdateDelay,
         setEnableUpdateDelay: handleSetEnableUpdateDelay,

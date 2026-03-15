@@ -7,6 +7,19 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+:root {
+  --glass-blur: 10px;
+  --glass-alpha: 0.18;
+  --glass-radius: 12px;
+}
+
+@media (max-width: 700px) {
+  :root {
+    --glass-blur: 8px;
+    --glass-alpha: 0.25;
+  }
+}
+
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
 }

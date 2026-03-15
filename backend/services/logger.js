@@ -13,6 +13,71 @@ class Logger {
         return `req_${Date.now()}_${crypto.randomBytes(8).toString('hex')}`;
     }
 
+    generateId(prefix) {
+        return `${prefix}_${Date.now()}_${crypto.randomBytes(8).toString('hex')}`;
+    }
+
+    log(level, scope, event, data = {}) {
+        if (level === 'debug' && process.env.NODE_ENV !== 'development') {
+            return;
+        }
+
+        const pad2 = (n) => String(n).padStart(2, '0');
+        const d = new Date();
+        const ts = `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(
+            d.getMinutes(),
+        )}:${pad2(d.getSeconds())}`;
+
+        const titleCase = (s) => {
+            if (!s) return s;
+            return `${s[0].toUpperCase()}${s.slice(1)}`;
+        };
+
+        const scopeMap = {
+            app: 'Backend',
+            http: 'API',
+            server: 'Server',
+            db: 'DB',
+            email: 'Email',
+            logger: 'Logger',
+            metrics: 'Metrics',
+            health: 'Health',
+            auth: 'Auth',
+            community: 'Community',
+            feedback: 'Feedback',
+        };
+
+        const resolveComponent = (rawScope) => {
+            if (!rawScope) return 'Backend';
+            if (scopeMap[rawScope]) return scopeMap[rawScope];
+            if (rawScope.includes('.')) {
+                const parts = rawScope.split('.');
+                if (parts[0] === 'api' && parts[1]) {
+                    return scopeMap[parts[1]] || titleCase(parts[1]);
+                }
+                if (parts[0] === 'ws') {
+                    const rest = parts
+                        .slice(1)
+                        .filter(Boolean)
+                        .map((p) => scopeMap[p] || titleCase(p));
+                    return rest.length > 0 ? `WS.${rest.join('.')}` : 'WS';
+                }
+                return parts
+                    .filter(Boolean)
+                    .map((p) => scopeMap[p] || titleCase(p))
+                    .join('.');
+            }
+            return titleCase(rawScope);
+        };
+
+        const component = resolveComponent(scope);
+        const levelUpper = String(level || 'info').toUpperCase();
+        const extra =
+            data && typeof data === 'object' && Object.keys(data).length > 0 ? ` - ${JSON.stringify(data)}` : '';
+
+        process.stdout.write(`[${ts}] ${component} | ${levelUpper} | ${event}${extra}\n`);
+    }
+
     /**
      * 记录API日志到数据库
      * @param {Object} logData - 日志数据
@@ -67,7 +132,9 @@ class Logger {
             );
         } catch (error) {
             // 日志记录失败不应影响主业务流程，仅打印到控制台
-            console.error('❌ 日志记录失败:', error.message);
+            this.log('error', 'logger', 'logger.db_write_failed', {
+                error: { name: error.name, message: error.message, stack: error.stack },
+            });
         }
     }
 
@@ -75,21 +142,30 @@ class Logger {
      * 记录信息级别日志
      */
     info(message, data = {}) {
-        console.log(`ℹ️  [INFO] ${message}`, data);
+        this.log('info', 'app', message, data);
     }
 
     /**
      * 记录警告级别日志
      */
     warn(message, data = {}) {
-        console.warn(`⚠️  [WARN] ${message}`, data);
+        this.log('warn', 'app', message, data);
     }
 
     /**
      * 记录错误级别日志
      */
     error(message, error = null, data = {}) {
-        console.error(`❌ [ERROR] ${message}`, error, data);
+        this.log('error', 'app', message, {
+            ...data,
+            error: error
+                ? {
+                      name: error.name,
+                      message: error.message,
+                      stack: error.stack,
+                  }
+                : undefined,
+        });
     }
 
     /**
@@ -97,7 +173,7 @@ class Logger {
      */
     debug(message, data = {}) {
         if (process.env.NODE_ENV === 'development') {
-            console.log(`🔍 [DEBUG] ${message}`, data);
+            this.log('debug', 'app', message, data);
         }
     }
 
@@ -113,6 +189,7 @@ class Logger {
 
             // 将requestId附加到请求对象，供后续使用
             req.requestId = requestId;
+            res.setHeader('x-request-id', requestId);
 
             // 获取用户ID（如果已认证）
             let userId = null;
@@ -129,6 +206,7 @@ class Logger {
 
             let responseBody = null;
             let responseStatus = 200;
+            let wroteJson = false;
 
             // 重写res.status方法
             res.status = function (statusCode) {
@@ -138,31 +216,53 @@ class Logger {
 
             // 重写res.json方法以捕获响应体
             res.json = function (body) {
+                wroteJson = true;
                 responseBody = body;
+                return originalJson(body);
+            }.bind(this);
 
-                // 记录日志
+            res.on('finish', () => {
                 const executionTime = Date.now() - startTime;
                 const success = responseStatus >= 200 && responseStatus < 400;
                 const level = success ? 'info' : responseStatus >= 500 ? 'error' : 'warn';
 
-                // 所有请求都打印到控制台
-                const statusEmoji = success ? '✅' : '❌';
-                const userInfo = userId ? `[用户:${userId}]` : '[匿名]';
-                const paramsInfo = Object.keys(req.query || {}).length > 0 ? JSON.stringify(req.query) : '';
-                const bodyInfo =
-                    req.body && Object.keys(req.body).length > 0
-                        ? JSON.stringify(this.sanitizeRequestBody(req.body))
-                        : '';
-                const responseInfo = responseBody ? JSON.stringify(this.sanitizeResponseBody(responseBody)) : '';
+                const requestBody =
+                    req.body && typeof req.body === 'object' && Object.keys(req.body).length > 0
+                        ? this.sanitizeRequestBody(req.body)
+                        : undefined;
+                const requestParams = req.query && Object.keys(req.query).length > 0 ? req.query : undefined;
+                const sanitizedResponse = wroteJson ? this.sanitizeResponseBody(responseBody) : undefined;
 
-                console.log(
-                    `${statusEmoji} ${req.method} ${req.originalUrl || req.url} - ${responseStatus} (${executionTime}ms) ${userInfo}\n` +
-                        (paramsInfo ? `  📥 Query: ${paramsInfo}\n` : '') +
-                        (bodyInfo ? `  📥 Body: ${bodyInfo}\n` : '') +
-                        (responseInfo ? `  📤 Response: ${responseInfo}` : ''),
-                );
+                const originalUrl = req.originalUrl || req.url;
+                const baseUrl = req.baseUrl || '';
+                const routeScope =
+                    baseUrl === '/api/community'
+                        ? 'api.community'
+                        : baseUrl === '/api/auth'
+                          ? 'api.auth'
+                          : baseUrl === '/api/feedback'
+                            ? 'api.feedback'
+                            : originalUrl?.startsWith?.('/metrics')
+                              ? 'metrics'
+                              : originalUrl?.startsWith?.('/api/health')
+                                ? 'health'
+                                : 'http';
 
-                // 只存储失败的日志（状态码 >= 400）到数据库
+                this.log(level, routeScope, 'http.request', {
+                    requestId,
+                    method: req.method,
+                    url: originalUrl,
+                    route: req.route ? req.route.path : req.path,
+                    ip: ipAddress,
+                    userId: userId ?? undefined,
+                    userAgent: req.get('user-agent'),
+                    status: responseStatus,
+                    durationMs: executionTime,
+                    query: requestParams,
+                    body: requestBody,
+                    response: !success ? sanitizedResponse : undefined,
+                });
+
                 if (!success) {
                     logger
                         .logToDatabase({
@@ -177,25 +277,36 @@ class Logger {
                                 'content-type': req.get('content-type'),
                                 authorization: req.get('authorization') ? 'Bearer ***' : null,
                             },
-                            requestParams: req.query,
-                            requestBody: this.sanitizeRequestBody(req.body),
+                            requestParams: requestParams,
+                            requestBody: requestBody,
                             responseStatus,
-                            responseBody: this.sanitizeResponseBody(responseBody),
-                            errorMessage: responseBody ? responseBody.error : null,
+                            responseBody: sanitizedResponse,
+                            errorMessage: sanitizedResponse ? sanitizedResponse.error : null,
                             executionTime,
                             success,
                             level,
                         })
                         .catch((err) => {
-                            console.error('日志记录失败:', err);
+                            this.log('error', 'logger', 'logger.db_write_failed', {
+                                requestId,
+                                error: { name: err.name, message: err.message, stack: err.stack },
+                            });
                         });
                 }
-
-                return originalJson(body);
-            }.bind(this);
+            });
 
             next();
         };
+    }
+
+    ws(level, event, data = {}) {
+        if (typeof event === 'string' && event.startsWith('ws.')) {
+            const parts = event.split('.');
+            const scope = parts.length >= 2 ? `ws.${parts[1]}` : 'ws';
+            this.log(level, scope, event, data);
+            return;
+        }
+        this.log(level, 'ws', event, data);
     }
 
     /**
@@ -250,10 +361,13 @@ class Logger {
                 [days],
             );
 
-            console.log(`✅ 清理了 ${result[0].affectedRows} 条过期日志记录`);
+            this.log('info', 'logger', 'logger.cleanup', { affectedRows: result[0].affectedRows, days });
             return result[0].affectedRows;
         } catch (error) {
-            console.error('❌ 清理日志失败:', error.message);
+            this.log('error', 'logger', 'logger.cleanup_failed', {
+                days,
+                error: { name: error.name, message: error.message, stack: error.stack },
+            });
             return 0;
         }
     }
@@ -288,7 +402,10 @@ class Logger {
 
             return stats[0];
         } catch (error) {
-            console.error('❌ 获取日志统计失败:', error.message);
+            this.log('error', 'logger', 'logger.stats_failed', {
+                options,
+                error: { name: error.name, message: error.message, stack: error.stack },
+            });
             return null;
         }
     }

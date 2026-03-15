@@ -2,6 +2,7 @@ import { makeStyles, Tab, TabList } from '@fluentui/react-components';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { EditMode } from '../editMode';
+import { glassSurface } from '../glassStyles';
 import { TabActivity } from '../TabActivity';
 import { useEditMode } from '../useEditMode';
 import { ArenaPanel } from './ArenaPanel';
@@ -58,10 +59,17 @@ const useStyles = makeStyles({
         gridArea: 'left-panel',
         width: `${PANEL_WIDTH}px`,
         userSelect: 'none',
+        ...glassSurface,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '8px',
+        padding: '8px',
+        boxSizing: 'border-box',
+        height: '100%',
     },
 
     container: {
-        height: 'calc(100% - 44px)',
+        flexGrow: 1,
         overflow: 'auto',
     },
 });

@@ -4,10 +4,12 @@ import { config } from '../config';
 export interface UserInfoData {
     userId: string;
     userName: string;
+    userAvatar?: string | null;
 }
 
 export interface RoomJoinedData {
     roomId: string;
+    shortId?: number;
 }
 
 export interface HostInfoData {
@@ -21,8 +23,20 @@ export interface HostChangedData {
 export interface ChatMessageData {
     userId: string;
     userName: string;
+    userAvatar?: string | null;
     message: string;
     timestamp: number;
+}
+
+export interface SceneActionMessage {
+    seq: number;
+    senderId: string;
+    action: unknown;
+}
+
+export interface SceneActionLogMessage {
+    fromSeq: number;
+    actions: SceneActionMessage[];
 }
 
 class WebSocketService {
@@ -37,7 +51,13 @@ class WebSocketService {
     private userId: string = '';
     private userName: string = '';
     private roomId: string = '';
-    private connectedUsers: Array<{ id: string; name: string; canEdit?: boolean }> = [];
+    private connectedUsers: Array<{
+        id: string;
+        name: string;
+        avatar?: string | null;
+        canEdit?: boolean;
+        shortId?: number;
+    }> = [];
     private heartbeatInterval = 5000; // 心跳间隔5秒
     private heartbeatTimer: NodeJS.Timeout | null = null;
     private lastHeartbeatResponse: number = 0;
@@ -52,15 +72,34 @@ class WebSocketService {
 
         // 根据当前协议选择对应的配置
         const wsConfig = config.websocket;
+        const baseUrl = wsConfig.baseUrl;
 
         // 构造完整URL
-        return `${wsProtocol}//${wsConfig.baseUrl}`;
+        if (baseUrl.startsWith('ws://') || baseUrl.startsWith('wss://')) {
+            return baseUrl;
+        }
+        if (baseUrl.startsWith('//')) {
+            return `${wsProtocol}${baseUrl}`;
+        }
+        return `${wsProtocol}//${baseUrl}`;
     }
 
     private currentUrl: string = '';
 
     connect(serverUrl?: string): Promise<void> {
         return new Promise((resolve, reject) => {
+            let settled = false;
+            const safeResolve = () => {
+                if (settled) return;
+                settled = true;
+                resolve();
+            };
+            const safeReject = (error: unknown) => {
+                if (settled) return;
+                settled = true;
+                reject(error);
+            };
+
             // 清除任何现有的重连定时器
             if (this.reconnectTimer) {
                 clearTimeout(this.reconnectTimer);
@@ -78,6 +117,7 @@ class WebSocketService {
 
             try {
                 this.ws = new WebSocket(this.currentUrl);
+                this.ws.binaryType = 'arraybuffer';
 
                 this.ws.onopen = () => {
                     this.log('WebSocket连接已建立');
@@ -85,22 +125,38 @@ class WebSocketService {
                     this.reconnectAttempts = 0;
                     this.trigger('connected');
                     this.startHeartbeat(); // 启动心跳
-                    resolve();
+                    safeResolve();
                 };
 
                 this.ws.onmessage = (event) => {
-                    try {
-                        const data = JSON.parse(event.data);
-                        this.handleMessage(data);
-                    } catch (error) {
-                        this.error('解析WebSocket消息失败:', error);
+                    if (typeof event.data === 'string') {
+                        try {
+                            const data = JSON.parse(event.data);
+                            this.handleMessage(data);
+                        } catch (error) {
+                            this.error('解析WebSocket消息失败:', error);
+                        }
+                        return;
+                    }
+
+                    if (event.data instanceof ArrayBuffer) {
+                        this.handleBinaryMessage(new Uint8Array(event.data));
+                        return;
+                    }
+
+                    if (event.data instanceof Blob) {
+                        event.data
+                            .arrayBuffer()
+                            .then((buf) => this.handleBinaryMessage(new Uint8Array(buf)))
+                            .catch((error) => this.error('解析WebSocket二进制消息失败:', error));
+                        return;
                     }
                 };
 
                 this.ws.onerror = (error) => {
                     this.error('WebSocket错误:', error);
                     this.isConnecting = false;
-                    reject(error);
+                    safeReject(new Error(`WebSocket连接失败: ${this.currentUrl}`));
                 };
 
                 // 连接关闭时的处理
@@ -121,7 +177,7 @@ class WebSocketService {
                 };
             } catch (error) {
                 this.isConnecting = false;
-                reject(error);
+                safeReject(error);
             }
         });
     }
@@ -244,7 +300,7 @@ class WebSocketService {
                 break;
 
             case 'scene_sync':
-                this.trigger('scene_sync', data.data);
+                this.trigger('scene_sync', { scene: data.data, seq: typeof data.seq === 'number' ? data.seq : 0 });
                 break;
 
             case 'scene_update':
@@ -252,6 +308,21 @@ class WebSocketService {
                     data: data.data,
                     senderId: data.senderId,
                 });
+                break;
+
+            case 'scene_action':
+                this.trigger('scene_action', {
+                    seq: data.seq,
+                    senderId: data.senderId,
+                    action: data.action,
+                } satisfies SceneActionMessage);
+                break;
+
+            case 'scene_action_log':
+                this.trigger('scene_action_log', {
+                    fromSeq: typeof data.fromSeq === 'number' ? data.fromSeq : 0,
+                    actions: Array.isArray(data.actions) ? data.actions : [],
+                } satisfies SceneActionLogMessage);
                 break;
 
             case 'user_joined':
@@ -308,6 +379,20 @@ class WebSocketService {
         }
     }
 
+    private handleBinaryMessage(data: Uint8Array): void {
+        const type = data[0];
+        switch (type) {
+            case 0xd1:
+                this.trigger('cursor_batch', data);
+                break;
+            case 0xd2:
+                this.trigger('cursor_fec', data);
+                break;
+            default:
+                this.trigger('binary_message', data);
+        }
+    }
+
     // 发送消息到服务器
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     send(type: string, payload?: any): void {
@@ -322,6 +407,14 @@ class WebSocketService {
         };
 
         this.ws.send(JSON.stringify(message));
+    }
+
+    sendBinary(payload: ArrayBuffer | Uint8Array): void {
+        if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+            console.warn('WebSocket未连接，无法发送二进制消息');
+            return;
+        }
+        this.ws.send(payload);
     }
 
     // 加入房间
@@ -344,9 +437,22 @@ class WebSocketService {
         }
     }
 
+    sendSceneAction(action: unknown): void {
+        this.send('scene_action', { action });
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    sendSceneSnapshot(scene: any, seq: number): void {
+        this.send('scene_snapshot', { scene, seq });
+    }
+
     // 设置用户名
     setUserName(name: string): void {
         this.send('set_user_name', { name });
+    }
+
+    setUserProfile(profile: { name?: string; avatar?: string | null }): void {
+        this.send('set_user_profile', profile);
     }
 
     // 发送聊天消息
@@ -428,7 +534,7 @@ class WebSocketService {
         userId: string;
         userName: string;
         roomId: string;
-        connectedUsers: Array<{ id: string; name: string; canEdit?: boolean }>;
+        connectedUsers: Array<{ id: string; name: string; canEdit?: boolean; shortId?: number }>;
     } {
         return {
             connected: this.ws?.readyState === WebSocket.OPEN,

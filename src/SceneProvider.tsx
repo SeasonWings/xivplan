@@ -1,6 +1,16 @@
 /* eslint-disable react-refresh/only-export-components */
 import * as React from 'react';
-import { createContext, Dispatch, PropsWithChildren, SetStateAction, useContext, useState } from 'react';
+import {
+    createContext,
+    Dispatch,
+    PropsWithChildren,
+    SetStateAction,
+    useCallback,
+    useContext,
+    useEffect,
+    useRef,
+    useState,
+} from 'react';
 import { Animation } from './animation/animationTypes';
 import { copyObjects } from './copy';
 import {
@@ -228,6 +238,10 @@ const SourceContext = createContext<[FileSource | undefined, Dispatch<SetStateAc
     () => {},
 ]);
 
+const DispatchListenersContext = createContext<
+    React.MutableRefObject<Array<(action: SceneAction | UndoRedoAction<EditorState>) => void>> | undefined
+>(undefined);
+
 const { UndoProvider, Context, usePresent, useUndoRedoPossible } = createUndoContext(sceneReducer, HISTORY_SIZE);
 
 export interface SceneProviderProps extends PropsWithChildren {
@@ -236,6 +250,7 @@ export interface SceneProviderProps extends PropsWithChildren {
 
 export const SceneProvider: React.FC<SceneProviderProps> = ({ initialScene, children }) => {
     const source = useState<FileSource | undefined>();
+    const dispatchListenersRef = useRef<Array<(action: SceneAction | UndoRedoAction<EditorState>) => void>>([]);
 
     const initialState: EditorState = {
         scene: initialScene ?? DEFAULT_SCENE,
@@ -244,7 +259,9 @@ export const SceneProvider: React.FC<SceneProviderProps> = ({ initialScene, chil
 
     return (
         <SourceContext value={source}>
-            <UndoProvider initialState={initialState}>{children}</UndoProvider>
+            <DispatchListenersContext value={dispatchListenersRef}>
+                <UndoProvider initialState={initialState}>{children}</UndoProvider>
+            </DispatchListenersContext>
         </SourceContext>
     );
 };
@@ -265,6 +282,19 @@ export interface SceneContext {
 export function useScene(): SceneContext {
     const [transientPresent, present, dispatch] = usePresent();
     const [source] = useContext(SourceContext);
+    const dispatchListenersRef = useContext(DispatchListenersContext);
+
+    const wrappedDispatch = useCallback(
+        (action: SceneAction | UndoRedoAction<EditorState>) => {
+            if (dispatchListenersRef) {
+                for (const listener of dispatchListenersRef.current) {
+                    listener(action);
+                }
+            }
+            dispatch(action);
+        },
+        [dispatch, dispatchListenersRef],
+    );
 
     return {
         scene: transientPresent.scene,
@@ -272,8 +302,24 @@ export function useScene(): SceneContext {
         step: getCurrentStep(transientPresent),
         stepIndex: transientPresent.currentStep,
         source: source,
-        dispatch,
+        dispatch: wrappedDispatch,
     };
+}
+
+export function useAddSceneDispatchListener(listener: (action: SceneAction | UndoRedoAction<EditorState>) => void) {
+    const dispatchListenersRef = useContext(DispatchListenersContext);
+
+    useEffect(() => {
+        if (!dispatchListenersRef) return;
+        const listeners = dispatchListenersRef.current;
+        listeners.push(listener);
+        return () => {
+            const idx = listeners.indexOf(listener);
+            if (idx >= 0) {
+                listeners.splice(idx, 1);
+            }
+        };
+    }, [dispatchListenersRef, listener]);
 }
 
 export function useCurrentStep(): SceneStep {

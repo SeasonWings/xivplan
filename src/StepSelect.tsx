@@ -34,6 +34,7 @@ import React, { HTMLAttributes, RefAttributes, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { HotkeyBlockingDialogBody } from './HotkeyBlockingDialogBody';
 import { useScene } from './SceneProvider';
+import { glassSurface, glassToolbar } from './glassStyles';
 import { ScenePreview } from './render/SceneRenderer';
 import { Scene } from './scene';
 import { MIN_STAGE_WIDTH } from './theme';
@@ -432,7 +433,7 @@ const useStyles = makeStyles({
         display: 'flex',
         flexFlow: 'row',
         columnGap: tokens.spacingHorizontalXS,
-        backgroundColor: tokens.colorNeutralBackground2,
+        ...glassToolbar,
         minWidth: MIN_STAGE_WIDTH,
     },
     listWrapper: {
@@ -470,6 +471,7 @@ const useStyles = makeStyles({
 
     dialogSurface: {
         maxWidth: 'calc(min(1050px, 100% - 50px))',
+        ...glassSurface,
     },
 
     dialogContent: {
@@ -489,8 +491,7 @@ const useStyles = makeStyles({
         padding: tokens.spacingHorizontalM,
         columnGap: tokens.spacingHorizontalM,
         rowGap: tokens.spacingVerticalL,
-        background: tokens.colorNeutralBackground3,
-        borderRadius: tokens.borderRadiusLarge,
+        ...glassSurface,
     },
 
     stepItem: {

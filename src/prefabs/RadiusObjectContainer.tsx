@@ -3,6 +3,7 @@ import { Circle, Line } from 'react-konva';
 import { useScene } from '../SceneProvider';
 import { getPointerAngle, snapAngle } from '../coord';
 import { getResizeCursor } from '../cursor';
+import { CANVAS_CROSSHAIR_CURSOR } from '../cursorIcon';
 import { rotateGroupObjects } from '../groupOperations';
 import { ActivePortal } from '../render/Portals';
 import { InnerRadiusObject, RadiusObject, SceneObject, UnknownObject, isRotateable } from '../scene';
@@ -212,7 +213,13 @@ function getNormalHandles(r: number, rotation: number): Handle[] {
 }
 
 function getRotateHandle(r: number): Handle {
-    return { id: HandleId.Rotate, style: HandleStyle.Square, cursor: 'crosshair', x: 0, y: -r - ROTATE_HANDLE_OFFSET };
+    return {
+        id: HandleId.Rotate,
+        style: HandleStyle.Square,
+        cursor: CANVAS_CROSSHAIR_CURSOR,
+        x: 0,
+        y: -r - ROTATE_HANDLE_OFFSET,
+    };
 }
 
 function getInnerRadiusHandles(r: number): Handle[] {

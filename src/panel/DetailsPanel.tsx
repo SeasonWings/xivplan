@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMedia } from 'react-use';
 import { TabActivity } from '../TabActivity';
+import { glassSurface } from '../glassStyles';
 import { useControlStyles } from '../useControlStyles';
 import { PANEL_PADDING, PANEL_WIDTH, WIDE_PANEL_WIDTH } from './PanelStyles';
 import { PropertiesPanel } from './PropertiesPanel';
@@ -72,15 +73,25 @@ const useStyles = makeStyles({
         gridArea: 'right-panel',
         flexShrink: '0 !important',
         width: `${PANEL_WIDTH}px`,
+        ...glassSurface,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '8px',
+        padding: '8px',
+        boxSizing: 'border-box',
     },
 
     widePanel: {
         display: 'flex',
         flexFlow: 'row',
+        gap: '8px',
+        padding: '8px',
+        boxSizing: 'border-box',
 
         gridArea: 'right-panel',
         flexShrink: '0 !important',
         height: '100%',
+        ...glassSurface,
     },
 
     header: {

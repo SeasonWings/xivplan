@@ -2,6 +2,7 @@ import Konva from 'konva';
 import { KonvaEventObject } from 'konva/lib/Node';
 import React, { PropsWithChildren, RefAttributes, useContext, useRef, useState } from 'react';
 import { Layer, Rect, Stage } from 'react-konva';
+import { CanvasCursorController } from '../CanvasCursorController';
 import { DefaultCursorProvider } from '../DefaultCursorProvider';
 import { getDropAction } from '../DropHandler';
 import { useEditActivity } from '../EditActivityContext';
@@ -12,7 +13,9 @@ import { useAnimation } from '../animation/AnimationContext';
 import { useAnimationV2 } from '../animation/AnimationV2Context';
 import { useVisualEdit } from '../animation/VisualEditContext';
 import { useCollaboration } from '../collaboration/CollaborationProvider';
+import { CursorSyncLayer } from '../collaboration/cursor/CursorSyncLayer';
 import { getCanvasCoord, getCanvasSize, getSceneCoord } from '../coord';
+import { CANVAS_CROSSHAIR_CURSOR } from '../cursorIcon';
 import { isMoveable, Scene, SceneObject } from '../scene';
 import { selectNewObjects, selectNone, useSelection } from '../selection';
 import { UndoContext } from '../undo/undoContext';
@@ -79,8 +82,7 @@ export const SceneRenderer: React.FC = () => {
             const cursor = container.style.cursor;
             // 拖拽样式：move
             // 拉伸样式：ns-resize, ew-resize, nesw-resize, nwse-resize
-            // 旋转样式：crosshair
-            const isInteracting = cursor === 'move' || cursor.endsWith('-resize') || cursor === 'crosshair';
+            const isInteracting = cursor === 'move' || cursor.endsWith('-resize') || cursor === CANVAS_CROSSHAIR_CURSOR;
             if (isInteracting) {
                 return;
             }
@@ -221,6 +223,7 @@ export const SceneRenderer: React.FC = () => {
             >
                 <StageContext value={stage}>
                     <DefaultCursorProvider>
+                        <CanvasCursorController />
                         <SceneContents selectionBox={isSelecting ? selectionBox : null} />
                     </DefaultCursorProvider>
                 </StageContext>
@@ -375,14 +378,13 @@ const SceneContents: React.FC<SceneContentsProps> = ({
 
             <Layer name={LayerName.Ground} listening={listening}>
                 <ArenaRenderer backgroundColor={backgroundColor} simple={simple} />
-                <ObjectRenderer objects={objects} layer={LayerName.Ground} />
             </Layer>
-            <Layer name={LayerName.Default} listening={listening}>
-                <ObjectRenderer objects={objects} layer={LayerName.Default} />
-            </Layer>
-            <Layer name={LayerName.Foreground} listening={listening}>
-                <ObjectRenderer objects={objects} layer={LayerName.Foreground} />
 
+            <UserLayerObjects objects={objects} listening={listening} userLayer="background" />
+            <UserLayerObjects objects={objects} listening={listening} userLayer="main" />
+            <UserLayerObjects objects={objects} listening={listening} userLayer="foreground" />
+
+            <Layer name={LayerName.Foreground} listening={listening}>
                 <TetherEditRenderer />
             </Layer>
             <Layer name={LayerName.Active} listening={listening}>
@@ -403,6 +405,28 @@ const SceneContents: React.FC<SceneContentsProps> = ({
                         listening={false}
                     />
                 )}
+            </Layer>
+            <CursorSyncLayer />
+        </>
+    );
+};
+
+const UserLayerObjects: React.FC<{
+    objects: readonly SceneObject[];
+    listening: boolean;
+    userLayer: 'background' | 'main' | 'foreground';
+}> = ({ objects, listening, userLayer }) => {
+    const selected = objects.filter((o) => (o.layer ?? 'main') === userLayer);
+    return (
+        <>
+            <Layer listening={listening}>
+                <ObjectRenderer objects={selected} layer={LayerName.Ground} />
+            </Layer>
+            <Layer listening={listening}>
+                <ObjectRenderer objects={selected} layer={LayerName.Default} />
+            </Layer>
+            <Layer listening={listening}>
+                <ObjectRenderer objects={selected} layer={LayerName.Foreground} />
             </Layer>
         </>
     );

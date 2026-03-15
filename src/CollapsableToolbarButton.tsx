@@ -4,16 +4,25 @@ import { useMedia } from 'react-use';
 
 const WIDE_MEDIA_QUERY = '(min-width: 1250px)';
 
-export const CollapsableToolbarButton: React.FC<ToolbarButtonProps> = ({ children, ...props }) => {
+export const CollapsableToolbarButton: React.FC<ToolbarButtonProps & { badge?: React.ReactNode }> = ({
+    children,
+    badge,
+    ...props
+}) => {
     const isWide = useMedia(WIDE_MEDIA_QUERY);
 
     if (isWide) {
-        return <ToolbarButton {...props}>{children}</ToolbarButton>;
+        return (
+            <ToolbarButton {...props}>
+                {children}
+                {badge}
+            </ToolbarButton>
+        );
     }
 
     return (
         <Tooltip content={<div>{children}</div>} relationship="label" withArrow>
-            <ToolbarButton {...props} />
+            <ToolbarButton {...props}>{badge}</ToolbarButton>
         </Tooltip>
     );
 };

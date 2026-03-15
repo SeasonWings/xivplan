@@ -88,6 +88,18 @@ import { ZoneTriangle } from '../prefabs/zone/ZoneTriangle';
 import { StatusJian } from '../prefabs/zxsj/StatusJian';
 import { StatusJu } from '../prefabs/zxsj/StatusJu';
 import { StatusShangDeath } from '../prefabs/zxsj/StatusShangDeath';
+import {
+    ZxsjWaymark1,
+    ZxsjWaymark10,
+    ZxsjWaymark2,
+    ZxsjWaymark3,
+    ZxsjWaymark4,
+    ZxsjWaymark5,
+    ZxsjWaymark6,
+    ZxsjWaymark7,
+    ZxsjWaymark8,
+    ZxsjWaymark9,
+} from '../prefabs/zxsj/WaymarksZXSJ';
 import { ZoneProximityZXSJ } from '../prefabs/zxsj/ZoneProximityZXSJ';
 import { ZoneTowerZXSJ } from '../prefabs/zxsj/ZoneTowerZXSJ';
 import { useControlStyles } from '../useControlStyles';
@@ -143,17 +155,41 @@ const ZonesAndWaymarksSection: React.FC<{ extraZones?: React.ReactNode; type: 'f
                 <ObjectGroup>
                     <TextLabel />
                     <MarkerArrow />
-                    <WaymarkA />
-                    <WaymarkB />
-                    <WaymarkC />
-                    <WaymarkD />
+                    {type === 'ff14' && (
+                        <>
+                            <WaymarkA />
+                            <WaymarkB />
+                            <WaymarkC />
+                            <WaymarkD />
+                        </>
+                    )}
                 </ObjectGroup>
-                <ObjectGroup>
-                    <Waymark1 />
-                    <Waymark2 />
-                    <Waymark3 />
-                    <Waymark4 />
-                </ObjectGroup>
+                {type === 'ff14' && (
+                    <ObjectGroup>
+                        <Waymark1 />
+                        <Waymark2 />
+                        <Waymark3 />
+                        <Waymark4 />
+                    </ObjectGroup>
+                )}
+                {type === 'zxsj' && (
+                    <>
+                        <ObjectGroup>
+                            <ZxsjWaymark1 />
+                            <ZxsjWaymark2 />
+                            <ZxsjWaymark3 />
+                            <ZxsjWaymark4 />
+                            <ZxsjWaymark5 />
+                        </ObjectGroup>
+                        <ObjectGroup>
+                            <ZxsjWaymark6 />
+                            <ZxsjWaymark7 />
+                            <ZxsjWaymark8 />
+                            <ZxsjWaymark9 />
+                            <ZxsjWaymark10 />
+                        </ObjectGroup>
+                    </>
+                )}
             </Section>
         </>
     );

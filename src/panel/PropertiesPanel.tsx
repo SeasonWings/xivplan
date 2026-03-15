@@ -53,6 +53,7 @@ import { HideControl } from './properties/HideControl';
 import { HollowControl } from './properties/HollowControl';
 import { IconStacksControl, IconTimeControl } from './properties/IconControls';
 import { ImageControl } from './properties/ImageControl';
+import { LayerControl } from './properties/LayerControl';
 import { LineSizeControl } from './properties/LineControls';
 import { LineInvertControl } from './properties/LineInvertControl';
 import { MarkerShapeControl } from './properties/MarkerControls';
@@ -161,6 +162,7 @@ const Controls: React.FC = () => {
                 )}
                 <HideControl objects={objects} />
             </div>
+            <LayerControl objects={objects} />
             <ControlCondition objects={objects} test={isDrawObject} control={DrawObjectBrushControl} />
             <ControlCondition objects={objects} test={isText} control={TextLayoutControl} />
 

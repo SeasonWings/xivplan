@@ -4,6 +4,7 @@ import { Group } from 'react-konva';
 import { useScene } from '../SceneProvider';
 import { getPointerPosition } from '../coord';
 import { useDefaultCursor } from '../cursor';
+import { CANVAS_POINTER_CURSOR } from '../cursorIcon';
 import { EditMode } from '../editMode';
 import { TetherToCursor } from '../prefabs/Tethers';
 import { isMoveable } from '../scene';
@@ -36,8 +37,8 @@ const TetherEditLayer: React.FC = () => {
             window.addEventListener('mousemove', onMouseMove);
 
             return () => {
-                setDefaultCursor('default');
-                stage.container().style.cursor = 'default';
+                setDefaultCursor(CANVAS_POINTER_CURSOR);
+                stage.container().style.cursor = CANVAS_POINTER_CURSOR;
 
                 window.removeEventListener('mousemove', onMouseMove);
             };

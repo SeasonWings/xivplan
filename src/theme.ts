@@ -212,29 +212,47 @@ export function useColorSwatches(): ColorSwatchProps[] {
 
 // ==== Fluent UI themes ====
 
-const darkTheme = webDarkTheme;
+const darkTheme: Theme = {
+    ...webDarkTheme,
+    colorNeutralBackground1: '#0e1722',
+    colorNeutralBackground2: '#0b1622',
+    colorNeutralBackground3: '#101f2d',
+    colorNeutralBackground1Hover: '#122133',
+    colorNeutralBackground1Pressed: '#16293d',
+    colorNeutralBackground1Selected: '#122133',
+    colorNeutralBackground3Hover: '#14283a',
+    colorNeutralBackground3Pressed: '#16293d',
+    colorNeutralBackground3Selected: '#14283a',
+    colorNeutralBackground6: '#122133',
+    colorNeutralBackgroundDisabled: '#0b1622',
+    colorNeutralStroke1: '#2a3f55',
+    colorNeutralStroke3: '#1e3246',
+    colorSubtleBackgroundHover: '#14283a',
+    colorSubtleBackgroundSelected: '#16293d',
+    colorNeutralBackgroundAlpha: 'rgb(14 23 34 / 0.55)',
+};
 
 // Colors adjusted to a more sepia tone that's easier on the eyes and is similar
-// to FFXIV's UI light theme.
+// to a clean, cool light theme.
 const lightTheme: Theme = {
     ...webLightTheme,
-    colorSubtleBackgroundHover: '#d8d2c2',
-    colorSubtleBackgroundSelected: '#cec9b9',
-    colorNeutralBackground1: '#eee8d5',
-    colorNeutralBackground2: '#f2ebd9',
-    colorNeutralBackground3: '#fdf6e3',
-    colorNeutralBackground1Hover: '#d8d2c2',
-    colorNeutralBackground1Pressed: '#fdf6e3',
-    colorNeutralBackground1Selected: '#cec9b9',
-    colorNeutralBackground3Hover: '#eee8d5',
-    colorNeutralBackground3Pressed: '#d8d2c2',
-    colorNeutralBackground3Selected: '#cec9b9',
-    colorNeutralBackground6: '#d8d2c2',
-    colorNeutralBackgroundDisabled: '#fdf6e3',
-    colorNeutralStencil1: '#cec9b9',
-    colorNeutralStroke1: '#cebfab',
-    colorNeutralStroke3: '#cec9b9',
-    colorNeutralBackgroundAlpha: 'rgb(253 235 209 / 0.5)',
+    colorNeutralBackground1: '#ffffff',
+    colorNeutralBackground2: '#f7fbff',
+    colorNeutralBackground3: '#ffffff',
+    colorNeutralBackground1Hover: '#eef6fb',
+    colorNeutralBackground1Pressed: '#e2eff8',
+    colorNeutralBackground1Selected: '#eef6fb',
+    colorNeutralBackground3Hover: '#f7fbff',
+    colorNeutralBackground3Pressed: '#eef6fb',
+    colorNeutralBackground3Selected: '#eef6fb',
+    colorNeutralBackground6: '#eef6fb',
+    colorNeutralBackgroundDisabled: '#f3f8fc',
+    colorNeutralStencil1: '#e2eff8',
+    colorNeutralStroke1: '#b6cde0',
+    colorNeutralStroke3: '#d7e5f0',
+    colorSubtleBackgroundHover: '#e2eff8',
+    colorSubtleBackgroundSelected: '#d7e5f0',
+    colorNeutralBackgroundAlpha: 'rgb(255 255 255 / 0.55)',
 };
 
 export function getFluentTheme(darkMode: boolean | undefined) {

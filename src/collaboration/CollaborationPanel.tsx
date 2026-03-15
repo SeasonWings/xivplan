@@ -1,67 +1,107 @@
-import { Button, Input, Switch, makeStyles, shorthands, tokens } from '@fluentui/react-components';
-import React, { useEffect, useRef, useState } from 'react';
+import {
+    Avatar,
+    Button,
+    Field,
+    Input,
+    Switch,
+    Tab,
+    TabList,
+    Textarea,
+    makeStyles,
+    shorthands,
+    tokens,
+} from '@fluentui/react-components';
+import { Send20Regular } from '@fluentui/react-icons';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useEditActivity } from '../EditActivityContext';
-import { InfoField } from '../InfoField';
+import { TabActivity } from '../TabActivity';
 import { useCollaboration } from './CollaborationProvider';
+import { ensureRoomKeyInUrl } from './cursor/cursorCrypto';
+
+type Tabs = 'room' | 'users' | 'chat';
+
+function formatUnreadCount(n: number) {
+    if (n <= 0) return '';
+    if (n > 99) return '99+';
+    return String(n);
+}
 
 const CollaborationPanel: React.FC = () => {
     const { startEditActivity } = useEditActivity();
     const {
-        connected,
         userId,
         userName,
         roomId,
         connectedUsers,
         isHost,
-        hostId, // 获取房主ID
+        hostId,
         joinRoom,
         leaveRoom,
         changeUserName,
         sendChatMessage,
         transferHost,
         setUserEditPermission,
+        unreadChatCount,
+        markChatRead,
+        setChatTabActive,
         chatMessages,
-        // enableUpdateDelay,
-        // setEnableUpdateDelay,
     } = useCollaboration();
 
+    const classes = useStyles();
+    const [tab, setTab] = useState<Tabs>('room');
     const [newMessage, setNewMessage] = useState('');
     const [newRoomId, setNewRoomId] = useState('');
     const [nameInput, setNameInput] = useState(userName);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
-    // 当userName变化时，同步更新nameInput
     useEffect(() => {
         setNameInput(userName);
     }, [userName]);
 
-    // 自动滚动到最新消息
     useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [chatMessages]);
+        localStorage.setItem('xivplan_cursor_share_mask', '1');
+    }, []);
 
-    // 复制房间链接
-    const copyRoomLink = () => {
-        const link = `${window.location.origin}${window.location.pathname}?room=${roomId}`;
-        if (navigator.clipboard && window.isSecureContext) {
-            navigator.clipboard
-                .writeText(link)
-                .then(() => {
-                    alert('房间链接已复制到剪贴板');
-                })
-                .catch((err) => {
-                    console.error('复制失败:', err);
-                    fallbackCopyTextToClipboard(link);
-                });
-        } else {
-            fallbackCopyTextToClipboard(link);
+    useEffect(() => {
+        const active = tab === 'chat';
+        setChatTabActive(active);
+        if (active) {
+            markChatRead();
         }
-    };
+    }, [markChatRead, setChatTabActive, tab]);
 
-    // 备用复制方法
-    const fallbackCopyTextToClipboard = (text: string) => {
+    useEffect(() => {
+        return () => {
+            setChatTabActive(false);
+        };
+    }, [setChatTabActive]);
+
+    useEffect(() => {
+        if (tab !== 'chat') return;
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [chatMessages, tab]);
+
+    const roomLink = useMemo(() => {
+        if (!roomId) return '';
+        ensureRoomKeyInUrl();
+        return `${window.location.origin}${window.location.pathname}?room=${roomId}${window.location.hash}`;
+    }, [roomId]);
+
+    const copyRoomLink = async () => {
+        if (!roomId) return;
+        const link = roomLink;
+        if (!link) return;
+        if (navigator.clipboard && window.isSecureContext) {
+            try {
+                await navigator.clipboard.writeText(link);
+                return;
+            } catch (err) {
+                void err;
+            }
+        }
+
         const textArea = document.createElement('textarea');
-        textArea.value = text;
+        textArea.value = link;
         textArea.style.position = 'fixed';
         textArea.style.left = '-999999px';
         textArea.style.top = '-999999px';
@@ -70,241 +110,278 @@ const CollaborationPanel: React.FC = () => {
         textArea.select();
         try {
             document.execCommand('copy');
-            alert('房间链接已复制到剪贴板');
-        } catch (err) {
-            console.error('备用复制方法也失败了:', err);
-            alert('复制失败，请手动复制链接');
         } finally {
             document.body.removeChild(textArea);
         }
     };
 
-    // 创建新房间
     const createNewRoom = async () => {
-        try {
-            await joinRoom();
-            setNewRoomId('');
-        } catch {
-            alert('创建房间失败，请检查服务器连接');
-        }
+        await joinRoom();
+        setNewRoomId('');
+        setTab('room');
     };
 
-    // 加入指定房间
     const joinSpecifiedRoom = async () => {
-        if (newRoomId.trim()) {
-            try {
-                await joinRoom(newRoomId.trim());
-            } catch {
-                alert('加入房间失败，请检查房间ID是否正确');
-            }
-        }
+        const id = newRoomId.trim();
+        if (!id) return;
+        await joinRoom(id);
+        setTab('room');
     };
 
-    // 发送消息
     const handleSendMessage = (e: React.FormEvent) => {
         e.preventDefault();
-        if (newMessage.trim()) {
-            sendChatMessage(newMessage);
-            setNewMessage('');
-        }
+        const msg = newMessage.trim();
+        if (!msg) return;
+        sendChatMessage(msg);
+        setNewMessage('');
     };
 
-    // 更新用户名
-    const handleNameChange = () => {
-        if (nameInput.trim()) {
-            changeUserName(nameInput);
+    const handleNameCommit = () => {
+        const next = nameInput.trim();
+        if (next) {
+            changeUserName(next);
         } else {
-            setNameInput(userName); // 恢复原始名称
+            setNameInput(userName);
         }
     };
-
-    const classes = useStyles();
 
     return (
         <div className={classes.root}>
-            {/* 连接状态 */}
-            <div className={connected ? classes.statusConnected : classes.statusDisconnected}>
-                <div className={connected ? classes.dotConnected : classes.dotDisconnected}></div>
-                <span>{connected ? '已连接' : '连接中...'}</span>
-            </div>
+            <TabList selectedValue={tab} onTabSelect={(ev, data) => setTab(data.value as Tabs)}>
+                <Tab value="room">房间</Tab>
+                <Tab value="users">用户</Tab>
+                <Tab value="chat">
+                    <span className={classes.chatTabLabel}>
+                        聊天
+                        {unreadChatCount > 0 && (
+                            <span className={classes.unreadBadge}>{formatUnreadCount(unreadChatCount)}</span>
+                        )}
+                    </span>
+                </Tab>
+            </TabList>
 
-            {/* 用户信息 */}
-            <div className={classes.section}>
-                <div style={{ marginBottom: '8px' }}>
-                    <InfoField label="用户名">
-                        <div className={classes.row}>
+            <div className={classes.body}>
+                <TabActivity value="room" activeTab={tab}>
+                    <div className={classes.tab}>
+                        <Field label="用户名">
                             <Input
-                                type="text"
                                 value={nameInput}
                                 onChange={(e) => setNameInput(e.target.value)}
-                                onBlur={handleNameChange}
-                                className={classes.input}
+                                onBlur={handleNameCommit}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        e.currentTarget.blur();
+                                    }
+                                }}
                             />
-                        </div>
-                    </InfoField>
-                </div>
-            </div>
+                        </Field>
 
-            {/* 房间管理 */}
-            <div className={classes.section}>
-                {roomId ? (
-                    <div>
-                        <div style={{ marginBottom: '10px' }}>
-                            <InfoField label="房间ID">
+                        {roomId ? (
+                            <>
+                                <Field label="房间">
+                                    <div className={classes.row}>
+                                        <Input value={roomId} readOnly />
+                                        <Button onClick={copyRoomLink} data-tutorial="collaboration-copy-link">
+                                            复制链接
+                                        </Button>
+                                    </div>
+                                </Field>
+
                                 <div className={classes.row}>
-                                    <Input type="text" value={roomId} readOnly className={classes.inputReadOnly} />
                                     <Button
-                                        onClick={copyRoomLink}
-                                        title="复制房间链接"
-                                        data-tutorial="collaboration-copy-link"
+                                        onClick={createNewRoom}
+                                        style={{ flex: 1 }}
+                                        data-tutorial="collaboration-create-room"
                                     >
-                                        复制
+                                        创建新房间
+                                    </Button>
+                                    <Button
+                                        onClick={leaveRoom}
+                                        style={{ flex: 1 }}
+                                        data-tutorial="collaboration-leave-room"
+                                    >
+                                        离开房间
                                     </Button>
                                 </div>
-                            </InfoField>
-                        </div>
-                        <div className={classes.actionsRow}>
-                            <Button
-                                onClick={createNewRoom}
-                                style={{ flex: 1 }}
-                                data-tutorial="collaboration-create-room"
-                            >
-                                创建新房间
-                            </Button>
-                            <Button onClick={leaveRoom} style={{ flex: 1 }} data-tutorial="collaboration-leave-room">
-                                离开房间
-                            </Button>
-                        </div>
-                        <div className={classes.helperText}>{isHost ? '你是房间主机' : '你是房间访客'}</div>
-                        {isHost && (
-                            <div style={{ marginTop: '10px' }} data-tutorial="collaboration-host-functions">
-                                <span className={classes.subtitle}>支持在用户列表独立编辑用户绘图权限</span>
-                                <span className={classes.smallText}>
-                                    开启后网络原因可能会导致操作不同步，请谨慎操作
-                                </span>
-                            </div>
+
+                                <div className={classes.hint}>{isHost ? '你是房主' : '你是访客'}</div>
+                                {isHost && (
+                                    <div className={classes.hostHint} data-tutorial="collaboration-host-functions">
+                                        <div className={classes.hostTitle}>房主可管理用户编辑权限</div>
+                                        <div className={classes.hostSub}>网络原因可能导致操作不同步，建议谨慎操作</div>
+                                    </div>
+                                )}
+                            </>
+                        ) : (
+                            <>
+                                <Field label="加入房间">
+                                    <div className={classes.row}>
+                                        <Input
+                                            value={newRoomId}
+                                            onChange={(e) => setNewRoomId(e.target.value)}
+                                            placeholder="房间ID"
+                                        />
+                                        <Button onClick={joinSpecifiedRoom}>加入</Button>
+                                    </div>
+                                </Field>
+                                <Button onClick={createNewRoom} data-tutorial="collaboration-create-room">
+                                    创建新房间
+                                </Button>
+                            </>
                         )}
                     </div>
-                ) : (
-                    <div>
-                        <InfoField label="输入房间ID加入">
-                            <div style={{ display: 'flex', alignItems: 'center' }}>
-                                <Input
-                                    type="text"
-                                    value={newRoomId}
-                                    onChange={(e) => setNewRoomId(e.target.value)}
-                                    placeholder="房间ID"
-                                    style={{ flex: 1, marginRight: '5px' }}
-                                />
-                                <Button onClick={joinSpecifiedRoom}>加入</Button>
-                            </div>
-                        </InfoField>
-                        <Button
-                            onClick={createNewRoom}
-                            style={{ width: '100%', marginTop: '10px' }}
-                            data-tutorial="collaboration-create-room"
-                        >
-                            创建新房间
-                        </Button>
-                    </div>
-                )}
-            </div>
+                </TabActivity>
 
-            {/* 在线用户 */}
-            <div className={classes.section}>
-                <InfoField label={`在线用户 (${connectedUsers.length})`}>
-                    <div className={classes.userList} data-tutorial="collaboration-user-list">
-                        {connectedUsers.map((user) => (
-                            <div key={user.id} className={user.id === userName ? classes.userSelf : classes.userItem}>
-                                <div className={classes.userRow}>
-                                    <div className={classes.row}>
-                                        {user.name}
-                                        {user.id === userId && <span className={classes.tagSelf}>(你)</span>}
-                                        {/* 显示房主标识，基于hostId判断 */}
-                                        {hostId && user.id === hostId && (
-                                            <span className={classes.tagHost}>(房主)</span>
-                                        )}
-                                        {/* 显示编辑权限标识 */}
-                                        {user.canEdit && user.id !== hostId && (
-                                            <span className={classes.tagEdit}>(可编辑)</span>
-                                        )}
-                                    </div>
-                                    <div className={classes.userActions}>
-                                        {/* 编辑权限开关 - 只有房主可以控制，房主始终有编辑权限 */}
-                                        {isHost && user.id !== userId && (
-                                            <div className={classes.switchWrapper}>
-                                                <Switch
-                                                    checked={user.canEdit || false}
-                                                    onChange={(event) => {
-                                                        setUserEditPermission(user.id, event.target.checked);
-                                                        // 触发场景更新
-                                                        startEditActivity();
-                                                    }}
-                                                    aria-label={`设置${user.name}的编辑权限`}
-                                                    data-tutorial="collaboration-edit-switch"
+                <TabActivity value="users" activeTab={tab}>
+                    <div className={classes.tab}>
+                        <div className={classes.sectionTitle} data-tutorial="collaboration-user-list">
+                            在线用户（{connectedUsers.length}）
+                        </div>
+                        <div className={classes.userList}>
+                            {connectedUsers.map((u) => {
+                                const isSelf = u.id === userId;
+                                const isRoomHost = hostId && u.id === hostId;
+                                const canEdit = u.canEdit || false;
+                                return (
+                                    <div key={u.id} className={classes.userItem}>
+                                        <div className={classes.userTop}>
+                                            <div className={classes.userNameRow}>
+                                                <Avatar
+                                                    name={u.name}
+                                                    size={24}
+                                                    image={u.avatar ? { src: u.avatar } : undefined}
                                                 />
+                                                <span className={classes.userName}>{u.name}</span>
+                                                {isSelf && <span className={classes.tag}>(你)</span>}
+                                                {isRoomHost && <span className={classes.tagHost}>(房主)</span>}
+                                                {canEdit && !isRoomHost && (
+                                                    <span className={classes.tagEdit}>(可编辑)</span>
+                                                )}
                                             </div>
-                                        )}
-                                        {/* 只有当前用户是房主，并且不是自己时才显示移交按钮 */}
-                                        {isHost && user.id !== userId && (
-                                            <Button
-                                                size="small"
-                                                onClick={() => {
-                                                    if (window.confirm(`确定要将房主权限移交给 ${user.name} 吗？`)) {
-                                                        transferHost(user.id);
-                                                    }
-                                                }}
-                                                className={classes.transferButton}
-                                                data-tutorial="collaboration-transfer-host"
-                                            >
-                                                移交房主
-                                            </Button>
-                                        )}
+                                            {isHost && !isSelf && (
+                                                <div className={classes.userControls}>
+                                                    <Switch
+                                                        checked={canEdit}
+                                                        onChange={(event) => {
+                                                            setUserEditPermission(u.id, event.target.checked);
+                                                            startEditActivity();
+                                                        }}
+                                                        aria-label={`设置${u.name}的编辑权限`}
+                                                        data-tutorial="collaboration-edit-switch"
+                                                    />
+                                                </div>
+                                            )}
+                                            {isHost && !isSelf && (
+                                                <div className={classes.userBottom}>
+                                                    <Button
+                                                        size="small"
+                                                        onClick={() => {
+                                                            if (
+                                                                window.confirm(`确定要将房主权限移交给 ${u.name} 吗？`)
+                                                            ) {
+                                                                transferHost(u.id);
+                                                            }
+                                                        }}
+                                                        data-tutorial="collaboration-transfer-host"
+                                                    >
+                                                        移交房主
+                                                    </Button>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
-                            </div>
-                        ))}
+                                );
+                            })}
+                        </div>
                     </div>
-                </InfoField>
-            </div>
+                </TabActivity>
 
-            {/* 聊天区域 */}
-            <div className={classes.chatWrapper} data-tutorial="collaboration-chat">
-                <div className={classes.chatHeader}>聊天</div>
-                <div className={classes.chatMessages}>
-                    {chatMessages.length === 0 ? (
-                        <div className={classes.empty}>暂无消息</div>
-                    ) : (
-                        chatMessages.map((msg, index) => (
-                            <div key={index} style={{ marginBottom: '10px' }}>
-                                <div className={classes.messageMeta}>
-                                    {msg.userName} {new Date(msg.timestamp).toLocaleTimeString()}
-                                </div>
-                                <div style={{ fontSize: '14px', wordBreak: 'break-word' }}>{msg.message}</div>
-                            </div>
-                        ))
-                    )}
-                    <div ref={messagesEndRef} />
-                </div>
-                <form onSubmit={handleSendMessage} className={classes.chatForm}>
-                    <div className={classes.row}>
-                        <Input
-                            type="text"
-                            value={newMessage}
-                            onChange={(e) => setNewMessage(e.target.value)}
-                            placeholder="输入消息..."
-                            className={classes.input}
-                            disabled={!roomId}
-                        />
-                        <Button
-                            type="submit"
-                            disabled={!roomId || !newMessage.trim()}
-                            data-tutorial="collaboration-send-message"
-                        >
-                            发送
-                        </Button>
+                <TabActivity value="chat" activeTab={tab}>
+                    <div className={classes.chatTab} data-tutorial="collaboration-chat">
+                        <div className={classes.chatMessages}>
+                            {chatMessages.length === 0 ? (
+                                <div className={classes.empty}>暂无消息</div>
+                            ) : (
+                                chatMessages.map((msg, index) => {
+                                    const isSelf = msg.userId === userId;
+                                    const prev = chatMessages[index - 1];
+                                    const showHeader =
+                                        !prev ||
+                                        prev.userId !== msg.userId ||
+                                        Math.abs(msg.timestamp - prev.timestamp) > 2 * 60 * 1000;
+                                    const time = new Date(msg.timestamp).toLocaleTimeString([], {
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                    });
+                                    const showAvatar = !isSelf && showHeader;
+                                    return (
+                                        <div
+                                            key={index}
+                                            className={isSelf ? classes.messageRowSelf : classes.messageRowOther}
+                                        >
+                                            {!isSelf && (
+                                                <div className={classes.avatarSlot}>
+                                                    {showAvatar ? (
+                                                        <Avatar
+                                                            name={msg.userName}
+                                                            size={28}
+                                                            image={msg.userAvatar ? { src: msg.userAvatar } : undefined}
+                                                        />
+                                                    ) : (
+                                                        <div className={classes.avatarPlaceholder} />
+                                                    )}
+                                                </div>
+                                            )}
+
+                                            <div className={classes.messageCol}>
+                                                {!isSelf && showHeader && (
+                                                    <div className={classes.metaRow}>
+                                                        <span className={classes.metaName}>{msg.userName}</span>
+                                                        <span className={classes.metaTime}>{time}</span>
+                                                    </div>
+                                                )}
+
+                                                <div className={isSelf ? classes.bubbleSelf : classes.bubbleOther}>
+                                                    {msg.message}
+                                                </div>
+
+                                                {isSelf && showHeader && <div className={classes.selfTime}>{time}</div>}
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            )}
+                            <div ref={messagesEndRef} />
+                        </div>
+
+                        <form onSubmit={handleSendMessage} className={classes.chatForm}>
+                            <Textarea
+                                value={newMessage}
+                                onChange={(e) => setNewMessage(e.target.value)}
+                                placeholder={roomId ? '输入消息…' : '加入房间后可聊天'}
+                                disabled={!roomId}
+                                resize="none"
+                                rows={2}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && !e.shiftKey) {
+                                        e.preventDefault();
+                                        handleSendMessage(e);
+                                    }
+                                }}
+                                className={classes.chatInput}
+                            />
+                            <Button
+                                type="submit"
+                                appearance="primary"
+                                icon={<Send20Regular />}
+                                disabled={!roomId || !newMessage.trim()}
+                                data-tutorial="collaboration-send-message"
+                            >
+                                发送
+                            </Button>
+                        </form>
                     </div>
-                </form>
+                </TabActivity>
             </div>
         </div>
     );
@@ -314,156 +391,213 @@ export default CollaborationPanel;
 
 const useStyles = makeStyles({
     root: {
-        width: '380px',
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
+    },
+    body: {
+        flex: 1,
+        minHeight: 0,
         overflow: 'hidden',
-        backgroundColor: tokens.colorNeutralBackground2,
-        boxShadow: tokens.shadow16,
-        ...shorthands.borderLeft('1px', 'solid', tokens.colorNeutralStroke1),
+    },
+    tab: {
+        height: '100%',
+        overflowY: 'auto',
+        padding: tokens.spacingHorizontalM,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: tokens.spacingVerticalM,
     },
     row: {
         display: 'flex',
         alignItems: 'center',
-        gap: tokens.spacingHorizontalXS,
+        gap: tokens.spacingHorizontalS,
     },
-    statusConnected: {
-        padding: tokens.spacingHorizontalS,
-        ...shorthands.borderBottom('1px', 'solid', tokens.colorNeutralStroke1),
-        backgroundColor: tokens.colorNeutralBackground3,
-        display: 'flex',
-        alignItems: 'center',
-        gap: tokens.spacingHorizontalXS,
+    hint: {
+        fontSize: tokens.fontSizeBase200,
+        color: tokens.colorNeutralForeground3,
     },
-    statusDisconnected: {
-        padding: tokens.spacingHorizontalS,
-        ...shorthands.borderBottom('1px', 'solid', tokens.colorNeutralStroke1),
+    hostHint: {
+        padding: tokens.spacingHorizontalM,
         backgroundColor: tokens.colorNeutralBackground2,
-        display: 'flex',
-        alignItems: 'center',
-        gap: tokens.spacingHorizontalXS,
+        ...shorthands.borderRadius(tokens.borderRadiusMedium),
     },
-    dotConnected: {
-        width: '8px',
-        height: '8px',
-        borderRadius: '50%',
-        backgroundColor: '#52c41a',
+    hostTitle: {
+        fontWeight: tokens.fontWeightSemibold,
     },
-    dotDisconnected: {
-        width: '8px',
-        height: '8px',
-        borderRadius: '50%',
-        backgroundColor: '#faad14',
-    },
-    section: {
-        padding: tokens.spacingHorizontalS,
-        ...shorthands.borderBottom('1px', 'solid', tokens.colorNeutralStroke1),
-        backgroundColor: tokens.colorNeutralBackground1,
-    },
-    input: {
-        flex: 1,
-    },
-    inputReadOnly: {
-        flex: 1,
-    },
-    actionsRow: {
-        display: 'flex',
-        gap: tokens.spacingHorizontalXS,
-    },
-    helperText: {
-        marginTop: '5px',
-        fontSize: '12px',
+    hostSub: {
+        marginTop: tokens.spacingVerticalXS,
+        fontSize: tokens.fontSizeBase200,
         color: tokens.colorNeutralForeground3,
     },
-    subtitle: {
-        fontSize: '14px',
-        marginBottom: '5px',
-        display: 'block',
-    },
-    smallText: {
-        fontSize: '11px',
-        color: tokens.colorNeutralForeground3,
+    sectionTitle: {
+        fontWeight: tokens.fontWeightSemibold,
     },
     userList: {
-        maxHeight: '200px',
-        overflowY: 'auto',
-        fontSize: '14px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: tokens.spacingVerticalS,
     },
     userItem: {
-        padding: '5px',
-        marginBottom: '3px',
-        borderRadius: tokens.borderRadiusSmall,
+        padding: tokens.spacingHorizontalM,
         backgroundColor: tokens.colorNeutralBackground2,
+        ...shorthands.borderRadius(tokens.borderRadiusMedium),
+        ...shorthands.border('1px', 'solid', tokens.colorNeutralStroke2),
     },
-    userSelf: {
-        padding: '5px',
-        marginBottom: '3px',
-        borderRadius: tokens.borderRadiusSmall,
-        backgroundColor: tokens.colorNeutralBackground3,
-    },
-    userRow: {
+    userTop: {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
+        gap: tokens.spacingHorizontalS,
     },
-    tagSelf: {
-        color: tokens.colorBrandForeground1,
-        marginLeft: '5px',
-    },
-    tagHost: {
-        color: '#52c41a',
-        marginLeft: '5px',
-        fontSize: '12px',
-    },
-    tagEdit: {
-        color: '#722ed1',
-        marginLeft: '5px',
-        fontSize: '12px',
-    },
-    userActions: {
+    userNameRow: {
         display: 'flex',
         alignItems: 'center',
         gap: tokens.spacingHorizontalXS,
-        marginLeft: 'auto',
-    },
-    switchWrapper: {
-        padding: '2px',
-    },
-    transferButton: {
-        fontSize: '12px',
-        padding: '2px 8px',
-        minWidth: '50px',
-    },
-    chatWrapper: {
+        minWidth: 0,
         flex: 1,
+    },
+    userName: {
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap',
+    },
+    tag: {
+        color: tokens.colorNeutralForeground3,
+        fontSize: tokens.fontSizeBase200,
+    },
+    tagHost: {
+        color: '#52c41a',
+        fontSize: tokens.fontSizeBase200,
+    },
+    tagEdit: {
+        color: '#722ed1',
+        fontSize: tokens.fontSizeBase200,
+    },
+    userControls: {
+        flexShrink: 0,
+    },
+    userBottom: {
+        display: 'flex',
+        justifyContent: 'flex-end',
+    },
+    chatTab: {
+        height: '100%',
         display: 'flex',
         flexDirection: 'column',
     },
-    chatHeader: {
-        padding: '10px 10px 0 10px',
-        fontSize: '14px',
-        fontWeight: 600,
-    },
     chatMessages: {
         flex: 1,
-        padding: tokens.spacingHorizontalS,
+        minHeight: 0,
         overflowY: 'auto',
-        backgroundColor: tokens.colorNeutralBackground1,
+        padding: tokens.spacingHorizontalM,
+        backgroundColor: tokens.colorNeutralBackground2,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: tokens.spacingVerticalS,
     },
     empty: {
         color: tokens.colorNeutralForeground3,
         textAlign: 'center',
-        padding: '20px',
+        paddingTop: tokens.spacingVerticalXXL,
     },
-    messageMeta: {
-        fontSize: '12px',
+    messageRowOther: {
+        display: 'flex',
+        alignItems: 'flex-end',
+        gap: tokens.spacingHorizontalS,
+    },
+    messageRowSelf: {
+        display: 'flex',
+        justifyContent: 'flex-end',
+    },
+    avatarSlot: {
+        width: '28px',
+        flexShrink: 0,
+        display: 'flex',
+        alignItems: 'flex-end',
+        justifyContent: 'center',
+    },
+    avatarPlaceholder: {
+        width: '28px',
+        height: '28px',
+    },
+    messageCol: {
+        maxWidth: '78%',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: tokens.spacingVerticalXXS,
+        minWidth: 0,
+    },
+    metaRow: {
+        display: 'flex',
+        alignItems: 'baseline',
+        gap: tokens.spacingHorizontalS,
         color: tokens.colorNeutralForeground3,
-        marginBottom: '2px',
+        fontSize: tokens.fontSizeBase200,
+        minWidth: 0,
+    },
+    metaName: {
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap',
+    },
+    metaTime: {
+        whiteSpace: 'nowrap',
+    },
+    bubbleOther: {
+        padding: `${tokens.spacingVerticalS} ${tokens.spacingHorizontalM}`,
+        backgroundColor: tokens.colorNeutralBackground1,
+        ...shorthands.borderRadius(tokens.borderRadiusLarge),
+        ...shorthands.border('1px', 'solid', tokens.colorNeutralStroke2),
+        fontSize: tokens.fontSizeBase300,
+        wordBreak: 'break-word',
+        whiteSpace: 'pre-wrap',
+        alignSelf: 'flex-start',
+    },
+    bubbleSelf: {
+        padding: `${tokens.spacingVerticalS} ${tokens.spacingHorizontalM}`,
+        backgroundColor: tokens.colorBrandBackground,
+        color: tokens.colorNeutralForegroundOnBrand,
+        ...shorthands.borderRadius(tokens.borderRadiusLarge),
+        fontSize: tokens.fontSizeBase300,
+        wordBreak: 'break-word',
+        whiteSpace: 'pre-wrap',
+        alignSelf: 'flex-end',
+    },
+    selfTime: {
+        fontSize: tokens.fontSizeBase200,
+        color: tokens.colorNeutralForeground3,
+        alignSelf: 'flex-end',
+        whiteSpace: 'nowrap',
     },
     chatForm: {
-        padding: tokens.spacingHorizontalS,
+        flexShrink: 0,
+        padding: tokens.spacingHorizontalM,
         ...shorthands.borderTop('1px', 'solid', tokens.colorNeutralStroke1),
         backgroundColor: tokens.colorNeutralBackground1,
+        display: 'flex',
+        gap: tokens.spacingHorizontalS,
+        alignItems: 'flex-end',
+    },
+    chatInput: {
+        flex: 1,
+        height: '32px',
+    },
+    chatTabLabel: {
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: tokens.spacingHorizontalXS,
+    },
+    unreadBadge: {
+        height: '18px',
+        minWidth: '18px',
+        paddingLeft: '6px',
+        paddingRight: '6px',
+        borderRadius: '999px',
+        backgroundColor: tokens.colorPaletteRedBorderActive,
+        color: tokens.colorNeutralForegroundInverted,
+        fontSize: tokens.fontSizeBase100,
+        lineHeight: '18px',
+        textAlign: 'center',
     },
 });

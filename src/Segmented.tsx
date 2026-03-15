@@ -145,7 +145,7 @@ const useStyles = makeStyles({
     },
 
     mediumText: {
-        minWidth: '34px',
+        minWidth: '56px',
         minHeight: '32px',
         ...typographyStyles.body2,
     },
