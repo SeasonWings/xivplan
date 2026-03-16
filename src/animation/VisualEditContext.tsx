@@ -3,7 +3,13 @@ import React, { createContext, useCallback, useContext, useState } from 'react';
 interface VisualEditContextType {
     isVisualEditing: boolean;
     editingObjectId: number | null; // 当前编辑的对象ID
-    startVisualEdit: (onSave?: () => void, onCancel?: () => void, objectId?: number) => void;
+    editingObjectIds: readonly number[] | null; // 当前编辑的多个对象ID（优先于 editingObjectId）
+    startVisualEdit: (
+        onSave?: () => void,
+        onCancel?: () => void,
+        objectId?: number,
+        objectIds?: readonly number[],
+    ) => void;
     endVisualEdit: () => void;
     saveVisualEdit: () => void;
     cancelVisualEdit: () => void;
@@ -21,6 +27,7 @@ const VisualEditContext = createContext<VisualEditContextType | undefined>(undef
 export const VisualEditProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [isVisualEditing, setIsVisualEditing] = useState(false);
     const [editingObjectId, setEditingObjectId] = useState<number | null>(null);
+    const [editingObjectIds, setEditingObjectIds] = useState<readonly number[] | null>(null);
     const [onSaveCallback, setOnSaveCallback] = useState<(() => void) | null>(null);
     const [onCancelCallback, setOnCancelCallback] = useState<(() => void) | null>(null);
     // 标记是否需要恢复弹窗（用于在悬浮窗关闭后恢复效果编辑弹窗和时间线）
@@ -28,17 +35,22 @@ export const VisualEditProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     const [pickCallback, setPickCallbackState] = useState<((point: { x: number; y: number }) => void) | null>(null);
     const [lastPickedPoint, setLastPickedPointState] = useState<{ x: number; y: number } | null>(null);
 
-    const startVisualEdit = useCallback((onSave?: () => void, onCancel?: () => void, objectId?: number) => {
-        setIsVisualEditing(true);
-        setEditingObjectId(objectId ?? null);
-        setShouldRestoreDialogs(true);
-        setOnSaveCallback(() => onSave || null);
-        setOnCancelCallback(() => onCancel || null);
-    }, []);
+    const startVisualEdit = useCallback(
+        (onSave?: () => void, onCancel?: () => void, objectId?: number, objectIds?: readonly number[]) => {
+            setIsVisualEditing(true);
+            setEditingObjectId(objectId ?? null);
+            setEditingObjectIds(objectIds && objectIds.length > 0 ? objectIds : null);
+            setShouldRestoreDialogs(true);
+            setOnSaveCallback(() => onSave || null);
+            setOnCancelCallback(() => onCancel || null);
+        },
+        [],
+    );
 
     const endVisualEdit = useCallback(() => {
         setIsVisualEditing(false);
         setEditingObjectId(null);
+        setEditingObjectIds(null);
         // 注意：这里不重置 shouldRestoreDialogs，让调用方决定何时重置
         setOnSaveCallback(null);
         setOnCancelCallback(null);
@@ -67,6 +79,7 @@ export const VisualEditProvider: React.FC<{ children: React.ReactNode }> = ({ ch
             value={{
                 isVisualEditing,
                 editingObjectId,
+                editingObjectIds,
                 startVisualEdit,
                 endVisualEdit,
                 saveVisualEdit,

@@ -21,6 +21,13 @@ function getApiBaseUrl(): string {
     return envUrl;
 }
 
+function getNumberEnv(key: string, fallback: number): number {
+    const raw = (import.meta.env as Record<string, unknown>)[key];
+    if (typeof raw !== 'string') return fallback;
+    const n = Number(raw);
+    return Number.isFinite(n) ? n : fallback;
+}
+
 export const config = {
     // WebSocket相关配置
     websocket: {
@@ -35,6 +42,9 @@ export const config = {
     app: {
         title: import.meta.env.VITE_APP_TITLE || 'XIVPlan',
         version: import.meta.env.VITE_APP_VERSION || '1.0.0',
+    },
+    collaboration: {
+        hostSnapshotIntervalMs: getNumberEnv('VITE_COLLAB_HOST_SNAPSHOT_INTERVAL_MS', 2000),
     },
 };
 

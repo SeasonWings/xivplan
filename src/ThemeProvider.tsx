@@ -36,6 +36,9 @@ const ThemeProviderInner: React.FC<ThemeProviderInnerProps> = ({ darkMode, child
               '--glass-radius': '12px',
               '--glass-border': 'rgba(255,255,255,0.2)',
               '--glass-shadow': '0 8px 16px rgba(0,0,0,0.35)',
+              '--dialog-glass-rgb': '16 28 40',
+              '--dialog-glass-alpha': '0.8',
+              '--dialog-border-dark': 'rgba(0,0,0,0.7)',
           }
         : {
               '--glass-bg-rgb': '255 255 255',
@@ -44,6 +47,9 @@ const ThemeProviderInner: React.FC<ThemeProviderInnerProps> = ({ darkMode, child
               '--glass-radius': '12px',
               '--glass-border': 'rgba(255,255,255,0.2)',
               '--glass-shadow': '0 8px 16px rgba(0,0,0,0.12)',
+              '--dialog-glass-rgb': '164 190 210',
+              '--dialog-glass-alpha': '0.94',
+              '--dialog-border-dark': 'rgba(0,0,0,0.5)',
           };
 
     return (

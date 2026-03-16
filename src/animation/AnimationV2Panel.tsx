@@ -433,8 +433,13 @@ export const AnimationV2Panel: React.FC<AnimationV2PanelProps> = ({ onMinimize, 
     }, [endVisualEdit, shouldRestoreDialogs]);
 
     // 进入可视化编辑模式
-    const handleVisualEditStart = (onSave?: () => void, onCancel?: () => void, objectId?: number) => {
-        startVisualEdit(onSave, onCancel, objectId);
+    const handleVisualEditStart = (
+        onSave?: () => void,
+        onCancel?: () => void,
+        objectId?: number,
+        objectIds?: readonly number[],
+    ) => {
+        startVisualEdit(onSave, onCancel, objectId, objectIds);
         // 关闭效果编辑弹窗和动画时间线面板，进入悬浮窗模式
         setEffectDialogOpen(false);
         hideAnimationPanel();

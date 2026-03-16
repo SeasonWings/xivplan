@@ -1,4 +1,13 @@
-import { makeStyles, Menu, MenuItem, MenuList, MenuPopover, MenuTrigger, tokens } from '@fluentui/react-components';
+import {
+    makeStyles,
+    Menu,
+    MenuItem,
+    MenuList,
+    MenuPopover,
+    MenuTrigger,
+    Portal,
+    tokens,
+} from '@fluentui/react-components';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useScene } from '../SceneProvider';
 import { useAnimationV2 } from './AnimationV2Context';
@@ -83,6 +92,7 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
     const handleContextMenu = useCallback(
         (e: React.MouseEvent) => {
             e.preventDefault();
+            e.stopPropagation();
 
             const rect = trackRef.current?.getBoundingClientRect();
             let time = 0;
@@ -90,8 +100,8 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
                 const x = e.clientX - rect.left;
                 time = Math.max(0, x / zoom);
             }
-
-            setContextMenuPosition({ x: e.clientX, y: e.clientY, time });
+            const pos = { x: e.clientX, y: e.clientY, time };
+            requestAnimationFrame(() => setContextMenuPosition(pos));
         },
         [zoom],
     );
@@ -199,6 +209,7 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
     const disabledItemIds = useMemo(() => {
         const ids = new Set<string>();
         const objects = step.objects as ReadonlyArray<{ id: number; groupId?: string }>;
+        const objectIdSet = new Set(objects.map((o) => o.id));
 
         for (const item of track.items) {
             if (item.groupId) {
@@ -209,7 +220,15 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
                 continue;
             }
 
-            const target = objects.find((o) => o.id === item.objectId);
+            if (item.objectIds && item.objectIds.length > 0) {
+                const anyExists = item.objectIds.some((id) => objectIdSet.has(id));
+                if (!anyExists) {
+                    ids.add(item.id);
+                }
+                continue;
+            }
+
+            const target = objectIdSet.has(item.objectId);
             if (!target) {
                 ids.add(item.id);
             }
@@ -340,35 +359,42 @@ export const TimelineTrack: React.FC<TimelineTrackProps> = ({
 
             {/* 轨道右键菜单 - 添加效果 */}
             {contextMenuPosition && (
-                <Menu open={true} onOpenChange={(e, data) => !data.open && setContextMenuPosition(null)}>
-                    <MenuTrigger disableButtonEnhancement>
-                        <div
-                            style={{
-                                position: 'fixed',
-                                left: contextMenuPosition.x,
-                                top: contextMenuPosition.y,
-                                width: 0,
-                                height: 0,
-                            }}
-                        />
-                    </MenuTrigger>
-                    <MenuPopover data-timeline-context-menu="true">
-                        <MenuList>
-                            <MenuItem onClick={handleAddEffectClick}>添加动画效果</MenuItem>
-                            <MenuItem
-                                disabled={!canPasteEffect}
-                                onClick={() => {
-                                    if (contextMenuPosition) {
-                                        pasteEffect(track.id, contextMenuPosition.time);
-                                    }
-                                    setContextMenuPosition(null);
+                <Portal>
+                    <Menu
+                        open={!!contextMenuPosition}
+                        onOpenChange={(_, data) => !data.open && setContextMenuPosition(null)}
+                    >
+                        <MenuTrigger disableButtonEnhancement>
+                            <div
+                                style={{
+                                    position: 'fixed',
+                                    left: contextMenuPosition.x,
+                                    top: contextMenuPosition.y,
+                                    width: 1,
+                                    height: 1,
+                                    opacity: 0,
                                 }}
-                            >
-                                粘贴效果到该轨道
-                            </MenuItem>
-                        </MenuList>
-                    </MenuPopover>
-                </Menu>
+                                aria-hidden="true"
+                            />
+                        </MenuTrigger>
+                        <MenuPopover data-timeline-context-menu="true">
+                            <MenuList>
+                                <MenuItem onClick={handleAddEffectClick}>添加动画效果</MenuItem>
+                                <MenuItem
+                                    disabled={!canPasteEffect}
+                                    onClick={() => {
+                                        if (contextMenuPosition) {
+                                            pasteEffect(track.id, contextMenuPosition.time);
+                                        }
+                                        setContextMenuPosition(null);
+                                    }}
+                                >
+                                    粘贴效果到该轨道
+                                </MenuItem>
+                            </MenuList>
+                        </MenuPopover>
+                    </Menu>
+                </Portal>
             )}
         </>
     );

@@ -63,6 +63,10 @@ export interface AnimationTrackItem {
     readonly id: string;
     /** 关联的对象ID */
     readonly objectId: number;
+    /** 关联的多个对象ID（多选目标；存在时优先于 objectId） */
+    readonly objectIds?: readonly number[];
+    /** 曲线运动的目标对象ID（多选时仅该对象走曲线，其余走直线） */
+    readonly curveTargetId?: number;
     /** 关联的组ID（如果是作用于元素组的效果） */
     readonly groupId?: string;
     /** 对象名称（用于显示） */

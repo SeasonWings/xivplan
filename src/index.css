@@ -5,12 +5,34 @@ body {
     'Helvetica Neue', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+input,
+textarea,
+[contenteditable='true'],
+[contenteditable=''] {
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 :root {
   --glass-blur: 10px;
   --glass-alpha: 0.18;
   --glass-radius: 12px;
+}
+
+.fui-DialogSurface {
+  background-color: rgb(
+    var(--dialog-glass-rgb, var(--glass-bg-rgb, 238 248 255)) / var(--dialog-glass-alpha, 0.5)
+  ) !important;
+  backdrop-filter: blur(var(--glass-blur, 10px)) !important;
+  -webkit-backdrop-filter: blur(var(--glass-blur, 10px)) !important;
+  box-shadow:
+    0 0 0 1px var(--dialog-border-dark, rgba(0, 0, 0, 0.35)),
+    var(--glass-shadow, 0 8px 16px rgba(0, 0, 0, 0.12)),
+    inset 0 0 0 1px var(--glass-border, rgba(255, 255, 255, 0.2)) !important;
 }
 
 @media (max-width: 700px) {

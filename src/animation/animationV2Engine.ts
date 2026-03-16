@@ -2,7 +2,9 @@
  * 动画播放引擎 V2 - 负责轨道项动画计算和插值
  */
 
-import { SceneObject } from '../scene';
+import { isMoveable, isRotateable, SceneObject } from '../scene';
+import { mod360 } from '../util';
+import { vecAngle, vecSub } from '../vector';
 import {
     AnimatedObjectProperties,
     AnimationEffectType,
@@ -59,7 +61,7 @@ export function getObjectsAtTimeV2(
                 for (const item of track.items) {
                     const targetGroupId = item.groupId;
                     const objGroupId = (obj as SceneObject & { groupId?: string }).groupId;
-                    const isSameObject = item.objectId === obj.id;
+                    const isSameObject = item.objectIds ? item.objectIds.includes(obj.id) : item.objectId === obj.id;
                     const isSameGroup =
                         targetGroupId !== undefined && objGroupId !== undefined && targetGroupId === objGroupId;
 
@@ -119,6 +121,26 @@ export function getObjectsAtTimeV2(
         }
     }
 
+    const byId = new Map<number, SceneObject>(result.map((o) => [o.id, o]));
+    const lockedIds = new Set<number>();
+    for (const o of result) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const rl = (o as any).rotationLock as { targetId: number; delta: number } | undefined;
+        if (!rl) continue;
+        const target = byId.get(rl.targetId);
+        if (!target) continue;
+        if (!isMoveable(o) || !isRotateable(o) || !isMoveable(target)) continue;
+        const v = vecSub({ x: target.x, y: target.y }, { x: o.x, y: o.y });
+        const angle = vecAngle(v);
+        const rotation = mod360(angle - rl.delta);
+        byId.set(o.id, { ...o, rotation } as SceneObject);
+        lockedIds.add(o.id);
+    }
+
+    if (lockedIds.size > 0) {
+        return result.map((o) => byId.get(o.id) ?? o);
+    }
+
     return result;
 }
 
@@ -128,112 +150,169 @@ function calculateTrackItemPropertiesForObject(
     obj: SceneObject,
     originalObjectsMap: ReadonlyMap<number, SceneObject>,
 ): AnimatedObjectProperties {
-    const baseProps = calculateTrackItemProperties(item, currentTime);
+    const resolveFromBaseProps = (baseProps: AnimatedObjectProperties): AnimatedObjectProperties => {
+        const itemGroupId = item.groupId;
+        const objGroupId = (obj as SceneObject & { groupId?: string }).groupId;
+        const isExplicitTarget = item.objectIds ? item.objectIds.includes(obj.id) : item.objectId === obj.id;
 
-    const itemGroupId = item.groupId;
-    const objGroupId = (obj as SceneObject & { groupId?: string }).groupId;
+        const perObject = (
+            baseProps as AnimatedObjectProperties & {
+                perObject?: Readonly<Record<number, AnimatedObjectProperties>>;
+            }
+        ).perObject;
 
-    const perObject = (
-        baseProps as AnimatedObjectProperties & {
-            perObject?: Readonly<Record<number, AnimatedObjectProperties>>;
+        if (perObject) {
+            const entry = perObject[obj.id];
+            if (entry) {
+                const result: Record<string, unknown> = { ...entry };
+                const hasOwnHide = Object.prototype.hasOwnProperty.call(entry, 'hide');
+                if (!hasOwnHide && typeof baseProps.hide === 'boolean') {
+                    result.hide = baseProps.hide;
+                }
+                return result as AnimatedObjectProperties;
+            }
+            if (itemGroupId && objGroupId && itemGroupId === objGroupId) {
+                return {};
+            }
         }
-    ).perObject;
 
-    if (itemGroupId && objGroupId && itemGroupId === objGroupId && perObject) {
-        const entry = perObject[obj.id];
-        if (!entry) {
-            return {};
+        if (!itemGroupId || !objGroupId || itemGroupId !== objGroupId || isExplicitTarget) {
+            return baseProps;
         }
 
-        const result: Record<string, unknown> = { ...entry };
-        const hasOwnHide = Object.prototype.hasOwnProperty.call(entry, 'hide');
-        if (!hasOwnHide && typeof baseProps.hide === 'boolean') {
+        const anchorOriginal = originalObjectsMap.get(item.objectId);
+        const memberOriginal = originalObjectsMap.get(obj.id);
+
+        if (!anchorOriginal || !memberOriginal) {
+            return baseProps;
+        }
+
+        const anchorBaseX = (anchorOriginal as SceneObject & { x?: number }).x;
+        const anchorBaseY = (anchorOriginal as SceneObject & { y?: number }).y;
+
+        let dx = 0;
+        let dy = 0;
+
+        if (typeof baseProps.x === 'number' && typeof anchorBaseX === 'number') {
+            dx = baseProps.x - anchorBaseX;
+        }
+
+        if (typeof baseProps.y === 'number' && typeof anchorBaseY === 'number') {
+            dy = baseProps.y - anchorBaseY;
+        }
+
+        const memberBaseX = (memberOriginal as SceneObject & { x?: number }).x;
+        const memberBaseY = (memberOriginal as SceneObject & { y?: number }).y;
+        const anchorBaseRotation = (anchorOriginal as SceneObject & { rotation?: number }).rotation;
+        const memberBaseRotation = (memberOriginal as SceneObject & { rotation?: number }).rotation;
+
+        const result: Record<string, unknown> = {};
+
+        if (typeof memberBaseX === 'number' && dx !== 0) {
+            result.x = memberBaseX + dx;
+        }
+
+        if (typeof memberBaseY === 'number' && dy !== 0) {
+            result.y = memberBaseY + dy;
+        }
+
+        if (typeof baseProps.rotation === 'number') {
+            const anchorR0 = typeof anchorBaseRotation === 'number' ? anchorBaseRotation : 0;
+            const memberR0 = typeof memberBaseRotation === 'number' ? memberBaseRotation : 0;
+            const rotationDelta = baseProps.rotation - anchorR0;
+            if (rotationDelta !== 0) {
+                result.rotation = memberR0 + rotationDelta;
+            }
+        }
+
+        const perObjectHide = (
+            baseProps as AnimatedObjectProperties & {
+                perObjectHide?: Readonly<Record<number, boolean | AnimatedObjectProperties>>;
+            }
+        ).perObjectHide;
+        if (perObjectHide && Object.prototype.hasOwnProperty.call(perObjectHide, obj.id)) {
+            const entry = perObjectHide[obj.id];
+            if (typeof entry === 'boolean') {
+                result.hide = entry;
+            } else if (entry && typeof entry === 'object') {
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                const { perObjectHide: _, ...overrideProps } = entry as Record<string, unknown>;
+                const hasOwnHide = Object.prototype.hasOwnProperty.call(overrideProps, 'hide');
+
+                for (const [key, value] of Object.entries(overrideProps)) {
+                    if (key === 'hide') {
+                        result.hide = value as boolean;
+                    } else {
+                        result[key] = value;
+                    }
+                }
+
+                if (!hasOwnHide && typeof baseProps.hide === 'boolean') {
+                    result.hide = baseProps.hide;
+                }
+            }
+        } else if (typeof baseProps.hide === 'boolean') {
             result.hide = baseProps.hide;
         }
 
         return result as AnimatedObjectProperties;
-    }
+    };
 
-    if (!itemGroupId || !objGroupId || itemGroupId !== objGroupId || item.objectId === obj.id) {
-        return baseProps;
-    }
+    const baseProps = calculateTrackItemProperties(item, currentTime);
 
-    const anchorOriginal = originalObjectsMap.get(item.objectId);
-    const memberOriginal = originalObjectsMap.get(obj.id);
+    const isMultiTargetCurve =
+        item.effectType === AnimationEffectType.CurveMove &&
+        item.objectIds &&
+        item.objectIds.length > 1 &&
+        item.curveTargetId !== undefined &&
+        item.objectIds.includes(obj.id);
 
-    if (!anchorOriginal || !memberOriginal) {
-        return baseProps;
-    }
+    if (isMultiTargetCurve) {
+        const curveTargetId = item.curveTargetId!;
 
-    const anchorBaseX = (anchorOriginal as SceneObject & { x?: number }).x;
-    const anchorBaseY = (anchorOriginal as SceneObject & { y?: number }).y;
+        const moveItem: AnimationTrackItem = {
+            ...item,
+            effectType: AnimationEffectType.Move,
+            curveConfig: undefined,
+        };
+        const moveBaseProps = calculateTrackItemProperties(moveItem, currentTime);
 
-    let dx = 0;
-    let dy = 0;
-
-    if (typeof baseProps.x === 'number' && typeof anchorBaseX === 'number') {
-        dx = baseProps.x - anchorBaseX;
-    }
-
-    if (typeof baseProps.y === 'number' && typeof anchorBaseY === 'number') {
-        dy = baseProps.y - anchorBaseY;
-    }
-
-    const memberBaseX = (memberOriginal as SceneObject & { x?: number }).x;
-    const memberBaseY = (memberOriginal as SceneObject & { y?: number }).y;
-    const anchorBaseRotation = (anchorOriginal as SceneObject & { rotation?: number }).rotation;
-    const memberBaseRotation = (memberOriginal as SceneObject & { rotation?: number }).rotation;
-
-    const result: Record<string, unknown> = {};
-
-    if (typeof memberBaseX === 'number' && dx !== 0) {
-        result.x = memberBaseX + dx;
-    }
-
-    if (typeof memberBaseY === 'number' && dy !== 0) {
-        result.y = memberBaseY + dy;
-    }
-
-    if (typeof baseProps.rotation === 'number') {
-        const anchorR0 = typeof anchorBaseRotation === 'number' ? anchorBaseRotation : 0;
-        const memberR0 = typeof memberBaseRotation === 'number' ? memberBaseRotation : 0;
-        const rotationDelta = baseProps.rotation - anchorR0;
-        if (rotationDelta !== 0) {
-            result.rotation = memberR0 + rotationDelta;
+        if (obj.id !== curveTargetId) {
+            return resolveFromBaseProps(moveBaseProps);
         }
-    }
 
-    const perObjectHide = (
-        baseProps as AnimatedObjectProperties & {
-            perObjectHide?: Readonly<Record<number, boolean | AnimatedObjectProperties>>;
-        }
-    ).perObjectHide;
-    if (perObjectHide && Object.prototype.hasOwnProperty.call(perObjectHide, obj.id)) {
-        const entry = perObjectHide[obj.id];
-        if (typeof entry === 'boolean') {
-            result.hide = entry;
-        } else if (entry && typeof entry === 'object') {
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            const { perObjectHide: _, ...overrideProps } = entry as Record<string, unknown>;
-            const hasOwnHide = Object.prototype.hasOwnProperty.call(overrideProps, 'hide');
+        const linearProps = resolveFromBaseProps(moveBaseProps);
 
-            for (const [key, value] of Object.entries(overrideProps)) {
-                if (key === 'hide') {
-                    result.hide = value as boolean;
-                } else {
-                    result[key] = value;
+        const curveKeyframes: readonly AnimationKeyframe[] = item.keyframes.map((kf) => {
+            const perObject = (
+                kf.value as AnimatedObjectProperties & {
+                    perObject?: Readonly<Record<number, AnimatedObjectProperties>>;
                 }
-            }
+            ).perObject;
+            const entry = perObject ? perObject[curveTargetId] : undefined;
+            return {
+                ...kf,
+                value: {
+                    x: entry?.x ?? kf.value.x,
+                    y: entry?.y ?? kf.value.y,
+                } as AnimatedObjectProperties,
+            };
+        });
 
-            if (!hasOwnHide && typeof baseProps.hide === 'boolean') {
-                result.hide = baseProps.hide;
-            }
-        }
-    } else if (typeof baseProps.hide === 'boolean') {
-        result.hide = baseProps.hide;
+        const curveItem: AnimationTrackItem = {
+            ...item,
+            keyframes: curveKeyframes,
+        };
+        const curveProps = calculateTrackItemProperties(curveItem, currentTime);
+
+        return {
+            ...linearProps,
+            x: curveProps.x ?? linearProps.x,
+            y: curveProps.y ?? linearProps.y,
+        };
     }
 
-    return result as AnimatedObjectProperties;
+    return resolveFromBaseProps(baseProps);
 }
 
 /**

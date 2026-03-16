@@ -5,6 +5,7 @@ import {
     MenuList,
     MenuPopover,
     MenuTrigger,
+    Portal,
     tokens,
     Tooltip,
 } from '@fluentui/react-components';
@@ -575,8 +576,11 @@ export const TimelineTrackItem: React.FC<TimelineTrackItemProps> = ({
             e.stopPropagation();
             // 只在非锁定状态下显示上下文菜单
             if (!locked) {
-                setContextMenuPosition({ x: e.clientX, y: e.clientY });
-                setContextMenuOpen(true);
+                const pos = { x: e.clientX, y: e.clientY };
+                requestAnimationFrame(() => {
+                    setContextMenuPosition(pos);
+                    setContextMenuOpen(true);
+                });
             }
         },
         [locked],
@@ -782,54 +786,58 @@ export const TimelineTrackItem: React.FC<TimelineTrackItemProps> = ({
             )}
             {/* Item 右键菜单 */}
             {contextMenuOpen && contextMenuPosition && (
-                <Menu open={true} onOpenChange={(_, data) => !data.open && setContextMenuOpen(false)}>
-                    <MenuTrigger disableButtonEnhancement>
-                        <div
-                            style={{
-                                position: 'fixed',
-                                left: contextMenuPosition.x,
-                                top: contextMenuPosition.y,
-                                width: 0,
-                                height: 0,
-                            }}
-                        />
-                    </MenuTrigger>
-                    <MenuPopover data-timeline-context-menu="true">
-                        <MenuList>
-                            {!disabled && canEdit && (
-                                <MenuItem
-                                    icon={<Edit24Regular />}
-                                    onClick={() => {
-                                        setContextMenuOpen(false);
-                                        onEdit?.(item);
-                                    }}
-                                >
-                                    编辑效果
-                                </MenuItem>
-                            )}
-                            {!disabled && (
-                                <MenuItem
-                                    icon={<CopyRegular />}
-                                    onClick={() => {
-                                        setContextMenuOpen(false);
-                                        onCopy?.();
-                                    }}
-                                >
-                                    复制效果
-                                </MenuItem>
-                            )}
-                            <MenuItem
-                                icon={<Delete24Regular />}
-                                onClick={() => {
-                                    setContextMenuOpen(false);
-                                    onDelete?.();
+                <Portal>
+                    <Menu open={contextMenuOpen} onOpenChange={(_, data) => !data.open && setContextMenuOpen(false)}>
+                        <MenuTrigger disableButtonEnhancement>
+                            <div
+                                style={{
+                                    position: 'fixed',
+                                    left: contextMenuPosition.x,
+                                    top: contextMenuPosition.y,
+                                    width: 1,
+                                    height: 1,
+                                    opacity: 0,
                                 }}
-                            >
-                                删除效果
-                            </MenuItem>
-                        </MenuList>
-                    </MenuPopover>
-                </Menu>
+                                aria-hidden="true"
+                            />
+                        </MenuTrigger>
+                        <MenuPopover data-timeline-context-menu="true">
+                            <MenuList>
+                                {!disabled && canEdit && (
+                                    <MenuItem
+                                        icon={<Edit24Regular />}
+                                        onClick={() => {
+                                            setContextMenuOpen(false);
+                                            onEdit?.(item);
+                                        }}
+                                    >
+                                        编辑效果
+                                    </MenuItem>
+                                )}
+                                {!disabled && (
+                                    <MenuItem
+                                        icon={<CopyRegular />}
+                                        onClick={() => {
+                                            setContextMenuOpen(false);
+                                            onCopy?.();
+                                        }}
+                                    >
+                                        复制效果
+                                    </MenuItem>
+                                )}
+                                <MenuItem
+                                    icon={<Delete24Regular />}
+                                    onClick={() => {
+                                        setContextMenuOpen(false);
+                                        onDelete?.();
+                                    }}
+                                >
+                                    删除效果
+                                </MenuItem>
+                            </MenuList>
+                        </MenuPopover>
+                    </Menu>
+                </Portal>
             )}
         </>
     );

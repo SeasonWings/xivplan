@@ -2,6 +2,7 @@ import React, { createContext, ReactNode, useContext, useEffect, useRef, useStat
 import { unstable_batchedUpdates } from 'react-dom';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
+import { config } from '../config';
 import { useEditActivity } from '../EditActivityContext';
 import { MessageToast } from '../MessageToast';
 import type { Scene } from '../scene';
@@ -134,6 +135,7 @@ export const CollaborationProvider: React.FC<CollaborationProviderProps> = ({ ch
     const lastSceneSeqRef = useRef(0);
     const sceneRef = useRef(scene);
     const snapshotTimerRef = useRef<number | null>(null);
+    const periodicSnapshotTimerRef = useRef<number | null>(null);
     const transientSendTimerRef = useRef<number | null>(null);
     const pendingTransientActionRef = useRef<SceneAction | null>(null);
 
@@ -483,6 +485,32 @@ export const CollaborationProvider: React.FC<CollaborationProviderProps> = ({ ch
         webSocketService.sendSceneSnapshot(sceneRef.current, lastSceneSeqRef.current);
     }, [connected, isHost, roomId]);
 
+    useEffect(() => {
+        if (!connected || !roomId || !isHost) {
+            if (periodicSnapshotTimerRef.current !== null) {
+                window.clearInterval(periodicSnapshotTimerRef.current);
+                periodicSnapshotTimerRef.current = null;
+            }
+            return;
+        }
+
+        if (periodicSnapshotTimerRef.current !== null) {
+            window.clearInterval(periodicSnapshotTimerRef.current);
+            periodicSnapshotTimerRef.current = null;
+        }
+
+        periodicSnapshotTimerRef.current = window.setInterval(() => {
+            webSocketService.sendSceneSnapshot(sceneRef.current, lastSceneSeqRef.current);
+        }, config.collaboration.hostSnapshotIntervalMs);
+
+        return () => {
+            if (periodicSnapshotTimerRef.current !== null) {
+                window.clearInterval(periodicSnapshotTimerRef.current);
+                periodicSnapshotTimerRef.current = null;
+            }
+        };
+    }, [connected, isHost, roomId]);
+
     // 加入房间
     const joinRoom = async (roomId?: string) => {
         if (!connected) {
@@ -599,6 +627,10 @@ export const CollaborationProvider: React.FC<CollaborationProviderProps> = ({ ch
         if (snapshotTimerRef.current !== null) {
             window.clearTimeout(snapshotTimerRef.current);
             snapshotTimerRef.current = null;
+        }
+        if (periodicSnapshotTimerRef.current !== null) {
+            window.clearInterval(periodicSnapshotTimerRef.current);
+            periodicSnapshotTimerRef.current = null;
         }
         if (remoteFlushRafRef.current !== null) {
             window.cancelAnimationFrame(remoteFlushRafRef.current);

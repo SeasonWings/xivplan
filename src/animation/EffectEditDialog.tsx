@@ -126,7 +126,12 @@ interface EffectEditDialogProps {
     item?: AnimationTrackItem;
     onClose: () => void;
     onSave: (trackId: string, item: Omit<AnimationTrackItem, 'id'> | AnimationTrackItem) => void;
-    onVisualEditStart?: (onSave?: () => void, onCancel?: () => void, objectId?: number) => void; // 进入可视化编辑时通知父组件，并传入对象ID
+    onVisualEditStart?: (
+        onSave?: () => void,
+        onCancel?: () => void,
+        objectId?: number,
+        objectIds?: readonly number[],
+    ) => void; // 进入可视化编辑时通知父组件，并传入对象ID
     onVisualEditEnd?: () => void; // 退出可视化编辑时通知父组件
 }
 
@@ -146,6 +151,16 @@ export const EffectEditDialog: React.FC<EffectEditDialogProps> = ({
 
     // 表单状态
     const [selectedObjectId, setSelectedObjectId] = useState<number | null>(item?.objectId ?? null);
+    const [selectedObjectIds, setSelectedObjectIds] = useState<number[]>(() => {
+        if (item?.objectIds && item.objectIds.length > 0) {
+            return [...item.objectIds];
+        }
+        if (item?.objectId != null) {
+            return [item.objectId];
+        }
+        return [];
+    });
+    const [curveTargetId, setCurveTargetId] = useState<number | null>(item?.curveTargetId ?? item?.objectId ?? null);
     const [effectType, setEffectType] = useState<AnimationEffectType>(item?.effectType ?? AnimationEffectType.Move);
     const [startTime, setStartTime] = useState(item?.startTime ?? 0);
     const [duration, setDuration] = useState(item?.duration ?? 3000);
@@ -157,14 +172,17 @@ export const EffectEditDialog: React.FC<EffectEditDialogProps> = ({
         item?.effectType === AnimationEffectType.CurveMove && item.curveConfig ? item.curveConfig : null,
     );
     const [selectedGroupId, setSelectedGroupId] = useState<string | null>(item?.groupId ?? null);
-    const [selectedTargetKey, setSelectedTargetKey] = useState<string | null>(() => {
+    const [selectedTargetKeys, setSelectedTargetKeys] = useState<string[]>(() => {
         if (item?.groupId) {
-            return `group:${item.groupId}`;
+            return [`group:${item.groupId}`];
+        }
+        if (item?.objectIds && item.objectIds.length > 0) {
+            return item.objectIds.map((id) => `obj:${id}`);
         }
         if (item?.objectId != null) {
-            return `obj:${item.objectId}`;
+            return [`obj:${item.objectId}`];
         }
-        return null;
+        return [];
     });
     const [expandedGroupIds, setExpandedGroupIds] = useState<string[]>([]);
     // 编辑模式
@@ -186,6 +204,10 @@ export const EffectEditDialog: React.FC<EffectEditDialogProps> = ({
     useEffect(() => {
         selectedGroupIdRef.current = selectedGroupId;
     }, [selectedGroupId]);
+    const selectedObjectIdsRef = useRef<number[]>(selectedObjectIds);
+    useEffect(() => {
+        selectedObjectIdsRef.current = selectedObjectIds;
+    }, [selectedObjectIds]);
 
     // 使用 ref 保存最新的 nodes，避免闭包问题
     const nodesRef = useRef<AnimationKeyframe[]>(nodes);
@@ -239,7 +261,17 @@ export const EffectEditDialog: React.FC<EffectEditDialogProps> = ({
             setTimeout(() => {
                 setSelectedObjectId(item.objectId);
                 setSelectedGroupId(item.groupId ?? null);
-                setSelectedTargetKey(item.groupId ? `group:${item.groupId}` : `obj:${item.objectId}`);
+                setSelectedObjectIds(
+                    item.objectIds && item.objectIds.length > 0 ? [...item.objectIds] : [item.objectId],
+                );
+                setSelectedTargetKeys(
+                    item.groupId
+                        ? [`group:${item.groupId}`]
+                        : item.objectIds && item.objectIds.length > 0
+                          ? item.objectIds.map((id) => `obj:${id}`)
+                          : [`obj:${item.objectId}`],
+                );
+                setCurveTargetId(item.curveTargetId ?? item.objectId);
                 setEffectType(item.effectType);
                 setStartTime(item.startTime);
                 setDuration(item.duration);
@@ -262,7 +294,9 @@ export const EffectEditDialog: React.FC<EffectEditDialogProps> = ({
             setTimeout(() => {
                 setSelectedObjectId(null);
                 setSelectedGroupId(null);
-                setSelectedTargetKey(null);
+                setSelectedObjectIds([]);
+                setSelectedTargetKeys([]);
+                setCurveTargetId(null);
                 setEffectType(AnimationEffectType.Move);
                 setStartTime(0);
                 setDuration(3000);
@@ -291,6 +325,24 @@ export const EffectEditDialog: React.FC<EffectEditDialogProps> = ({
         }
     }, [nodes, loop, effectType, curveConfig]);
 
+    useEffect(() => {
+        if (selectedGroupId) {
+            if (curveTargetId !== null) {
+                setTimeout(() => setCurveTargetId(null), 0);
+            }
+            return;
+        }
+        if (selectedObjectIds.length === 0) {
+            if (curveTargetId !== null) {
+                setTimeout(() => setCurveTargetId(null), 0);
+            }
+            return;
+        }
+        if (curveTargetId === null || !selectedObjectIds.includes(curveTargetId)) {
+            setTimeout(() => setCurveTargetId(selectedObjectIds[0]!), 0);
+        }
+    }, [curveTargetId, selectedGroupId, selectedObjectIds]);
+
     // 当选择对象时，初始化第一个节点
     useEffect(() => {
         if (selectedObjectId !== null && nodes.length === 0 && !item) {
@@ -303,9 +355,13 @@ export const EffectEditDialog: React.FC<EffectEditDialogProps> = ({
                 const props = extractAnimatableProperties(obj);
                 let initialNodes: AnimationKeyframe[] = [];
 
-                if (selectedGroupId) {
-                    const groupObjects = step.objects.filter(
-                        (o) => (o as SceneObject & { groupId?: string }).groupId === selectedGroupId,
+                const isMultiObject = !selectedGroupId && selectedObjectIds.length > 1;
+
+                if (selectedGroupId || isMultiObject) {
+                    const groupObjects = step.objects.filter((o) =>
+                        selectedGroupId
+                            ? (o as SceneObject & { groupId?: string }).groupId === selectedGroupId
+                            : selectedObjectIds.includes(o.id),
                     );
                     const perObject: Record<number, AnimatedObjectProperties> = {};
                     let minX: number | undefined;
@@ -361,7 +417,7 @@ export const EffectEditDialog: React.FC<EffectEditDialogProps> = ({
                 setTimeout(() => setNodes(initialNodes), 0);
             }
         }
-    }, [selectedObjectId, selectedGroupId, nodes.length, step.objects, item]);
+    }, [selectedObjectId, selectedObjectIds, selectedGroupId, nodes.length, step.objects, item]);
 
     const stepObjectsRef = useRef(step.objects);
     useEffect(() => {
@@ -386,9 +442,14 @@ export const EffectEditDialog: React.FC<EffectEditDialogProps> = ({
 
         let value: AnimatedObjectProperties;
 
-        if (currentSelectedGroupId) {
-            const groupObjects = stepObjectsRef.current.filter(
-                (o) => (o as SceneObject & { groupId?: string }).groupId === currentSelectedGroupId,
+        const currentSelectedObjectIds = selectedObjectIdsRef.current;
+        const isMultiObject = !currentSelectedGroupId && currentSelectedObjectIds.length > 1;
+
+        if (currentSelectedGroupId || isMultiObject) {
+            const groupObjects = stepObjectsRef.current.filter((o) =>
+                currentSelectedGroupId
+                    ? (o as SceneObject & { groupId?: string }).groupId === currentSelectedGroupId
+                    : currentSelectedObjectIds.includes(o.id),
             );
             const perObject: Record<number, AnimatedObjectProperties> = {};
             let minX: number | undefined;
@@ -502,9 +563,13 @@ export const EffectEditDialog: React.FC<EffectEditDialogProps> = ({
                 }
             ).perObjectHide;
 
-            if (selectedGroupId) {
-                const groupObjects = step.objects.filter(
-                    (o) => (o as SceneObject & { groupId?: string }).groupId === selectedGroupId,
+            const isMultiObject = !selectedGroupId && selectedObjectIds.length > 1;
+
+            if (selectedGroupId || isMultiObject) {
+                const groupObjects = step.objects.filter((o) =>
+                    selectedGroupId
+                        ? (o as SceneObject & { groupId?: string }).groupId === selectedGroupId
+                        : selectedObjectIds.includes(o.id),
                 );
                 // 记录原始组对象
                 originalObjectRef.current = groupObjects.map((o) => ({ ...o }) as SceneObject);
@@ -582,13 +647,25 @@ export const EffectEditDialog: React.FC<EffectEditDialogProps> = ({
             isTemporarilyHiddenRef.current = true;
             // 先设置 isVisualEditing 为 true，然后通知父组件
             setIsVisualEditing(true);
+            const visualEditObjectIds =
+                !selectedGroupId && selectedObjectIds.length > 1 ? selectedObjectIds : undefined;
             onVisualEditStartRef.current?.(
                 () => handleSaveNodeState(),
                 () => handleCancelVisualEdit(),
                 selectedObjectId,
+                visualEditObjectIds,
             ); // 通知父组件进入可视化编辑，并传入保存/取消回调和对象ID
         },
-        [selectedObjectId, selectedGroupId, nodes, step.objects, dispatch, handleSaveNodeState, handleCancelVisualEdit],
+        [
+            selectedObjectId,
+            selectedObjectIds,
+            selectedGroupId,
+            nodes,
+            step.objects,
+            dispatch,
+            handleSaveNodeState,
+            handleCancelVisualEdit,
+        ],
     );
 
     const toggleGroupExpanded = useCallback((groupId: string) => {
@@ -621,9 +698,12 @@ export const EffectEditDialog: React.FC<EffectEditDialogProps> = ({
 
         // 创建新节点，使用当前状态作为初始值
         let newNode: AnimationKeyframe;
-        if (selectedGroupId) {
-            const groupObjects = step.objects.filter(
-                (o) => (o as SceneObject & { groupId?: string }).groupId === selectedGroupId,
+        const isMultiObject = !selectedGroupId && selectedObjectIds.length > 1;
+        if (selectedGroupId || isMultiObject) {
+            const groupObjects = step.objects.filter((o) =>
+                selectedGroupId
+                    ? (o as SceneObject & { groupId?: string }).groupId === selectedGroupId
+                    : selectedObjectIds.includes(o.id),
             );
             const perObject: Record<number, AnimatedObjectProperties> = {};
             let minX: number | undefined;
@@ -701,13 +781,16 @@ export const EffectEditDialog: React.FC<EffectEditDialogProps> = ({
         isTemporarilyHiddenRef.current = true;
         // 先设置 isVisualEditing 为 true，然后通知父组件
         setIsVisualEditing(true);
+        const visualEditObjectIds = !selectedGroupId && selectedObjectIds.length > 1 ? selectedObjectIds : undefined;
         onVisualEditStartRef.current?.(
             () => handleSaveNodeState(),
             () => handleCancelVisualEdit(),
             selectedObjectId,
+            visualEditObjectIds,
         );
     }, [
         selectedObjectId,
+        selectedObjectIds,
         selectedGroupId,
         nodes,
         step.objects,
@@ -788,9 +871,31 @@ export const EffectEditDialog: React.FC<EffectEditDialogProps> = ({
     );
 
     const handleSave = () => {
-        if (selectedObjectId === null) return;
-        const obj = step.objects.find((o) => o.id === selectedObjectId);
+        const isMultiObject = !selectedGroupId && selectedObjectIds.length > 1;
+        const effectiveObjectIds = selectedGroupId
+            ? selectedObjectId != null
+                ? [selectedObjectId]
+                : []
+            : isMultiObject
+              ? selectedObjectIds
+              : selectedObjectId != null
+                ? [selectedObjectId]
+                : [];
+
+        if (effectiveObjectIds.length === 0) return;
+
+        const curveTargetInSelection =
+            effectType === AnimationEffectType.CurveMove &&
+            isMultiObject &&
+            curveTargetId != null &&
+            effectiveObjectIds.includes(curveTargetId);
+        const anchorId = curveTargetInSelection ? curveTargetId! : effectiveObjectIds[0]!;
+        const obj = step.objects.find((o) => o.id === anchorId);
         const objectName = obj ? getObjectDisplayName(obj, t) : undefined;
+        const objectNameLabel =
+            !selectedGroupId && isMultiObject && effectiveObjectIds.length > 1
+                ? `${objectName ?? ''} 等（${effectiveObjectIds.length} 个）`
+                : objectName;
         let effectiveNodes = nodes;
 
         if (
@@ -857,9 +962,12 @@ export const EffectEditDialog: React.FC<EffectEditDialogProps> = ({
         }
 
         let newItem: Omit<AnimationTrackItem, 'id'> | AnimationTrackItem = {
-            objectId: selectedObjectId,
+            objectId: anchorId,
+            objectIds:
+                !selectedGroupId && isMultiObject && effectiveObjectIds.length > 1 ? effectiveObjectIds : undefined,
+            curveTargetId: curveTargetInSelection ? curveTargetId! : undefined,
             groupId: selectedGroupId ?? undefined,
-            objectName,
+            objectName: objectNameLabel,
             effectType,
             startTime,
             duration: finalDuration,
@@ -937,6 +1045,12 @@ export const EffectEditDialog: React.FC<EffectEditDialogProps> = ({
             }
         }
 
+        if (!selectedGroupId && selectedObjectIds.length > 1) {
+            const first = step.objects.find((o) => o.id === selectedObjectIds[0]);
+            const firstName = first ? getObjectDisplayName(first, t) : '';
+            return `${firstName} 等（${selectedObjectIds.length} 个）`;
+        }
+
         if (selectedObjectId !== null) {
             const obj = step.objects.find((o) => o.id === selectedObjectId);
             if (obj) {
@@ -959,29 +1073,35 @@ export const EffectEditDialog: React.FC<EffectEditDialogProps> = ({
                                 {/* 选择对象 */}
                                 <Field label="选择对象">
                                     <Dropdown
+                                        multiselect
                                         value={selectedDisplayLabel}
-                                        selectedOptions={selectedTargetKey ? [selectedTargetKey] : []}
+                                        selectedOptions={selectedTargetKeys}
                                         onOptionSelect={(_, data) => {
-                                            if (!data.optionValue) {
+                                            const selected = data.selectedOptions ?? [];
+                                            setSelectedTargetKeys(selected);
+
+                                            const groupKey = selected.find((k) => k.startsWith('group:'));
+                                            if (groupKey) {
+                                                setSelectedTargetKeys([groupKey]);
+                                                const groupId = groupKey.substring('group:'.length);
+                                                const groupOption = groupOptions.find((opt) => opt.groupId === groupId);
+                                                if (!groupOption) return;
+                                                setSelectedObjectId(groupOption.objectId);
+                                                setSelectedGroupId(groupId);
+                                                setSelectedObjectIds([groupOption.objectId]);
+                                                setNodes([]);
                                                 return;
                                             }
-                                            const value = data.optionValue;
-                                            if (value.startsWith('group:')) {
-                                                const groupId = value.substring('group:'.length);
-                                                const groupOption = groupOptions.find((opt) => opt.groupId === groupId);
-                                                if (groupOption) {
-                                                    setSelectedObjectId(groupOption.objectId);
-                                                    setSelectedGroupId(groupId);
-                                                    setSelectedTargetKey(groupOption.key);
-                                                    setNodes([]);
-                                                }
-                                            } else if (value.startsWith('obj:')) {
-                                                const id = parseInt(value.substring('obj:'.length), 10);
-                                                setSelectedObjectId(Number.isNaN(id) ? null : id);
-                                                setSelectedGroupId(null);
-                                                setSelectedTargetKey(`obj:${id}`);
-                                                setNodes([]);
-                                            }
+
+                                            const ids = selected
+                                                .filter((k) => k.startsWith('obj:'))
+                                                .map((k) => parseInt(k.substring('obj:'.length), 10))
+                                                .filter((n) => !Number.isNaN(n));
+
+                                            setSelectedGroupId(null);
+                                            setSelectedObjectIds(ids);
+                                            setSelectedObjectId(ids.length > 0 ? ids[0]! : null);
+                                            setNodes([]);
                                         }}
                                         disabled={!!item}
                                     >
@@ -1072,6 +1192,46 @@ export const EffectEditDialog: React.FC<EffectEditDialogProps> = ({
                                         <Option value={AnimationEffectType.CurveMove}>曲线移动</Option>
                                     </Dropdown>
                                 </Field>
+
+                                {effectType === AnimationEffectType.CurveMove &&
+                                    !selectedGroupId &&
+                                    selectedObjectIds.length > 1 && (
+                                        <Field label="曲线对象">
+                                            <Dropdown
+                                                value={
+                                                    curveTargetId != null
+                                                        ? (() => {
+                                                              const obj = step.objects.find(
+                                                                  (o) => o.id === curveTargetId,
+                                                              );
+                                                              return obj
+                                                                  ? getObjectDisplayName(obj as SceneObject, t)
+                                                                  : '请选择曲线对象';
+                                                          })()
+                                                        : '请选择曲线对象'
+                                                }
+                                                selectedOptions={curveTargetId != null ? [`obj:${curveTargetId}`] : []}
+                                                onOptionSelect={(_, data) => {
+                                                    const value = data.optionValue;
+                                                    if (!value) return;
+                                                    const id = parseInt(value.substring('obj:'.length), 10);
+                                                    if (Number.isNaN(id)) return;
+                                                    setCurveTargetId(id);
+                                                }}
+                                            >
+                                                {selectedObjectIds.map((id) => {
+                                                    const obj = step.objects.find((o) => o.id === id);
+                                                    if (!obj) return null;
+                                                    const label = getObjectDisplayName(obj as SceneObject, t);
+                                                    return (
+                                                        <Option key={`obj:${id}`} value={`obj:${id}`} text={label}>
+                                                            {label}
+                                                        </Option>
+                                                    );
+                                                })}
+                                            </Dropdown>
+                                        </Field>
+                                    )}
 
                                 {/* 基本设置 */}
                                 <Field label="开始时间 (ms)">
@@ -1400,7 +1560,11 @@ export const EffectEditDialog: React.FC<EffectEditDialogProps> = ({
                             <Button appearance="secondary" onClick={onClose}>
                                 取消
                             </Button>
-                            <Button appearance="primary" onClick={handleSave} disabled={selectedObjectId === null}>
+                            <Button
+                                appearance="primary"
+                                onClick={handleSave}
+                                disabled={selectedGroupId ? selectedObjectId === null : selectedObjectIds.length === 0}
+                            >
                                 {item ? '保存' : '添加'}
                             </Button>
                         </DialogActions>

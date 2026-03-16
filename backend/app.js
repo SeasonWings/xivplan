@@ -540,7 +540,7 @@ wss.on('connection', (ws, req) => {
                         });
                         const room = rooms.get(ws.roomId);
                         if (room) {
-                            if (!room.userEditPermissions.get(ws.userId)) {
+                            if (!room.userEditPermissions.get(ws.userId) || ws.userId !== room.hostId) {
                                 ws.send(
                                     JSON.stringify({
                                         type: 'error',
@@ -555,6 +555,15 @@ wss.on('connection', (ws, req) => {
                             room.snapshotSeq = seq;
                             room.actionLog = room.actionLog.filter((x) => x.seq > seq);
                             room.lastUpdated = Date.now();
+
+                            room.broadcast(
+                                JSON.stringify({
+                                    type: 'scene_sync',
+                                    data: room.sceneData,
+                                    seq: room.snapshotSeq || 0,
+                                }),
+                                ws,
+                            );
                         }
                     }
                     break;

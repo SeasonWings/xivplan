@@ -1,6 +1,6 @@
 import { Button, makeStyles, mergeClasses, tokens, typographyStyles } from '@fluentui/react-components';
 import { ChevronDownRegular, ChevronRightRegular } from '@fluentui/react-icons';
-import React, { useState } from 'react';
+import React, { ReactNode, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useScene } from '../SceneProvider';
 import { SceneObject } from '../scene';
@@ -33,13 +33,13 @@ export const SceneObjectsPanel: React.FC<SceneObjectsPanelProps> = ({ className 
                         collapsed={collapsed.foreground}
                         onToggle={() => setCollapsed((prev) => ({ ...prev, foreground: !prev.foreground }))}
                     />
-                    {!collapsed.foreground && (
+                    <AnimatedCollapse collapsed={collapsed.foreground} dep={fg.length}>
                         <LayerObjectList
                             objects={fg}
                             allObjects={allObjects}
                             onMove={(from, to) => dispatch({ type: 'move', from, to })}
                         />
-                    )}
+                    </AnimatedCollapse>
                 </div>
             )}
             {main.length > 0 && (
@@ -50,13 +50,13 @@ export const SceneObjectsPanel: React.FC<SceneObjectsPanelProps> = ({ className 
                         collapsed={collapsed.main}
                         onToggle={() => setCollapsed((prev) => ({ ...prev, main: !prev.main }))}
                     />
-                    {!collapsed.main && (
+                    <AnimatedCollapse collapsed={collapsed.main} dep={main.length}>
                         <LayerObjectList
                             objects={main}
                             allObjects={allObjects}
                             onMove={(from, to) => dispatch({ type: 'move', from, to })}
                         />
-                    )}
+                    </AnimatedCollapse>
                 </div>
             )}
             {bg.length > 0 && (
@@ -67,13 +67,13 @@ export const SceneObjectsPanel: React.FC<SceneObjectsPanelProps> = ({ className 
                         collapsed={collapsed.background}
                         onToggle={() => setCollapsed((prev) => ({ ...prev, background: !prev.background }))}
                     />
-                    {!collapsed.background && (
+                    <AnimatedCollapse collapsed={collapsed.background} dep={bg.length}>
                         <LayerObjectList
                             objects={bg}
                             allObjects={allObjects}
                             onMove={(from, to) => dispatch({ type: 'move', from, to })}
                         />
-                    )}
+                    </AnimatedCollapse>
                 </div>
             )}
         </div>
@@ -112,7 +112,63 @@ const useStyles = makeStyles({
         minWidth: '28px',
         padding: '2px',
     },
+
+    collapseWrapper: {
+        overflow: 'hidden',
+        transitionProperty: 'max-height, opacity, transform',
+        transitionDuration: '160ms',
+        transitionTimingFunction: 'cubic-bezier(0.2, 0, 0, 1)',
+        willChange: 'max-height, opacity, transform',
+    },
 });
+
+const AnimatedCollapse: React.FC<{ collapsed: boolean; dep: number; children: ReactNode }> = ({
+    collapsed,
+    dep,
+    children,
+}) => {
+    const classes = useStyles();
+    const contentRef = useRef<HTMLDivElement | null>(null);
+    const [maxHeight, setMaxHeight] = useState<number>(collapsed ? 0 : 9999);
+
+    useLayoutEffect(() => {
+        const el = contentRef.current;
+        if (!el) return;
+        if (collapsed) {
+            const h = el.scrollHeight;
+            setMaxHeight(h);
+            requestAnimationFrame(() => setMaxHeight(0));
+            return;
+        }
+        setMaxHeight(el.scrollHeight);
+    }, [collapsed]);
+
+    useEffect(() => {
+        const el = contentRef.current;
+        if (!el || collapsed) return;
+        setMaxHeight(el.scrollHeight);
+        if (!('ResizeObserver' in window)) return;
+        const ro = new ResizeObserver(() => {
+            setMaxHeight(el.scrollHeight);
+        });
+        ro.observe(el);
+        return () => ro.disconnect();
+    }, [collapsed, dep]);
+
+    return (
+        <div
+            className={classes.collapseWrapper}
+            style={{
+                maxHeight,
+                opacity: collapsed ? 0 : 1,
+                transform: collapsed ? 'translateY(-2px)' : 'translateY(0)',
+            }}
+            aria-hidden={collapsed}
+        >
+            <div ref={contentRef}>{children}</div>
+        </div>
+    );
+};
 
 const LayerGroupHeader: React.FC<{
     title: string;

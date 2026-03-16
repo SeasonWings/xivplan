@@ -346,7 +346,7 @@ const SceneContents: React.FC<SceneContentsProps> = ({
         console.warn('AnimationV2Provider not found, using default animation state');
     }
 
-    const { isVisualEditing, editingObjectId } = useVisualEdit();
+    const { isVisualEditing, editingObjectId, editingObjectIds } = useVisualEdit();
 
     // 优先使用 V2 动画系统的对象（如果正在播放），否则使用传入的对象或旧版动画对象
     let objects: readonly SceneObject[];
@@ -361,7 +361,10 @@ const SceneContents: React.FC<SceneContentsProps> = ({
     }
 
     // 如果处于可视化编辑模式
-    if (isVisualEditing && editingObjectId !== null) {
+    if (isVisualEditing && editingObjectIds && editingObjectIds.length > 0) {
+        const idSet = new Set(editingObjectIds);
+        objects = objects.filter((obj) => idSet.has(obj.id));
+    } else if (isVisualEditing && editingObjectId !== null) {
         const editingObj = objects.find((obj) => obj.id === editingObjectId);
         const groupId = (editingObj as (SceneObject & { groupId?: string }) | undefined)?.groupId;
 

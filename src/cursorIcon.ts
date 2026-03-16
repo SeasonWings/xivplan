@@ -12,7 +12,8 @@ const CLICK_EFFECT_PATHS = [
 
 export function getCursorSvg(color: string, clicked = false) {
     const clickEffects = clicked ? CLICK_EFFECT_PATHS.map((d) => `<path d="${d}" fill="${color}"/>`).join('') : '';
-    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-43 0 495 495.06667" width="32" height="32"><path d="${ARROW_PATH}" fill="${color}"/>${clickEffects}</svg>`;
+    const paths = `<path d="${ARROW_PATH}" fill="${color}"/>${clickEffects}`;
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-43 0 495 495.06667" width="32" height="32"><defs><filter id="cursorShadow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="10" dy="10" stdDeviation="6" flood-color="#000000" flood-opacity="0.35"/></filter></defs><g filter="url(#cursorShadow)">${paths}</g></svg>`;
 }
 
 export function getCursorDataUrl(color: string, clicked = false) {
@@ -41,7 +42,7 @@ const CROSSHAIR_PATHS = [
 
 export function getCrosshairSvg(color: string) {
     const paths = CROSSHAIR_PATHS.map((d) => `<path d="${d}" fill="${color}"/>`).join('');
-    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-18 0 488 488.8" width="32" height="32">${paths}</svg>`;
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-18 0 488 488.8" width="32" height="32"><defs><filter id="crosshairShadow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="10" dy="10" stdDeviation="6" flood-color="#000000" flood-opacity="0.35"/></filter></defs><g filter="url(#crosshairShadow)">${paths}</g></svg>`;
 }
 
 export function getCrosshairDataUrl(color: string) {
