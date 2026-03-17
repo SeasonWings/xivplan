@@ -6,13 +6,15 @@ interface FileMetadata {
     timestamp: string;
 }
 
+const APP_TITLE = import.meta.env.VITE_APP_TITLE || 'XIVPlan';
+
 const files = localforage.createInstance({
-    name: 'XIVPlan Files',
+    name: `${APP_TITLE} Files`,
     storeName: 'files',
 });
 
 const metadata = localforage.createInstance({
-    name: 'XIVPlan File Metadata',
+    name: `${APP_TITLE} File Metadata`,
     storeName: 'meta',
 });
 
@@ -35,6 +37,7 @@ export async function openFileLocalStorage(name: string): Promise<Scene> {
 
 export async function deleteFileLocalStorage(name: string): Promise<void> {
     await files.removeItem(name);
+    await metadata.removeItem(name);
 }
 
 export interface LocalStorageFileInfo {

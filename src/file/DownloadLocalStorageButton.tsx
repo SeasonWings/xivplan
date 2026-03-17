@@ -6,13 +6,15 @@ import { downloadBlob } from './blob';
 import { exportLocalStorageFiles } from './localStorage';
 import { useTranslation } from 'react-i18next';
 
+const APP_TITLE = import.meta.env.VITE_APP_TITLE || 'XIVPlan';
+
 export const DownloadLocalStorageButton: React.FC<ButtonProps> = ({ ...props }) => {
     const classes = useStyles();
     const { t } = useTranslation();
 
     const [state, download] = useAsyncFn(async () => {
         const blob = await exportLocalStorageFiles();
-        downloadBlob(blob, `XIVPlan-export.zip`);
+        downloadBlob(blob, `${APP_TITLE}-export.zip`);
     }, []);
 
     return (

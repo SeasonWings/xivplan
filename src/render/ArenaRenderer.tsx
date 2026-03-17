@@ -23,6 +23,7 @@ import {
     RadialGrid,
     RectangularGrid,
     Scene,
+    TriangularGrid,
 } from '../scene';
 import { getArenaShapeConfig, getGridShapeConfig, useSceneTheme, useSceneThemeHtmlStyle } from '../theme';
 import { useImageTracked } from '../useObjectLoading';
@@ -83,6 +84,23 @@ function getArenaClip(scene: Scene): ((context: KonvaContext) => void) | undefin
                 ctx.rect(rect.x + 1, rect.y + 1, rect.width - 2, rect.height - 2);
                 ctx.clip();
                 ctx.closePath();
+            };
+
+        case ArenaShape.Triangle:
+            return (ctx) => {
+                const inset = 1;
+                const left = rect.x + inset;
+                const right = rect.x + rect.width - inset;
+                const top = rect.y + inset;
+                const bottom = rect.y + rect.height - inset;
+                const midX = (left + right) / 2;
+
+                ctx.beginPath();
+                ctx.moveTo(midX, top);
+                ctx.lineTo(right, bottom);
+                ctx.lineTo(left, bottom);
+                ctx.closePath();
+                ctx.clip();
             };
 
         case ArenaShape.None:
@@ -156,6 +174,9 @@ const BackgroundRenderer: React.FC = () => {
         case ArenaShape.Rectangle:
             return <RectangularBackground />;
 
+        case ArenaShape.Triangle:
+            return <TriangleBackground />;
+
         case ArenaShape.None:
             return <></>;
     }
@@ -192,6 +213,35 @@ const RectangularBackground: React.FC = () => {
     return <Rect {...alignedPosition} {...shapeConfig} {...SHADOW} {...ALIGN_TO_PIXEL} />;
 };
 
+const TriangleBackground: React.FC = () => {
+    const position = useCanvasArenaRect();
+    const theme = useSceneTheme();
+    const shapeConfig = getArenaShapeConfig(theme);
+
+    const inset = 1;
+    const left = position.x + inset;
+    const right = position.x + position.width - inset;
+    const top = position.y + inset;
+    const bottom = position.y + position.height - inset;
+    const midX = (left + right) / 2;
+
+    return (
+        <Shape
+            sceneFunc={(ctx, shape) => {
+                ctx.beginPath();
+                ctx.moveTo(midX, top);
+                ctx.lineTo(right, bottom);
+                ctx.lineTo(left, bottom);
+                ctx.closePath();
+                ctx.fillStrokeShape(shape);
+            }}
+            {...shapeConfig}
+            {...SHADOW}
+            {...ALIGN_TO_PIXEL}
+        />
+    );
+};
+
 const GridRenderer: React.FC = () => {
     const { scene } = useScene();
 
@@ -204,6 +254,9 @@ const GridRenderer: React.FC = () => {
 
         case GridType.Rectangular:
             return <RectangularGridRenderer grid={scene.arena.grid} />;
+
+        case GridType.Triangular:
+            return <TriangularGridRenderer grid={scene.arena.grid} />;
 
         case GridType.CustomRectangular:
             return <CustomRectangularGridRenderer grid={scene.arena.grid} />;
@@ -317,6 +370,94 @@ const RectangularGridRenderer: React.FC<GridProps<RectangularGrid>> = ({ grid })
                     ctx.moveTo(position.x, y);
                     ctx.lineTo(position.x + position.width, y);
                 }
+
+                ctx.closePath();
+                ctx.fillStrokeShape(shape);
+            }}
+            {...shapeConfig}
+            {...ALIGN_TO_PIXEL}
+        />
+    );
+};
+
+function lerpPoint(a: { x: number; y: number }, b: { x: number; y: number }, t: number) {
+    return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
+}
+
+function midPoint(a: { x: number; y: number }, b: { x: number; y: number }) {
+    return lerpPoint(a, b, 0.5);
+}
+
+const TriangularGridRenderer: React.FC<GridProps<TriangularGrid>> = ({ grid }) => {
+    const theme = useSceneTheme();
+    const { scene } = useScene();
+
+    const clip = getArenaClip(scene);
+    const rect = getCanvasArenaRect(scene);
+    const shapeConfig = getGridShapeConfig(theme);
+
+    const level =
+        typeof grid.level === 'number' && Number.isFinite(grid.level)
+            ? Math.max(0, Math.floor(grid.level))
+            : typeof grid.divs === 'number' && Number.isFinite(grid.divs) && grid.divs > 0
+              ? Math.max(0, Math.round(Math.log2(grid.divs)))
+              : 1;
+
+    const maxLevel = 6;
+    const effectiveLevel = Math.min(maxLevel, level);
+    if (effectiveLevel <= 0) {
+        return null;
+    }
+
+    const inset = 1;
+    const left = rect.x + inset;
+    const right = rect.x + rect.width - inset;
+    const top = rect.y + inset;
+    const bottom = rect.y + rect.height - inset;
+    const midX = (left + right) / 2;
+
+    const A = { x: midX, y: top };
+    const B = { x: right, y: bottom };
+    const C = { x: left, y: bottom };
+
+    return (
+        <Shape
+            sceneFunc={(ctx, shape) => {
+                clip?.(ctx);
+
+                ctx.beginPath();
+
+                const drawSubdivide = (
+                    a: { x: number; y: number },
+                    b: { x: number; y: number },
+                    c: { x: number; y: number },
+                    depth: number,
+                ) => {
+                    if (depth <= 0) {
+                        return;
+                    }
+
+                    const ab = midPoint(a, b);
+                    const ac = midPoint(a, c);
+                    const bc = midPoint(b, c);
+
+                    ctx.moveTo(ab.x, ab.y);
+                    ctx.lineTo(ac.x, ac.y);
+
+                    ctx.moveTo(ab.x, ab.y);
+                    ctx.lineTo(bc.x, bc.y);
+
+                    ctx.moveTo(ac.x, ac.y);
+                    ctx.lineTo(bc.x, bc.y);
+
+                    const next = depth - 1;
+                    drawSubdivide(a, ab, ac, next);
+                    drawSubdivide(ab, b, bc, next);
+                    drawSubdivide(ac, bc, c, next);
+                    drawSubdivide(ab, bc, ac, next);
+                };
+
+                drawSubdivide(A, B, C, effectiveLevel);
 
                 ctx.closePath();
                 ctx.fillStrokeShape(shape);

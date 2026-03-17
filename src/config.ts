@@ -31,7 +31,7 @@ function getNumberEnv(key: string, fallback: number): number {
 export const config = {
     // WebSocket相关配置
     websocket: {
-        baseUrl: import.meta.env.VITE_WS_URL || '//localhost:3001',
+        baseUrl: import.meta.env.VITE_WS_URL || '//localhost:9000',
     },
     // API相关配置
     api: {

@@ -16,8 +16,13 @@ import { copyObjects } from './copy';
 import {
     Arena,
     ArenaShape,
+    DEFAULT_RECT_GRID,
+    DEFAULT_RECT_TICKS,
     DEFAULT_SCENE,
+    DEFAULT_TRI_GRID,
+    DEFAULT_TRI_TICKS,
     Grid,
+    GridType,
     isMoveable,
     isRotateable,
     isTether,
@@ -27,6 +32,7 @@ import {
     SceneStep,
     Tether,
     Ticks,
+    TickType,
 } from './scene';
 import { createUndoContext } from './undo/undoContext';
 import { StateActionBase, UndoRedoAction } from './undo/undoReducer';
@@ -741,6 +747,29 @@ function sceneReducer(state: Readonly<EditorState>, action: SceneAction): Editor
             return updateArena(state, action.value);
 
         case 'arenaShape':
+            if (action.value === ArenaShape.Triangle) {
+                const current = state.scene.arena.grid;
+                const grid = current.type === GridType.Triangular ? current : DEFAULT_TRI_GRID;
+                const currentTicks = state.scene.arena.ticks;
+                const ticks =
+                    !currentTicks || currentTicks.type === TickType.None || currentTicks.type === TickType.Triangular
+                        ? currentTicks
+                        : DEFAULT_TRI_TICKS;
+                return updateArena(state, { ...state.scene.arena, shape: action.value, grid, ticks });
+            }
+
+            if (state.scene.arena.grid.type === GridType.Triangular) {
+                const currentTicks = state.scene.arena.ticks;
+                const ticks =
+                    currentTicks && currentTicks.type === TickType.Triangular ? DEFAULT_RECT_TICKS : currentTicks;
+                return updateArena(state, {
+                    ...state.scene.arena,
+                    shape: action.value,
+                    grid: DEFAULT_RECT_GRID,
+                    ticks,
+                });
+            }
+
             return updateArena(state, { ...state.scene.arena, shape: action.value });
 
         case 'arenaWidth':
@@ -753,9 +782,24 @@ function sceneReducer(state: Readonly<EditorState>, action: SceneAction): Editor
             return updateArena(state, { ...state.scene.arena, padding: action.value });
 
         case 'arenaGrid':
+            if (state.scene.arena.shape === ArenaShape.Triangle && action.value.type !== GridType.Triangular) {
+                return updateArena(state, { ...state.scene.arena, grid: DEFAULT_TRI_GRID });
+            }
+
             return updateArena(state, { ...state.scene.arena, grid: action.value });
 
         case 'arenaTicks':
+            if (state.scene.arena.shape === ArenaShape.Triangle) {
+                if (action.value.type === TickType.None || action.value.type === TickType.Triangular) {
+                    return updateArena(state, { ...state.scene.arena, ticks: action.value });
+                }
+                return updateArena(state, { ...state.scene.arena, ticks: DEFAULT_TRI_TICKS });
+            }
+
+            if (action.value.type === TickType.Triangular) {
+                return updateArena(state, { ...state.scene.arena, ticks: DEFAULT_RECT_TICKS });
+            }
+
             return updateArena(state, { ...state.scene.arena, ticks: action.value });
 
         case 'arenaBackground':

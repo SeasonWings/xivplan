@@ -19,6 +19,8 @@ import React, { useState } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { config } from '../config';
 
+const APP_TITLE = import.meta.env.VITE_APP_TITLE || 'XIVPlan';
+
 const useStyles = makeStyles({
     dialogSurface: {
         maxWidth: '800px', // 增加宽度以容纳左右布局
@@ -191,13 +193,13 @@ export const FeedbackDialog: React.FC<FeedbackDialogProps> = ({ open, onClose })
                                 <div className={classes.groupSection}>
                                     <div style={{ textAlign: 'center' }}>
                                         <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>
-                                            加入 XIVPlan 交流群
+                                            加入 {APP_TITLE} 交流群
                                         </div>
                                         <div style={{ fontSize: '12px', color: tokens.colorNeutralForeground3 }}>
                                             群号: 662560323
                                         </div>
                                     </div>
-                                    <img src="/QQ/qq.jpg" alt="XIVPlan 交流群" className={classes.groupImage} />
+                                    <img src="/QQ/qq.jpg" alt={`${APP_TITLE} 交流群`} className={classes.groupImage} />
                                 </div>
                             </div>
                         )}

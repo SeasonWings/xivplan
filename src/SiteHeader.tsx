@@ -31,7 +31,7 @@ import { glassToolbar } from './glassStyles';
 import { HelpContext } from './HelpContext';
 import { PANEL_WIDTH } from './panel/PanelStyles';
 import { FileSource, useScene } from './SceneProvider';
-import { DarkModeContext } from './ThemeContext';
+import { DarkModeContext, ThemePalette, ThemePaletteContext } from './ThemeContext';
 import { ToolbarContext } from './ToolbarContext';
 import { TutorialDialog } from './tutorial/TutorialDialog';
 import { useIsDirty } from './useIsDirty';
@@ -110,6 +110,32 @@ export const SiteHeader: React.FC<HTMLAttributes<HTMLElement>> = ({ className, .
     const { t, i18n } = useTranslation();
     const { state: authState, logout } = useAuth();
     const navigate = useNavigate();
+    const [paletteValue, setPalette] = useContext(ThemePaletteContext);
+    const paletteItems = [
+        {
+            value: 'default' as ThemePalette,
+            gradient: 'linear-gradient(135deg, #55b0ffff, #b7deffff, #ffffffff)',
+        },
+        {
+            value: 'candyMint' as ThemePalette,
+            gradient: 'linear-gradient(135deg, #ffe0ef, #ff9ac6, #6fd8c9)',
+        },
+        {
+            value: 'candyGrape' as ThemePalette,
+            gradient: 'linear-gradient(135deg, #f2dcff, #c79aff, #ffb8de)',
+        },
+        {
+            value: 'candyPeach' as ThemePalette,
+            gradient: 'linear-gradient(135deg, #ffe4d6, #ffa98c, #6fc3ff)',
+        },
+        {
+            value: 'candySky' as ThemePalette,
+            gradient: 'linear-gradient(135deg, #d6fff3, #2bd4a6, #ff7ab6)',
+        },
+    ];
+    const activeGradient =
+        paletteItems.find((x) => x.value === paletteValue)?.gradient ??
+        'linear-gradient(135deg, #40352c, #6f5a48, #292929)';
 
     // 认证对话框状态
     const [showLoginDialog, setShowLoginDialog] = React.useState(false);
@@ -130,7 +156,7 @@ export const SiteHeader: React.FC<HTMLAttributes<HTMLElement>> = ({ className, .
         <header className={mergeClasses(classes.root, className)} {...props}>
             <div className={classes.title}>
                 <Text size={titleSize} weight="semibold">
-                    XIVPlan
+                    {import.meta.env.VITE_APP_TITLE || 'XIVPlan'}
                 </Text>
                 {source && <SourceIndicator source={source} />}
             </div>
@@ -153,6 +179,50 @@ export const SiteHeader: React.FC<HTMLAttributes<HTMLElement>> = ({ className, .
                 {t('header.github')}
             </ExternalLink>
             <div className={classes.buttonGroup}>
+                <Menu>
+                    <MenuTrigger disableButtonEnhancement>
+                        <Button
+                            appearance="subtle"
+                            className={classes.iconButton}
+                            icon={
+                                <span
+                                    style={{
+                                        width: '20px',
+                                        height: '20px',
+                                        borderRadius: '999px',
+                                        backgroundImage: activeGradient,
+                                        border: `1px solid ${tokens.colorNeutralStroke2}`,
+                                        display: 'inline-block',
+                                    }}
+                                />
+                            }
+                        />
+                    </MenuTrigger>
+                    <MenuPopover>
+                        <MenuList>
+                            {paletteItems.map((item) => (
+                                <MenuItem
+                                    key={item.value}
+                                    onClick={() => setPalette(item.value)}
+                                    aria-label={item.value}
+                                >
+                                    <div
+                                        style={{
+                                            width: '72px',
+                                            height: '20px',
+                                            borderRadius: '999px',
+                                            backgroundImage: item.gradient,
+                                            border:
+                                                paletteValue === item.value
+                                                    ? `2px solid ${tokens.colorBrandStroke1}`
+                                                    : `1px solid ${tokens.colorNeutralStroke2}`,
+                                        }}
+                                    />
+                                </MenuItem>
+                            ))}
+                        </MenuList>
+                    </MenuPopover>
+                </Menu>
                 <Menu>
                     <MenuTrigger disableButtonEnhancement>
                         <Button appearance="subtle" className={classes.iconButton} icon={<LocalLanguageFilled />} />

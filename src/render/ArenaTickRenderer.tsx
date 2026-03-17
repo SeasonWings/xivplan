@@ -1,7 +1,7 @@
 import React from 'react';
 import { Rect } from 'react-konva';
 import { getCanvasArenaEllipse, getCanvasArenaRect } from '../coord';
-import { RadialTicks, RectangularTicks, Scene, Ticks, TickType } from '../scene';
+import { RadialTicks, RectangularTicks, Scene, Ticks, TickType, TriangularTicks } from '../scene';
 import { useScene } from '../SceneProvider';
 import { useSceneTheme } from '../theme';
 import { degtorad, getLinearGridDivs } from '../util';
@@ -26,6 +26,9 @@ export const ArenaTickRenderer: React.FC = () => {
 
         case TickType.Radial:
             return <RadialTickRenderer scene={scene} ticks={scene.arena.ticks} />;
+
+        case TickType.Triangular:
+            return <TriangularTickRenderer scene={scene} ticks={scene.arena.ticks} />;
     }
 };
 
@@ -62,6 +65,122 @@ const RadialTickRenderer: React.FC<TickRendererProps<RadialTicks>> = ({ scene, t
 
     const majorProps = anglesToTicks(majorAngles, ellipse, MAJOR_TICK_SIZE);
     const minorProps = anglesToTicks(minorAngles, ellipse, MINOR_TICK_SIZE);
+
+    return (
+        <>
+            {minorProps.map((props, i) => (
+                <MinorTick key={i} {...props} />
+            ))}
+            {majorProps.map((props, i) => (
+                <MajorTick key={i} {...props} />
+            ))}
+        </>
+    );
+};
+
+interface Vec2 {
+    x: number;
+    y: number;
+}
+
+function vecSub(a: Vec2, b: Vec2): Vec2 {
+    return { x: a.x - b.x, y: a.y - b.y };
+}
+
+function vecAdd(a: Vec2, b: Vec2): Vec2 {
+    return { x: a.x + b.x, y: a.y + b.y };
+}
+
+function vecScale(v: Vec2, s: number): Vec2 {
+    return { x: v.x * s, y: v.y * s };
+}
+
+function vecLen(v: Vec2): number {
+    return Math.sqrt(v.x * v.x + v.y * v.y);
+}
+
+function vecNorm(v: Vec2): Vec2 {
+    const len = vecLen(v);
+    return len === 0 ? { x: 0, y: 0 } : { x: v.x / len, y: v.y / len };
+}
+
+function lerpPoint(a: Vec2, b: Vec2, t: number): Vec2 {
+    return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
+}
+
+function radToDeg(rad: number): number {
+    return (rad * 180) / Math.PI;
+}
+
+function edgeOutwardNormalCCW(p: Vec2, q: Vec2): Vec2 {
+    const v = vecSub(q, p);
+    return vecNorm({ x: v.y, y: -v.x });
+}
+
+function triangleVertices(scene: Scene) {
+    const rect = getCanvasArenaRect(scene);
+
+    const inset = 1;
+    const left = rect.x + inset;
+    const right = rect.x + rect.width - inset;
+    const top = rect.y + inset;
+    const bottom = rect.y + rect.height - inset;
+    const midX = (left + right) / 2;
+
+    const A = { x: midX, y: top };
+    const B = { x: right, y: bottom };
+    const C = { x: left, y: bottom };
+
+    return { A, B, C };
+}
+
+const TriangularTickRenderer: React.FC<TickRendererProps<TriangularTicks>> = ({ scene, ticks }) => {
+    const { A, B, C } = triangleVertices(scene);
+
+    const level =
+        typeof ticks.level === 'number' && Number.isFinite(ticks.level)
+            ? Math.max(1, Math.floor(ticks.level))
+            : typeof ticks.divs === 'number' && Number.isFinite(ticks.divs) && ticks.divs > 0
+              ? Math.max(1, Math.round(Math.log2(ticks.divs)))
+              : 1;
+
+    const divs = Math.max(1, 2 ** level);
+
+    const nAB = edgeOutwardNormalCCW(A, B);
+    const nBC = edgeOutwardNormalCCW(B, C);
+    const nCA = edgeOutwardNormalCCW(C, A);
+
+    const edges = [
+        { p: A, q: B, n: nAB },
+        { p: B, q: C, n: nBC },
+        { p: C, q: A, n: nCA },
+    ] as const;
+
+    const minorProps: TickProps[] = [];
+    for (const { p, q, n } of edges) {
+        const angle = radToDeg(Math.atan2(q.y - p.y, q.x - p.x));
+        const offset = MINOR_TICK_SIZE + TICK_MARGIN;
+
+        for (let i = 1; i < divs; i++) {
+            const t = i / divs;
+            const pt = lerpPoint(p, q, t);
+            const out = vecAdd(pt, vecScale(n, offset));
+            minorProps.push({ x: out.x, y: out.y, angle });
+        }
+    }
+
+    const majorProps: TickProps[] = [];
+    const vertexNormals = [vecNorm(vecAdd(nCA, nAB)), vecNorm(vecAdd(nAB, nBC)), vecNorm(vecAdd(nBC, nCA))] as const;
+    const majorOffset = MAJOR_TICK_SIZE + TICK_MARGIN;
+    for (const [v, n] of [
+        [A, vertexNormals[0]],
+        [B, vertexNormals[1]],
+        [C, vertexNormals[2]],
+    ] as const) {
+        const out = vecAdd(v, vecScale(n, majorOffset));
+        const angle = radToDeg(Math.atan2(n.y, n.x));
+        majorProps.push({ x: out.x, y: out.y, angle });
+    }
 
     return (
         <>

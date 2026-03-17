@@ -22,6 +22,7 @@ export interface AboutDialogProps {
 export const AboutDialog: React.FC<AboutDialogProps> = (props) => {
     const classes = useStyles();
     const { t } = useTranslation();
+    const appTitle = import.meta.env.VITE_APP_TITLE || 'XIVPlan';
 
     return (
         <Dialog>
@@ -32,19 +33,19 @@ export const AboutDialog: React.FC<AboutDialogProps> = (props) => {
                 <HotkeyBlockingDialogBody>
                     <DialogTitle>{t('about.title')}</DialogTitle>
                     <DialogContent className={classes.content}>
-                        <p>{t('about.xivplanCnDescription.part1')}</p>
+                        <p>{t('about.xivplanCnDescription.part1', { appTitle })}</p>
                         <p>{t('about.xivplanCnDescription.part2')}</p>
                         <hr className={classes.divider} />
                         <p>
-                            XIVPlan is a tool for quickly diagramming raid strategies for Final Fantasy XIV, inspired by{' '}
-                            <ExternalLink href="https://raidplan.io">RaidPlan.io</ExternalLink> and{' '}
+                            {appTitle} is a tool for quickly diagramming raid strategies for Final Fantasy XIV, inspired
+                            by <ExternalLink href="https://raidplan.io">RaidPlan.io</ExternalLink> and{' '}
                             <ExternalLink href="https://ff14.toolboxgaming.space">
                                 FF14 Toolbox Gaming Space
                             </ExternalLink>
                             .
                         </p>
                         <p>
-                            XIVPlan is open source on{' '}
+                            {appTitle} is open source on{' '}
                             <ExternalLink href="https://github.com/joelspadin/xivplan">GitHub</ExternalLink>. If you
                             find a bug or have other feedback, please create a{' '}
                             <ExternalLink href="https://github.com/joelspadin/xivplan/issues/new/choose">
@@ -53,7 +54,7 @@ export const AboutDialog: React.FC<AboutDialogProps> = (props) => {
                             on GitHub.
                         </p>
                         <h2>Credits</h2>
-                        <p>XIVPlan is © 2021 Joel Spadin and contributors.</p>
+                        <p>{appTitle} is © 2021 Joel Spadin and contributors.</p>
                         <p>Job, role, waymark, and enemy icons are © SQUARE ENIX CO., LTD. All Rights Reserved.</p>
                         <p>
                             <ExternalLink href="https://magentalava.gumroad.com/l/limitcuticons">

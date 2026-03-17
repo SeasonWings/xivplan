@@ -318,7 +318,7 @@ const MainPageContent: React.FC = () => {
     );
 };
 
-const TITLE = 'XIVPlan';
+const TITLE = import.meta.env.VITE_APP_TITLE || 'XIVPlan';
 
 function usePageTitle() {
     const { source } = useScene();

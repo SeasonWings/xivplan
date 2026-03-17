@@ -78,7 +78,7 @@
     "title": "About",
     "close": "Close",
     "xivplanCnDescription": {
-      "part1": "This site is a Chinese localized version based on the XIVPlan project, aiming to provide a better user experience for Chinese users.",
+      "part1": "This site is a localized version based on the {{appTitle}} project, aiming to provide a better user experience.",
       "part2": "The original project information is as follows:"
     }
   },
@@ -420,6 +420,8 @@
     "shape": "Arena shape",
     "padding": "Padding",
     "gridType": "Grid type",
+    "divisions": "Subdivision level",
+    "scaleNumber": "Scale Number",
     "columns": "Columns",
     "rows": "Rows",
     "spokes": "Spokes",
@@ -441,8 +443,10 @@
     "none": "None",
     "circle": "Circle",
     "rectangle": "Rectangle",
+    "triangle": "Triangle",
     "radial": "Radial",
     "rectangular": "Rectangular",
+    "triangular": "Triangular",
     "customRadial": "Custom radial",
     "customRectangular": "Custom rectangular",
     "backgroundImageUrl": "Background image URL",

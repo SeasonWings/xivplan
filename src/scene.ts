@@ -1,16 +1,18 @@
-import type { NativeStyle } from './lib/aoe/nativeStyle';
 import type { Animation } from './animation/animationTypes';
+import type { NativeStyle } from './lib/aoe/nativeStyle';
 
 export enum ArenaShape {
     None = 'none',
     Rectangle = 'rectangle',
     Circle = 'circle',
+    Triangle = 'triangle',
 }
 
 export enum GridType {
     None = 'none',
     Rectangular = 'rectangle',
     Radial = 'radial',
+    Triangular = 'triangular',
     CustomRectangular = 'custom',
     CustomRadial = 'customRadial',
 }
@@ -19,6 +21,7 @@ export enum TickType {
     None = 'none',
     Rectangular = 'rectangle',
     Radial = 'radial',
+    Triangular = 'triangular',
 }
 
 export enum ObjectType {
@@ -107,7 +110,13 @@ export interface CustomRadialGrid {
     readonly spokes: number[];
 }
 
-export type Grid = NoGrid | RectangularGrid | RadialGrid | CustomRectangularGrid | CustomRadialGrid;
+export interface TriangularGrid {
+    readonly type: GridType.Triangular;
+    readonly level?: number;
+    readonly divs?: number;
+}
+
+export type Grid = NoGrid | RectangularGrid | RadialGrid | TriangularGrid | CustomRectangularGrid | CustomRadialGrid;
 
 export interface NoTicks {
     readonly type: TickType.None;
@@ -127,7 +136,13 @@ export interface RadialTicks {
     readonly minorCount: number;
 }
 
-export type Ticks = NoTicks | RectangularTicks | RadialTicks;
+export interface TriangularTicks {
+    readonly type: TickType.Triangular;
+    readonly level: number;
+    readonly divs?: number;
+}
+
+export type Ticks = NoTicks | RectangularTicks | RadialTicks | TriangularTicks;
 
 export interface Arena {
     readonly shape: ArenaShape;
@@ -553,6 +568,11 @@ export const DEFAULT_RADIAL_GRID: RadialGrid = {
     radialDivs: 2,
 };
 
+export const DEFAULT_TRI_GRID: TriangularGrid = {
+    type: GridType.Triangular,
+    level: 2,
+};
+
 export const DEFAULT_CUSTOM_RECT_GRID: CustomRectangularGrid = {
     type: GridType.CustomRectangular,
     rows: [-150, 0, 150],
@@ -581,6 +601,11 @@ export const DEFAULT_RADIAL_TICKS: RadialTicks = {
     majorCount: 8,
     minorStart: 0,
     minorCount: 72,
+};
+
+export const DEFAULT_TRI_TICKS: TriangularTicks = {
+    type: TickType.Triangular,
+    level: 4,
 };
 
 export const DEFAULT_ARENA_PADDING = 120;

@@ -2,6 +2,8 @@ import { DBSchema, openDB } from 'idb';
 import { FileSystemFileSource } from '../SceneProvider';
 import { Scene } from '../scene';
 
+const APP_TITLE = import.meta.env.VITE_APP_TITLE || 'XIVPlan';
+
 const FILE_PICKER_ID = 'plan-file';
 const FOLDER_PICKER_ID = 'plan-folder';
 const DEFAULT_FOLDER: WellKnownDirectory = 'documents';
@@ -44,7 +46,7 @@ async function getFileStartIn() {
 const filePickerTypes: FilePickerAcceptType[] = [
     {
         accept: { 'application/vnd.xivplancn.plan+json': '.xivplancn' },
-        description: 'XIVPlan Scene',
+        description: `${APP_TITLE} Scene`,
     },
 ];
 

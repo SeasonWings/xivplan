@@ -20,15 +20,18 @@ import { SpinButton } from '../SpinButton';
 import { SpinButtonUnits } from '../SpinButtonUnits';
 import { ThreeQuarterCircleFilled, ThreeQuarterCircleRegular } from '../icon/ThreeQuarterCircle';
 import {
+    ArenaShape,
     CustomRadialGrid,
     CustomRectangularGrid,
     DEFAULT_CUSTOM_RADIAL_GRID,
     DEFAULT_CUSTOM_RECT_GRID,
     DEFAULT_RADIAL_GRID,
     DEFAULT_RECT_GRID,
+    DEFAULT_TRI_GRID,
     Grid,
     GridType,
     NO_GRID,
+    TriangularGrid,
 } from '../scene';
 import { useControlStyles } from '../useControlStyles';
 
@@ -37,6 +40,19 @@ const CircleIcon = bundleIcon(CircleFilled, CircleRegular);
 const DataPieIcon = bundleIcon(ThreeQuarterCircleFilled, ThreeQuarterCircleRegular);
 const SquareIcon = bundleIcon(SquareFilled, SquareRegular);
 const GridIcon = bundleIcon(GridFilled, GridRegular);
+
+const TriangleGridIcon: React.FC = () => (
+    <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M12 4L21 20H3L12 4Z" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+        <path
+            d="M12 4L12 20M3 20L21 20M6 14H18"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1"
+            strokeLinejoin="round"
+        />
+    </svg>
+);
 
 function formatCustomGridRows(grid: Grid) {
     return grid.type === GridType.CustomRectangular ? grid.rows.join(' ') : '';
@@ -84,6 +100,7 @@ export const ArenaGridEdit: React.FC = () => {
     const { scene, dispatch } = useScene();
     const grid = scene.arena.grid;
     const { t } = useTranslation();
+    const isTriangleArena = scene.arena.shape === ArenaShape.Triangle;
 
     const setGrid = (grid: Grid, transient = false) => {
         dispatch({ type: 'arenaGrid', value: grid, transient });
@@ -114,6 +131,13 @@ export const ArenaGridEdit: React.FC = () => {
     }
 
     const onTypeChange = (option?: GridType) => {
+        if (isTriangleArena) {
+            if (option === GridType.Triangular) {
+                setGrid(DEFAULT_TRI_GRID);
+            }
+            return;
+        }
+
         switch (option) {
             case GridType.None:
                 setGrid(NO_GRID);
@@ -125,6 +149,10 @@ export const ArenaGridEdit: React.FC = () => {
 
             case GridType.Radial:
                 setGrid(DEFAULT_RADIAL_GRID);
+                break;
+
+            case GridType.Triangular:
+                setGrid(DEFAULT_TRI_GRID);
                 break;
 
             case GridType.CustomRectangular:
@@ -146,20 +174,58 @@ export const ArenaGridEdit: React.FC = () => {
             <Field label={t('arena.gridType')}>
                 <SegmentedGroup
                     name="arena-grid"
-                    value={grid.type}
-                    onChange={(ev, data) => onTypeChange(data.value as GridType)}
+                    value={isTriangleArena ? GridType.Triangular : grid.type}
+                    onChange={isTriangleArena ? undefined : (ev, data) => onTypeChange(data.value as GridType)}
                 >
-                    <Segment value={GridType.None} icon={<SquareHintIcon />} title={t('arena.none')} />
-                    <Segment value={GridType.Radial} icon={<CircleIcon />} title={t('arena.radial')} />
-                    <Segment value={GridType.CustomRadial} icon={<DataPieIcon />} title={t('arena.customRadial')} />
-                    <Segment value={GridType.Rectangular} icon={<SquareIcon />} title={t('arena.rectangular')} />
-                    <Segment
-                        value={GridType.CustomRectangular}
-                        icon={<GridIcon />}
-                        title={t('arena.customRectangular')}
-                    />
+                    {isTriangleArena ? (
+                        <Segment
+                            value={GridType.Triangular}
+                            icon={<TriangleGridIcon />}
+                            title={t('arena.triangular')}
+                        />
+                    ) : (
+                        <>
+                            <Segment value={GridType.None} icon={<SquareHintIcon />} title={t('arena.none')} />
+                            <Segment value={GridType.Radial} icon={<CircleIcon />} title={t('arena.radial')} />
+                            <Segment
+                                value={GridType.CustomRadial}
+                                icon={<DataPieIcon />}
+                                title={t('arena.customRadial')}
+                            />
+                            <Segment
+                                value={GridType.Rectangular}
+                                icon={<SquareIcon />}
+                                title={t('arena.rectangular')}
+                            />
+                            <Segment
+                                value={GridType.CustomRectangular}
+                                icon={<GridIcon />}
+                                title={t('arena.customRectangular')}
+                            />
+                        </>
+                    )}
                 </SegmentedGroup>
             </Field>
+            {grid.type === GridType.Triangular && (
+                <div className={classes.row}>
+                    <Field label={t('arena.divisions')}>
+                        <SpinButton
+                            min={1}
+                            max={6}
+                            step={1}
+                            value={
+                                (grid as TriangularGrid).level ??
+                                Math.max(1, Math.round(Math.log2(Math.max(1, (grid as TriangularGrid).divs ?? 2))))
+                            }
+                            onChange={(ev, data) => {
+                                if (data.value) {
+                                    setGrid({ type: GridType.Triangular, level: data.value });
+                                }
+                            }}
+                        />
+                    </Field>
+                </div>
+            )}
             {grid.type === GridType.Rectangular && (
                 <div className={classes.row}>
                     <Field label={t('arena.columns')}>

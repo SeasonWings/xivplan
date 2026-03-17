@@ -78,7 +78,7 @@
     "title": "关于",
     "close": "关闭",
     "xivplanCnDescription": {
-      "part1": "本站是基于 XIVPlan 项目进行汉化的版本，旨在为中文用户提供更好的使用体验。",
+      "part1": "本站是基于 {{appTitle}} 项目进行二次开发的版本，旨在为MMO玩家提供更好的使用体验。",
       "part2": "原项目信息如下："
     }
   },
@@ -420,6 +420,8 @@
     "shape": "场地形状",
     "padding": "边距",
     "gridType": "网格类型",
+    "divisions": "等分数",
+    "scaleNumber": "刻度数",
     "columns": "列",
     "rows": "行",
     "spokes": "辐条数",
@@ -441,8 +443,10 @@
     "none": "无",
     "circle": "圆形",
     "rectangle": "矩形",
+    "triangle": "三角形",
     "radial": "径向",
     "rectangular": "矩形网格",
+    "triangular": "三角网格",
     "customRadial": "自定义径向",
     "customRectangular": "自定义矩形",
     "backgroundImageUrl": "背景图片地址",

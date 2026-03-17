@@ -1,6 +1,7 @@
 import { Tab, TabList, Text } from '@fluentui/react-components';
-import React, { useState } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { useLocalStorage } from 'react-use';
 import { HotkeyName } from '../HotkeyName';
 import { MarkerArrow } from '../prefabs/Arrow';
 import { EnemyCircle, EnemyHuge, EnemyLarge, EnemyMedium, EnemySmall } from '../prefabs/Enemies';
@@ -235,13 +236,14 @@ const EnemiesAndTethersSection: React.FC<{ type: 'ff14' | 'zxsj' }> = ({ type })
 export const PrefabsPanel: React.FC = () => {
     const controlClasses = useControlStyles();
     const { t } = useTranslation();
-    const [selectedTab, setSelectedTab] = useState<'ff14' | 'zxsj'>('ff14');
+    const [selectedTabLS, setSelectedTabLS] = useLocalStorage<'ff14' | 'zxsj'>('prefabs.selectedTab', 'ff14');
+    const selectedTab = selectedTabLS ?? 'ff14';
 
     return (
         <div className={controlClasses.panel}>
             <TabList
                 selectedValue={selectedTab}
-                onTabSelect={(_, data) => setSelectedTab(data.value as 'ff14' | 'zxsj')}
+                onTabSelect={(_, data) => setSelectedTabLS(data.value as 'ff14' | 'zxsj')}
                 style={{ marginBottom: '10px' }}
             >
                 <Tab value="ff14">{t('prefabs.FF14')}</Tab>

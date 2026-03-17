@@ -21,6 +21,20 @@ const CircleIcon = bundleIcon(CircleFilled, CircleRegular);
 const SquareIcon = bundleIcon(SquareFilled, SquareRegular);
 const BorderNoneIcon = bundleIcon(BorderNoneFilled, BorderNoneRegular);
 
+const TriangleFilledIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+    <svg width="1em" height="1em" viewBox="0 0 24 24" aria-hidden="true" {...props}>
+        <path d="M12 4L21 20H3L12 4Z" fill="currentColor" />
+    </svg>
+);
+
+const TriangleRegularIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+    <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
+        <path d="M12 4L21 20H3L12 4Z" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+    </svg>
+);
+
+const TriangleIcon = bundleIcon(TriangleFilledIcon, TriangleRegularIcon);
+
 export const ArenaShapeEdit: React.FC = () => {
     const classes = useControlStyles();
     const { scene, dispatch } = useScene();
@@ -43,6 +57,7 @@ export const ArenaShapeEdit: React.FC = () => {
                         <Segment value={ArenaShape.None} icon={<BorderNoneIcon />} title={t('arena.none')} />
                         <Segment value={ArenaShape.Circle} icon={<CircleIcon />} title={t('arena.circle')} />
                         <Segment value={ArenaShape.Rectangle} icon={<SquareIcon />} title={t('arena.rectangle')} />
+                        <Segment value={ArenaShape.Triangle} icon={<TriangleIcon />} title={t('arena.triangle')} />
                     </SegmentedGroup>
                 </Field>
                 <Field label={t('arena.padding')} className={classes.cell}>
