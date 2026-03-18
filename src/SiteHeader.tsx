@@ -150,6 +150,48 @@ export const SiteHeader: React.FC<HTMLAttributes<HTMLElement>> = ({ className, .
         await logout();
     };
 
+    const toggleThemeWithTransition = (
+        e: React.MouseEvent | React.KeyboardEvent,
+        callback: () => void,
+        isShrinking = false,
+    ) => {
+        const x = 'clientX' in e ? e.clientX : window.innerWidth / 2;
+        const y = 'clientY' in e ? e.clientY : window.innerHeight / 2;
+
+        const endRadius = Math.hypot(Math.max(x, window.innerWidth - x), Math.max(y, window.innerHeight - y));
+
+        if (!document.startViewTransition) {
+            callback();
+            return;
+        }
+
+        if (isShrinking) {
+            document.documentElement.classList.add('theme-transition-shrinking');
+        }
+
+        const transition = document.startViewTransition(callback);
+
+        transition.finished.finally(() => {
+            document.documentElement.classList.remove('theme-transition-shrinking');
+        });
+
+        transition.ready.then(() => {
+            const clipPath = [`circle(0px at ${x}px ${y}px)`, `circle(${endRadius}px at ${x}px ${y}px)`];
+
+            document.documentElement.animate(
+                {
+                    clipPath: isShrinking ? [...clipPath].reverse() : clipPath,
+                },
+                {
+                    duration: 400,
+                    easing: 'ease-in-out',
+                    fill: 'both',
+                    pseudoElement: isShrinking ? '::view-transition-old(root)' : '::view-transition-new(root)',
+                },
+            );
+        });
+    };
+
     const titleSize = source ? 400 : 500;
 
     return (
@@ -203,7 +245,7 @@ export const SiteHeader: React.FC<HTMLAttributes<HTMLElement>> = ({ className, .
                             {paletteItems.map((item) => (
                                 <MenuItem
                                     key={item.value}
-                                    onClick={() => setPalette(item.value)}
+                                    onClick={(e) => toggleThemeWithTransition(e, () => setPalette(item.value))}
                                     aria-label={item.value}
                                 >
                                     <div
@@ -248,7 +290,7 @@ export const SiteHeader: React.FC<HTMLAttributes<HTMLElement>> = ({ className, .
                     appearance="subtle"
                     className={classes.iconButton}
                     icon={darkMode ? <WeatherSunnyFilled /> : <WeatherMoonFilled />}
-                    onClick={() => setDarkMode(!darkMode)}
+                    onClick={(e) => toggleThemeWithTransition(e, () => setDarkMode(!darkMode), darkMode)}
                 />
                 {/* 用户菜单 - 放在暗黑模式切换按钮右侧 */}
                 <Menu positioning="below-end">

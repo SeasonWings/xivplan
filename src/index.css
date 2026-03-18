@@ -80,3 +80,26 @@ code {
     background-color: rgba(255, 255, 255, 0.3);
   }
 }
+
+/* View Transitions Theme Circle Ripple Effect */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+::view-transition-old(root) {
+  z-index: 1;
+}
+
+::view-transition-new(root) {
+  z-index: 9999;
+}
+
+.theme-transition-shrinking::view-transition-old(root) {
+  z-index: 9999;
+}
+
+.theme-transition-shrinking::view-transition-new(root) {
+  z-index: 1;
+}

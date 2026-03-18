@@ -12,7 +12,15 @@ export const ThemeProvider: React.FC<PropsWithChildren> = ({ children }) => {
 
     // TODO: remove this hack once https://github.com/microsoft/fluentui/issues/31211 is implemented.
     useEffect(() => {
-        document.documentElement.className = darkMode ? classes.dark : classes.light;
+        const darkClasses = classes.dark.split(' ').filter(Boolean);
+        const lightClasses = classes.light.split(' ').filter(Boolean);
+        if (darkMode) {
+            document.documentElement.classList.add(...darkClasses);
+            document.documentElement.classList.remove(...lightClasses);
+        } else {
+            document.documentElement.classList.add(...lightClasses);
+            document.documentElement.classList.remove(...darkClasses);
+        }
     }, [classes, darkMode]);
 
     return (
