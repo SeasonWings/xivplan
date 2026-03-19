@@ -104,6 +104,7 @@ import {
 import { ZoneProximityZXSJ } from '../prefabs/zxsj/ZoneProximityZXSJ';
 import { ZoneTowerZXSJ } from '../prefabs/zxsj/ZoneTowerZXSJ';
 import { useControlStyles } from '../useControlStyles';
+import { CustomAssetsSection } from './CustomAssetsSection';
 import { ObjectGroup, Section } from './Section';
 
 const ZonesAndWaymarksSection: React.FC<{ extraZones?: React.ReactNode; type: 'ff14' | 'zxsj' }> = ({
@@ -236,18 +237,22 @@ const EnemiesAndTethersSection: React.FC<{ type: 'ff14' | 'zxsj' }> = ({ type })
 export const PrefabsPanel: React.FC = () => {
     const controlClasses = useControlStyles();
     const { t } = useTranslation();
-    const [selectedTabLS, setSelectedTabLS] = useLocalStorage<'ff14' | 'zxsj'>('prefabs.selectedTab', 'ff14');
+    const [selectedTabLS, setSelectedTabLS] = useLocalStorage<'ff14' | 'zxsj' | 'custom'>(
+        'prefabs.selectedTab',
+        'ff14',
+    );
     const selectedTab = selectedTabLS ?? 'ff14';
 
     return (
         <div className={controlClasses.panel}>
             <TabList
                 selectedValue={selectedTab}
-                onTabSelect={(_, data) => setSelectedTabLS(data.value as 'ff14' | 'zxsj')}
+                onTabSelect={(_, data) => setSelectedTabLS(data.value as 'ff14' | 'zxsj' | 'custom')}
                 style={{ marginBottom: '10px' }}
             >
                 <Tab value="ff14">{t('prefabs.FF14')}</Tab>
                 <Tab value="zxsj">{t('prefabs.ZXSJ')}</Tab>
+                <Tab value="custom">{t('prefabs.custom', '自定义')}</Tab>
             </TabList>
 
             {selectedTab === 'ff14' && (
@@ -306,7 +311,7 @@ export const PrefabsPanel: React.FC = () => {
                             <PartyDancer />
                         </ObjectGroup>
                     </Section>
-                    <EnemiesAndTethersSection type="zxsj" />
+                    <EnemiesAndTethersSection type="ff14" />
                 </>
             )}
 
@@ -342,6 +347,8 @@ export const PrefabsPanel: React.FC = () => {
                     <EnemiesAndTethersSection type="zxsj" />
                 </>
             )}
+
+            {selectedTab === 'custom' && <CustomAssetsSection />}
         </div>
     );
 };

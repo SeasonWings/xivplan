@@ -297,6 +297,7 @@
     "omnidirectional": "全向",
     "noDirection": "无方向",
     "imageUrl": "图片地址",
+    "uploadImage": "上传图片",
     "duration": "持续时间",
     "stacks": "层数",
     "playerCount": "玩家数量",
@@ -397,12 +398,15 @@
     "jian": "剑点名"
   },
   "prefabs": {
-    "zones": "机制",
+    "FF14": "FF14",
+    "ZXSJ": "诛仙世界",
+    "custom": "自定义",
+    "customImages": "自定义图案",
+    "customImagesLimit": "每个人最多上传 10 个图片 ({{count}}/10)",
+    "zones": "区域",
     "waymarks": "场标",
     "common": "共通",
     "party": "友方",
-    "FF14": "最终幻想14",
-    "ZXSJ": "诛仙世界",
     "enemies": "敌方",
     "tethers": "连线",
     "tethersHelp": {
@@ -653,7 +657,8 @@
     "error": {
       "parseError": "数据解析失败,请稍后重试",
       "downloadError": "下载失败,请稍后重试",
-      "noSceneData": "战术板数据不存在"
+      "noSceneData": "战术板数据不存在",
+      "fileTooLarge": "文件太大，最大支持 5MB"
     }
   },
   "auth": {

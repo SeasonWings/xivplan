@@ -23,6 +23,7 @@ module.exports = function setupHttpApp(app, { baseDir, logger, routes }) {
     app.use('/api/auth', authLimiter, routes.auth);
     app.use('/api/community', routes.community);
     app.use('/api/feedback', routes.feedback);
+    app.use('/api/user-assets', routes.userAsset);
 
     app.get('/api/health', (_req, res) => {
         res.json({ status: 'ok', timestamp: new Date().toISOString() });

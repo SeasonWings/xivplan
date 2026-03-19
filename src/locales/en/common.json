@@ -295,8 +295,9 @@
     "ringStyle": "Ring style",
     "directional": "Directional",
     "omnidirectional": "Omnidirectional",
-    "noDirection": "No direction",
+    "noDirection": "No Direction",
     "imageUrl": "Image URL",
+    "uploadImage": "Upload Image",
     "duration": "Duration",
     "stacks": "Stacks",
     "playerCount": "Player count",
@@ -401,8 +402,11 @@
     "waymarks": "Waymarks",
     "common": "Common",
     "party": "Party",
-    "FF14": "FINAL FANTASY XIV",
-    "ZXSJ": "World of Jade Dynasty",
+    "FF14": "FF14",
+    "ZXSJ": "ZXSJ",
+    "custom": "Custom",
+    "customImages": "Custom Images",
+    "customImagesLimit": "Max 10 images per user ({{count}}/10)",
     "enemies": "Enemies",
     "tethers": "Tethers",
     "tethersHelp": {
@@ -650,7 +654,8 @@
     "error": {
       "parseError": "Failed to parse data, please try again later",
       "downloadError": "Download failed, please try again later",
-      "noSceneData": "Plan data not found"
+      "noSceneData": "Tactics board data does not exist",
+      "fileTooLarge": "File too large, maximum supported is 5MB"
     }
   },
   "auth": {

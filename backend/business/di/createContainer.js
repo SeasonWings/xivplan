@@ -7,15 +7,19 @@ const createUserRepository = require('../models/userRepository');
 const createVerificationCodeRepository = require('../models/verificationCodeRepository');
 const createFeedbackRepository = require('../models/feedbackRepository');
 const createTokenBlacklistRepository = require('../models/tokenBlacklistRepository');
+const createUserAssetRepository = require('../models/userAssetRepository');
 const createAuthService = require('../services/authService');
 const createCommunityService = require('../services/communityService');
 const createFeedbackService = require('../services/feedbackService');
+const createUserAssetService = require('../services/userAssetService');
 const createAuthController = require('../controllers/authController');
 const createCommunityController = require('../controllers/communityController');
 const createFeedbackController = require('../controllers/feedbackController');
+const createUserAssetController = require('../controllers/userAssetController');
 const createAuthRoutes = require('../routes/authRoutes');
 const createCommunityRoutes = require('../routes/communityRoutes');
 const createFeedbackRoutes = require('../routes/feedbackRoutes');
+const createUserAssetRoutes = require('../routes/userAssetRoutes');
 const createAuthenticate = require('../middleware/authenticate');
 const createRequireAdmin = require('../middleware/requireAdmin');
 
@@ -29,6 +33,7 @@ module.exports = function createContainer({ pool, logger, env, overrides }) {
         tokenBlacklist: createTokenBlacklistRepository(pool),
         user: createUserRepository(pool),
         verificationCode: createVerificationCodeRepository(pool),
+        userAsset: createUserAssetRepository(pool),
     };
 
     const middleware = {
@@ -67,12 +72,18 @@ module.exports = function createContainer({ pool, logger, env, overrides }) {
             jwt,
             jwtSecret: config.jwtSecret,
         }),
+        userAsset: createUserAssetService({
+            userAssetRepository: repositories.userAsset,
+            cosConfig: config.cos,
+            logger,
+        }),
     };
 
     const controllers = {
         auth: createAuthController({ authService: services.auth }),
         community: createCommunityController({ communityService: services.community }),
         feedback: createFeedbackController({ feedbackService: services.feedback }),
+        userAsset: createUserAssetController({ userAssetService: services.userAsset, logger }),
     };
 
     const routes = {
@@ -85,6 +96,10 @@ module.exports = function createContainer({ pool, logger, env, overrides }) {
             feedbackController: controllers.feedback,
             authenticate: middleware.authenticate,
             requireAdmin: middleware.requireAdmin,
+        }),
+        userAsset: createUserAssetRoutes({
+            userAssetController: controllers.userAsset,
+            authenticate: middleware.authenticate,
         }),
     };
 
