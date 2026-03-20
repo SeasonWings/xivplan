@@ -1,5 +1,4 @@
 const COS = require('cos-nodejs-sdk-v5');
-const crypto = require('crypto');
 const path = require('path');
 
 module.exports = function createUserAssetService({ userAssetRepository, cosConfig, logger }) {
@@ -16,10 +15,13 @@ module.exports = function createUserAssetService({ userAssetRepository, cosConfi
                 throw new Error('Upload limit reached (max 10 images per user)');
             }
 
-            // 2. 生成唯一文件名
+            // 2. 生成唯一且可读的文件名，避免中文乱码和特殊字符问题
             const ext = path.extname(originalName) || '.png';
-            const randomName = crypto.randomBytes(16).toString('hex') + ext;
-            const cosPath = `xivplan/user-assets/${userId}/${randomName}`;
+            const baseName = path.basename(originalName, ext);
+            // 移除非法字符，只保留字母、数字、下划线和中文字符
+            const safeBaseName = baseName.replace(/[^a-zA-Z0-9_\u4e00-\u9fa5]/g, '_').substring(0, 50);
+            const uniqueName = `${Date.now()}_${safeBaseName}${ext}`;
+            const cosPath = `xivplan/user-assets/${userId}/${uniqueName}`;
 
             // 3. 上传到 COS
             return new Promise((resolve, reject) => {

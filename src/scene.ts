@@ -608,13 +608,13 @@ export const DEFAULT_TRI_TICKS: TriangularTicks = {
     level: 4,
 };
 
-export const DEFAULT_ARENA_PADDING = 120;
+export const DEFAULT_ARENA_PADDING = 90;
 
 export const DEFAULT_ARENA: Arena = {
     shape: ArenaShape.Rectangle,
     width: 600,
     height: 600,
-    padding: 120,
+    padding: 90,
     grid: DEFAULT_RECT_GRID,
 };
 

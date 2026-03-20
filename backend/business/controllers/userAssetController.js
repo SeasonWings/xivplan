@@ -12,7 +12,9 @@ module.exports = function createUserAssetController({ userAssetService, logger }
             }
 
             try {
-                const result = await userAssetService.uploadAsset(userId, file, file.originalname);
+                // Fix for originalname encoding issue with multer (it might be decoded as latin1)
+                const originalname = Buffer.from(file.originalname, 'latin1').toString('utf8');
+                const result = await userAssetService.uploadAsset(userId, file, originalname);
                 res.status(201).json(result);
             } catch (err) {
                 logger.error('Asset Upload Controller Error', err);
