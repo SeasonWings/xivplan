@@ -21,6 +21,7 @@ import {
 import { useKonvaCache } from '../useKonvaCache';
 import { usePanelDrag } from '../usePanelDrag';
 import { makeDisplayName } from '../util';
+import { wrapImageUrl } from '../util/cos';
 import { HideGroup } from './HideGroup';
 import { PrefabIcon } from './PrefabIcon';
 import { RadiusObjectContainer } from './RadiusObjectContainer';
@@ -46,7 +47,7 @@ const SHADOW_BLUR_MIN = 2;
 function makeIcon(defaultNameKey: string, icon: string, radius: number, hasDirection = true) {
     const Component: React.FC = () => {
         const [, setDragObject] = usePanelDrag();
-        const iconUrl = `/actor/${icon}`;
+        const iconUrl = wrapImageUrl(`/actor/${icon}`);
         const { t } = useTranslation();
 
         return (

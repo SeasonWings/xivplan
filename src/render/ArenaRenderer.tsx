@@ -29,6 +29,7 @@ import { getArenaShapeConfig, getGridShapeConfig, useSceneTheme, useSceneThemeHt
 import { useImageTracked } from '../useObjectLoading';
 import { useStyledSvg } from '../useStyledSvg';
 import { degtorad, getLinearGridDivs, getUrlFileExtension } from '../util';
+import { wrapImageUrl } from '../util/cos';
 import { ArenaTickRenderer } from './ArenaTickRenderer';
 
 export interface ArenaRendererProps {
@@ -119,7 +120,7 @@ const ArenaClip: React.FC<PropsWithChildren> = ({ children }) => {
 const BackgroundImage: React.FC = () => {
     const { scene } = useScene();
 
-    const url = scene.arena.backgroundImage ?? '';
+    const url = wrapImageUrl(scene.arena.backgroundImage ?? '');
     const ext = getUrlFileExtension(url);
 
     if (!url) {

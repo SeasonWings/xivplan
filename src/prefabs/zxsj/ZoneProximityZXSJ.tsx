@@ -10,6 +10,7 @@ import { LayerName } from '../../render/layers';
 import { CircleZone, ObjectType } from '../../scene';
 import { useImageTracked } from '../../useObjectLoading';
 import { usePanelDrag } from '../../usePanelDrag';
+import { wrapImageUrl } from '../../util/cos';
 import { HideGroup } from '../HideGroup';
 import { PrefabIcon } from '../PrefabIcon';
 import { RadiusObjectContainer } from '../RadiusObjectContainer';
@@ -164,7 +165,7 @@ export const ZoneProximityZXSJ: React.FC = () => {
     const [, setDragObject] = usePanelDrag();
 
     const name = t('objects.proximity', { defaultValue: 'Proximity AOE' });
-    const icon = '/marker/zxsj/proximity_zxsj.png';
+    const icon = wrapImageUrl('/marker/zxsj/proximity_zxsj.png');
     const defaultColor = '#ff0000';
 
     return (
@@ -220,7 +221,7 @@ registerDropHandler<CircleZone>(ObjectType.ProximityZXSJ, (object, position) => 
 
 const ProximityZXSJRenderer: React.FC<RendererProps<CircleZone>> = ({ object }) => {
     const highlightProps = useHighlightProps(object);
-    const [image] = useImageTracked('/marker/zxsj/proximity_zxsj.png');
+    const [image] = useImageTracked(wrapImageUrl('/marker/zxsj/proximity_zxsj.png'));
     const radius = object.radius;
     // @ts-expect-error: CircleZone does not have innerRadius
     const innerRadius = object.innerRadius ?? 60;
@@ -286,8 +287,8 @@ const ProximityZXSJDetails: React.FC<ListComponentProps<CircleZone>> = ({ object
                         width: '100%',
                         height: '100%',
                         backgroundColor: object.color,
-                        maskImage: `url(/marker/zxsj/proximity_zxsj.png)`,
-                        WebkitMaskImage: `url(/marker/zxsj/proximity_zxsj.png)`,
+                        maskImage: `url(${wrapImageUrl('/marker/zxsj/proximity_zxsj.png')})`,
+                        WebkitMaskImage: `url(${wrapImageUrl('/marker/zxsj/proximity_zxsj.png')})`,
                         maskSize: 'contain',
                         WebkitMaskSize: 'contain',
                         maskRepeat: 'no-repeat',

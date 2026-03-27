@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { getDragOffset } from '../../DropHandler';
 import { ObjectType } from '../../scene';
 import { usePanelDrag } from '../../usePanelDrag';
+import { wrapImageUrl } from '../../util/cos';
 import { PrefabIcon } from '../PrefabIcon';
 
 export const StatusJu: React.FC = () => {
@@ -10,7 +11,7 @@ export const StatusJu: React.FC = () => {
 
     const defaultNameKey = 'statusIcons.ju';
     const name = t(defaultNameKey, { defaultValue: 'Loneliness' });
-    const icon = '/marker/zxsj/ju.png';
+    const icon = wrapImageUrl('/marker/zxsj/ju.png');
     const defaultColor = '#0066ff';
 
     return (

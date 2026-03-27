@@ -1,5 +1,6 @@
 import { Image, ImageProps, makeStyles, mergeClasses } from '@fluentui/react-components';
 import React, { CSSProperties, ReactNode } from 'react';
+import { wrapImageUrl } from '../util/cos';
 import { PREFAB_ICON_SIZE } from './PrefabIconStyles';
 
 export interface PrefabIconProps extends Omit<ImageProps, 'width' | 'height'> {
@@ -39,7 +40,7 @@ export const PrefabIcon: React.FC<PrefabIconProps> = ({
             onDragStart={onDragStart}
             title={title ?? name}
         >
-            {typeof icon === 'string' ? <Image {...props} fit="contain" src={icon} /> : icon}
+            {typeof icon === 'string' ? <Image {...props} fit="contain" src={wrapImageUrl(icon)} /> : icon}
         </div>
     );
 };

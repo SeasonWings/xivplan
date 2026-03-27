@@ -16,10 +16,12 @@ const createAuthController = require('../controllers/authController');
 const createCommunityController = require('../controllers/communityController');
 const createFeedbackController = require('../controllers/feedbackController');
 const createUserAssetController = require('../controllers/userAssetController');
+const createConfigController = require('../controllers/configController');
 const createAuthRoutes = require('../routes/authRoutes');
 const createCommunityRoutes = require('../routes/communityRoutes');
 const createFeedbackRoutes = require('../routes/feedbackRoutes');
 const createUserAssetRoutes = require('../routes/userAssetRoutes');
+const createConfigRoutes = require('../routes/configRoutes');
 const createAuthenticate = require('../middleware/authenticate');
 const createRequireAdmin = require('../middleware/requireAdmin');
 
@@ -84,6 +86,7 @@ module.exports = function createContainer({ pool, logger, env, overrides }) {
         community: createCommunityController({ communityService: services.community }),
         feedback: createFeedbackController({ feedbackService: services.feedback }),
         userAsset: createUserAssetController({ userAssetService: services.userAsset, logger }),
+        config: createConfigController({ cosConfig: config.cos }),
     };
 
     const routes = {
@@ -100,6 +103,9 @@ module.exports = function createContainer({ pool, logger, env, overrides }) {
         userAsset: createUserAssetRoutes({
             userAssetController: controllers.userAsset,
             authenticate: middleware.authenticate,
+        }),
+        config: createConfigRoutes({
+            configController: controllers.config,
         }),
     };
 

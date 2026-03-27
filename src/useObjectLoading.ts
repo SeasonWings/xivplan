@@ -1,6 +1,7 @@
 import { useContext, useEffect, useId } from 'react';
 import useImage from 'use-image';
 import { ObjectLoadingContext } from './ObjectLoadingContext';
+import { wrapImageUrl } from './util/cos';
 
 /**
  * Delays taking a screenshot until loading == false.
@@ -27,9 +28,10 @@ type UseImageType = typeof useImage;
  * and crossOrigin defaults to "anonymous" to avoid tainting the canvas.
  */
 export const useImageTracked: UseImageType = (url, crossOrigin = 'anonymous', referrerPolicy = undefined) => {
-    const [image, status] = useImage(url, crossOrigin, referrerPolicy);
+    const wrappedUrl = url ? wrapImageUrl(url) : url;
+    const [image, status] = useImage(wrappedUrl, crossOrigin, referrerPolicy);
 
-    useObjectLoading(!!url && status === 'loading');
+    useObjectLoading(!!wrappedUrl && status === 'loading');
 
     return [image, status];
 };

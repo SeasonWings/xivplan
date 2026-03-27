@@ -4,6 +4,7 @@ import { getDragOffset } from '../../DropHandler';
 import { ObjectType } from '../../scene';
 import { DEFAULT_MARKER_OPACITY } from '../../theme';
 import { usePanelDrag } from '../../usePanelDrag';
+import { wrapImageUrl } from '../../util/cos';
 import { PrefabIcon } from '../PrefabIcon';
 
 function loadImage(url: string): Promise<HTMLImageElement> {
@@ -57,7 +58,7 @@ async function composeDigitsImage(digits: number[]) {
     if (digits.length === 0) {
         return '';
     }
-    const urls = digits.map((d) => `/marker/zxsj/waymark/T_d_shuzi_${d}.png`);
+    const urls = digits.map((d) => wrapImageUrl(`/marker/zxsj/waymark/T_d_shuzi_${d}.png`));
     const imgs = await Promise.all(urls.map((u) => loadImage(u)));
     const crops = imgs.map((img) => cropByAlpha(img));
 
@@ -92,8 +93,8 @@ function makeZxsjWaymark(n: number, digit: number, menuIcon: string, defaultColo
         const [, setDragObject] = usePanelDrag();
         const defaultNameKey = `objects.zxsjWaymark${n}`;
         const name = t(defaultNameKey, { defaultValue: `ZXSJ Waymark ${n}` });
-        const iconUrl = `/marker/zxsj/waymark/T_d_shuzi_${digit}.png`;
-        const menuIconUrl = `/marker/zxsj/waymark/icon/${menuIcon}`;
+        const iconUrl = wrapImageUrl(`/marker/zxsj/waymark/T_d_shuzi_${digit}.png`);
+        const menuIconUrl = wrapImageUrl(`/marker/zxsj/waymark/icon/${menuIcon}`);
         const [compositeUrl, setCompositeUrl] = useState<string | null>(null);
 
         const digits = useMemo(() => compositeDigits ?? null, []);

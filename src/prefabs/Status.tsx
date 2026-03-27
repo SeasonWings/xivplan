@@ -1,12 +1,20 @@
 import { useTranslation } from 'react-i18next';
 import { makeDisplayName } from '../util';
+import { wrapImageUrl } from '../util/cos';
 import { StatusIcon } from './StatusIcon';
 
 function makeIcon(defaultNameKey: string, icon: string, scale?: number) {
     const Component: React.FC = () => {
         const { t } = useTranslation();
         const name = t(defaultNameKey);
-        return <StatusIcon name={name} defaultNameKey={defaultNameKey} icon={`/marker/${icon}`} scale={scale} />;
+        return (
+            <StatusIcon
+                name={name}
+                defaultNameKey={defaultNameKey}
+                icon={wrapImageUrl(`/marker/${icon}`)}
+                scale={scale}
+            />
+        );
     };
     Component.displayName = makeDisplayName(defaultNameKey);
     return Component;

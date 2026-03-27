@@ -20,6 +20,7 @@ import {
 import { useImageTracked } from '../useObjectLoading';
 import { usePanelDrag } from '../usePanelDrag';
 import { makeDisplayName } from '../util';
+import { wrapImageUrl } from '../util/cos';
 import { HideGroup } from './HideGroup';
 import { PrefabIcon } from './PrefabIcon';
 import { ResizeableObjectContainer } from './ResizeableObjectContainer';
@@ -31,7 +32,7 @@ const ICON_RATIO = 32 / DEFAULT_SIZE;
 function makeIcon(defaultNameKey: string, icon: string, shape: 'circle' | 'square', color: string) {
     const Component: React.FC = () => {
         const [, setDragObject] = usePanelDrag();
-        const iconUrl = `/marker/${icon}`;
+        const iconUrl = wrapImageUrl(`/marker/${icon}`);
         const { t } = useTranslation();
         const name = t(defaultNameKey);
 

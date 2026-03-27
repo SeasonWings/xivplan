@@ -1,3 +1,5 @@
+import { wrapImageUrl } from './util/cos';
+
 export interface JobProps {
     defaultNameKey: string; // i18n key
     icon: string;
@@ -121,5 +123,5 @@ export function getJob(job: Job): JobProps {
 }
 
 export function getJobIconUrl(icon: string): string {
-    return `/actor/${icon}`;
+    return wrapImageUrl(`/actor/${icon}`);
 }

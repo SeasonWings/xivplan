@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { getDragOffset } from '../../DropHandler';
 import { ObjectType } from '../../scene';
 import { usePanelDrag } from '../../usePanelDrag';
+import { wrapImageUrl } from '../../util/cos';
 import { PrefabIcon } from '../PrefabIcon';
 
 export const StatusJian: React.FC = () => {
@@ -9,9 +10,9 @@ export const StatusJian: React.FC = () => {
     const [, setDragObject] = usePanelDrag();
 
     const defaultNameKey = 'statusIcons.jian';
-    const name = t(defaultNameKey, { defaultValue: 'Sword Mark' });
-    const icon = '/marker/zxsj/jian.png';
-    const defaultColor = '#ff0000';
+    const name = t(defaultNameKey);
+    const icon = wrapImageUrl('/marker/zxsj/jian.png');
+    const defaultColor = '#0066ff';
 
     return (
         <PrefabIcon

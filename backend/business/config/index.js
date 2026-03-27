@@ -11,6 +11,7 @@ module.exports = function getConfig(env = process.env) {
             bucket: env.COS_BUCKET,
             region: env.COS_REGION,
             domain: env.COS_DOMAIN, // Optional custom domain
+            baseUrl: env.COS_BASE_URL || '', // Default COS base URL
         },
     };
 };

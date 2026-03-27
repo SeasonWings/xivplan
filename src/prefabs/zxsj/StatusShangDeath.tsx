@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { getDragOffset } from '../../DropHandler';
 import { ObjectType } from '../../scene';
 import { usePanelDrag } from '../../usePanelDrag';
+import { wrapImageUrl } from '../../util/cos';
 import { PrefabIcon } from '../PrefabIcon';
 
 export const StatusShangDeath: React.FC = () => {
@@ -10,7 +11,7 @@ export const StatusShangDeath: React.FC = () => {
 
     const defaultNameKey = 'statusIcons.shang';
     const name = t(defaultNameKey);
-    const icon = '/marker/zxsj/shang.png';
+    const icon = wrapImageUrl('/marker/zxsj/shang.png');
     const defaultColor = '#ff0000';
 
     return (
