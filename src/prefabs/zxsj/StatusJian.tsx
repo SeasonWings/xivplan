@@ -1,6 +1,8 @@
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getDragOffset } from '../../DropHandler';
 import { ObjectType } from '../../scene';
+import { useImageTracked } from '../../useObjectLoading';
 import { usePanelDrag } from '../../usePanelDrag';
 import { wrapImageUrl } from '../../util/cos';
 import { PrefabIcon } from '../PrefabIcon';
@@ -11,7 +13,12 @@ export const StatusJian: React.FC = () => {
 
     const defaultNameKey = 'statusIcons.jian';
     const name = t(defaultNameKey);
-    const icon = wrapImageUrl('/marker/zxsj/jian.png');
+    const iconPath = '/marker/zxsj/jian.png';
+    // 使用 useImageTracked 确保图片加载并在加载完成后显示
+    const [image] = useImageTracked(iconPath);
+    void image; // 仅用于触发加载跟踪，不直接使用变量
+
+    const icon = useMemo(() => wrapImageUrl(iconPath), [iconPath]);
     const defaultColor = '#0066ff';
 
     return (

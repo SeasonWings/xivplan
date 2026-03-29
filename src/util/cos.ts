@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import config from '../config';
 
 export interface CosConfig {
@@ -5,29 +6,72 @@ export interface CosConfig {
     enabled: boolean;
 }
 
-// 初始配置为禁用状态
-let currentCosConfig: CosConfig = {
-    baseUrl: '',
-    enabled: false,
-};
+const COS_CONFIG_KEY = 'xivplan_cos_config';
+
+// 尝试从 localStorage 加载初始配置，以便在页面刷新时能立即使用上次的配置
+function loadInitialConfig(): CosConfig {
+    try {
+        const saved = localStorage.getItem(COS_CONFIG_KEY);
+        if (saved) {
+            const config = JSON.parse(saved);
+            if (config && config.baseUrl) {
+                return config;
+            }
+        }
+    } catch (e) {
+        console.warn('Failed to load COS config from localStorage', e);
+    }
+    return {
+        baseUrl: '',
+        enabled: false,
+    };
+}
+
+// 初始配置
+let currentCosConfig: CosConfig = loadInitialConfig();
+
+type Listener = (config: CosConfig) => void;
+const listeners = new Set<Listener>();
+
+function notify() {
+    for (const listener of listeners) {
+        listener(currentCosConfig);
+    }
+}
 
 /**
  * 初始化 COS 配置
  * 仅从后端获取配置，如果失败则不启用 COS 替换
  */
 export async function initCosConfig(): Promise<void> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000); // 3秒超时
+
     try {
-        const response = await fetch(`${config.api.baseUrl}/config/cos`);
+        const response = await fetch(`${config.api.baseUrl}/config/cos`, {
+            signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+
         if (response.ok) {
             const data = await response.json();
             if (data && data.baseUrl) {
                 currentCosConfig = data;
-                console.log('COS configuration loaded from backend:', currentCosConfig);
+                // 将最新配置同步到 localStorage
+                localStorage.setItem(COS_CONFIG_KEY, JSON.stringify(data));
+                console.log('COS configuration loaded from backend and persisted:', currentCosConfig);
+                notify();
                 return;
             }
         }
-    } catch (error) {
-        console.warn('Failed to fetch COS config from backend:', error);
+    } catch (error: unknown) {
+        if (error instanceof Error && error.name === 'AbortError') {
+            console.warn('COS config fetch timed out');
+        } else {
+            console.warn('Failed to fetch COS config from backend:', error);
+        }
+    } finally {
+        clearTimeout(timeoutId);
     }
 }
 
@@ -39,6 +83,23 @@ export function getCosConfig(): CosConfig {
 }
 
 /**
+ * React Hook for using COS config, automatically re-renders when config changes.
+ */
+export function useCosConfig(): CosConfig {
+    const [cfg, setCfg] = useState(currentCosConfig);
+
+    useEffect(() => {
+        const listener: Listener = (newCfg) => setCfg({ ...newCfg });
+        listeners.add(listener);
+        return () => {
+            listeners.delete(listener);
+        };
+    }, []);
+
+    return cfg;
+}
+
+/**
  * 重置 COS 配置（仅用于测试）
  */
 export function _resetCosConfig(): void {
@@ -46,6 +107,7 @@ export function _resetCosConfig(): void {
         baseUrl: '',
         enabled: false,
     };
+    notify();
 }
 
 /**

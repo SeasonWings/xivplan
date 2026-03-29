@@ -214,6 +214,7 @@ const Controls: React.FC = () => {
                     obj.type === ObjectType.LineKnockAway ||
                     obj.type === ObjectType.Proximity ||
                     obj.type === ObjectType.ProximityZXSJ ||
+                    obj.type === ObjectType.ArrowZXSJ ||
                     obj.type === ObjectType.Knockback ||
                     obj.type === ObjectType.RotateCW ||
                     obj.type === ObjectType.RotateCCW
