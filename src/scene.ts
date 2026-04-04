@@ -28,6 +28,7 @@ export enum ObjectType {
     Undefined = '',
     Arc = 'arc',
     Arrow = 'arrow',
+    ArrowZXSJ = 'arrowZXSJ',
     Circle = 'circle',
     Cone = 'cone',
     Cursor = 'cursor',

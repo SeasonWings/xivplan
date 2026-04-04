@@ -1,5 +1,4 @@
-import Konva from 'konva';
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Circle, Group, Image as KonvaImage } from 'react-konva';
 import { getDragOffset, registerDropHandler } from '../../DropHandler';
@@ -77,12 +76,10 @@ function useProcessedImage(image: HTMLImageElement | undefined, targetColor: str
                 data[i + 3] = 0; // Alpha = 0
             } else {
                 // 否则，染成目标颜色，保留原有的 Alpha（如果是半透明纹理）
-                // 这里我们假设非背景区域就是纹理，直接染色
                 if (a !== undefined && a > 0) {
                     data[i] = tr;
                     data[i + 1] = tg;
                     data[i + 2] = tb;
-                    // Alpha 保持不变，或者可以根据亮度调整
                 }
             }
         }
@@ -92,86 +89,17 @@ function useProcessedImage(image: HTMLImageElement | undefined, targetColor: str
     }, [image, targetColor]);
 }
 
-interface ProximityRippleProps {
-    startRadius: number; // 新增：起始半径
-    endRadius: number; // 新增：结束半径 (原 radius)
-    color: string;
-    animated?: boolean;
-}
-
-const SingleRipple: React.FC<ProximityRippleProps> = ({ startRadius, endRadius, color, animated }) => {
-    const circleRef = useRef<Konva.Circle>(null);
-
-    useEffect(() => {
-        const node = circleRef.current;
-        if (!node) return;
-
-        if (!animated) {
-            node.visible(false);
-            return;
-        }
-
-        const duration = 1000; // 动画时长
-        const delay = 400; // 延迟时间
-        const totalDuration = duration + delay;
-
-        const anim = new Konva.Animation((frame) => {
-            if (!frame) return;
-
-            // 当前在整个周期中的时间
-            const timeInCycle = frame.time % totalDuration;
-
-            if (timeInCycle < duration) {
-                node.visible(true);
-                // 在动画时间内：正常播放 (0 ~ 1)
-                const time = timeInCycle / duration;
-
-                // 半径：从 startRadius 到 endRadius
-                const currentRadius = startRadius + time * (endRadius - startRadius);
-                node.radius(currentRadius);
-
-                // 透明度曲线：前90%保持最大透明度，最后10%快速消失
-                let opacity = 0.6;
-                if (time > 0.9) {
-                    opacity = 0.6 * (1 - (time - 0.9) / 0.1);
-                }
-                node.opacity(opacity);
-
-                // 线宽：起始5，缓慢变细，结束时约为2.5
-                node.strokeWidth(5 * (1 - time * 0.5));
-            } else {
-                // 在延迟时间内：隐藏
-                node.visible(false);
-            }
-        }, node.getLayer());
-
-        anim.start();
-
-        return () => {
-            anim.stop();
-        };
-    }, [startRadius, endRadius, animated]); // 依赖项更新
-
-    return <Circle ref={circleRef} radius={startRadius} stroke={color} strokeWidth={0} opacity={0} listening={false} />;
-};
-
-// 不再需要 Group，直接导出 SingleRipple 或改名
-const ProximityRipple: React.FC<ProximityRippleProps> = (props) => {
-    return <SingleRipple {...props} />;
-};
-
-export const ZoneProximityZXSJ: React.FC = () => {
+export const ZoneArrowZXSJ: React.FC = () => {
     const { t } = useTranslation();
     const [, setDragObject] = usePanelDrag();
 
-    const name = t('objects.proximity', { defaultValue: 'Proximity AOE' });
-    const iconPath = '/marker/zxsj/proximity_zxsj.png';
-    // 使用 useImageTracked 确保图片加载并在加载完成后显示
+    const name = t('objects.arrowZXSJ');
+    const iconPath = '/marker/zxsj/fangxiangjiantou.png';
     const [image] = useImageTracked(iconPath);
-    void image; // 仅用于触发加载跟踪，不直接使用变量
+    void image;
 
     const icon = useMemo(() => wrapImageUrl(iconPath), [iconPath]);
-    const defaultColor = '#ff0000';
+    const defaultColor = '#ff6600';
 
     return (
         <PrefabIcon
@@ -197,7 +125,7 @@ export const ZoneProximityZXSJ: React.FC = () => {
             onDragStart={(e) => {
                 setDragObject({
                     object: {
-                        type: ObjectType.ProximityZXSJ,
+                        type: ObjectType.ArrowZXSJ,
                     },
                     offset: getDragOffset(e),
                 });
@@ -206,16 +134,14 @@ export const ZoneProximityZXSJ: React.FC = () => {
     );
 };
 
-registerDropHandler<CircleZone>(ObjectType.ProximityZXSJ, (object, position) => {
+registerDropHandler<CircleZone>(ObjectType.ArrowZXSJ, (object, position) => {
     return {
         type: 'add',
         object: {
-            type: ObjectType.ProximityZXSJ,
-            color: '#ff0000',
+            type: ObjectType.ArrowZXSJ,
+            color: '#ff6600',
             opacity: 100,
-            radius: 200,
-            // CircleZone interface doesn't strictly include innerRadius but runtime supports it
-            innerRadius: 40,
+            radius: 30, // 默认半径设置为 30
             rotation: 0,
             animated: true,
             ...object,
@@ -224,55 +150,52 @@ registerDropHandler<CircleZone>(ObjectType.ProximityZXSJ, (object, position) => 
     };
 });
 
-const ProximityZXSJRenderer: React.FC<RendererProps<CircleZone>> = ({ object }) => {
+const ArrowZXSJRenderer: React.FC<RendererProps<CircleZone>> = ({ object }) => {
     const highlightProps = useHighlightProps(object);
-    const [image] = useImageTracked(wrapImageUrl('/marker/zxsj/proximity_zxsj.png'));
+    const [image] = useImageTracked(wrapImageUrl('/marker/zxsj/fangxiangjiantou.png'));
     const radius = object.radius;
-    // @ts-expect-error: CircleZone does not have innerRadius
-    const innerRadius = object.innerRadius ?? 60;
-
-    // 使用手动控制的 innerRadius 作为渲染半径
-    const renderRadius = innerRadius;
-
-    // 使用自定义 Hook 处理图片：抠除 #ede9d6 并染色
     const processedImage = useProcessedImage(image, object.color);
 
-    // 确保 object 有 innerRadius，否则 RadiusObjectContainer 在渲染内圆控制点时会因半径为 0 而出错
-    const objectWithInner = { ...object, innerRadius: innerRadius };
+    // 箭头随时间上下浮动的动画
+    const [floatY, setFloatY] = useState(0);
+    const isAnimated = object.animated !== false;
+
+    useEffect(() => {
+        if (!isAnimated) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            setFloatY(0);
+            return;
+        }
+
+        let animationFrameId: number;
+        const startTime = Date.now();
+        const animate = () => {
+            const elapsed = Date.now() - startTime;
+            // 浮动幅度随半径等比例缩放 (radius / 15)
+            // 在默认半径 30 时，幅度为 2 (即之前要求的 10 的 20%)
+            const float = Math.sin(elapsed / 300) * (radius / 6);
+            setFloatY(float);
+            animationFrameId = requestAnimationFrame(animate);
+        };
+        animationFrameId = requestAnimationFrame(animate);
+        return () => cancelAnimationFrame(animationFrameId);
+    }, [isAnimated, radius]);
 
     return (
-        <RadiusObjectContainer object={objectWithInner} minRadius={60} allowInnerRadius allowRotate>
+        <RadiusObjectContainer object={object} minRadius={10} allowRotate>
             {(groupProps) => (
                 <Group {...groupProps}>
-                    {/* 高亮圈使用真实半径 */}
                     {highlightProps && <Circle radius={radius} {...highlightProps} />}
 
-                    {/* 添加冲击波动画 */}
-                    <ProximityRipple
-                        startRadius={renderRadius}
-                        endRadius={radius}
-                        color={object.color}
-                        animated={object.animated}
-                    />
-
                     <HideGroup>
-                        {/* 绘制圆形遮罩和图片 */}
-                        <Group
-                            clipFunc={(ctx) => {
-                                // 遮罩也使用受限的渲染半径
-                                ctx.arc(0, 0, renderRadius, 0, Math.PI * 2, false);
-                            }}
-                        >
-                            {/* 图片：使用受限的渲染半径 */}
-                            <KonvaImage
-                                image={processedImage} // 使用处理后的图片
-                                x={-renderRadius}
-                                y={-renderRadius}
-                                width={renderRadius * 2}
-                                height={renderRadius * 2}
-                                opacity={object.opacity / 100}
-                            />
-                        </Group>
+                        <KonvaImage
+                            image={processedImage}
+                            x={-radius}
+                            y={-radius + floatY} // 加入浮动效果
+                            width={radius * 2}
+                            height={radius * 2}
+                            opacity={object.opacity / 100}
+                        />
                     </HideGroup>
                 </Group>
             )}
@@ -280,14 +203,13 @@ const ProximityZXSJRenderer: React.FC<RendererProps<CircleZone>> = ({ object }) 
     );
 };
 
-registerRenderer<CircleZone>(ObjectType.ProximityZXSJ, LayerName.Ground, ProximityZXSJRenderer);
+registerRenderer<CircleZone>(ObjectType.ArrowZXSJ, LayerName.Ground, ArrowZXSJRenderer);
 
-const ProximityZXSJDetails: React.FC<ListComponentProps<CircleZone>> = ({ object, ...props }) => {
+const ArrowZXSJDetails: React.FC<ListComponentProps<CircleZone>> = ({ object, ...props }) => {
     const { t } = useTranslation();
-    const iconPath = '/marker/zxsj/proximity_zxsj.png';
-    // 使用 useImageTracked 确保图片加载并在加载完成后显示
+    const iconPath = '/marker/zxsj/fangxiangjiantou.png';
     const [image] = useImageTracked(iconPath);
-    void image; // 仅用于触发加载跟踪，不直接使用变量
+    void image;
 
     const iconUrl = useMemo(() => wrapImageUrl(iconPath), [iconPath]);
 
@@ -310,11 +232,11 @@ const ProximityZXSJDetails: React.FC<ListComponentProps<CircleZone>> = ({ object
                     }}
                 />
             }
-            name={t('objects.proximity', { defaultValue: 'Proximity AOE' })}
+            name={t('objects.arrowZXSJ')}
             object={object}
             {...props}
         />
     );
 };
 
-registerListComponent<CircleZone>(ObjectType.ProximityZXSJ, ProximityZXSJDetails);
+registerListComponent<CircleZone>(ObjectType.ArrowZXSJ, ArrowZXSJDetails);

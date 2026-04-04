@@ -470,6 +470,7 @@
     "arrow": "Arrow",
     "draw": "Drawing",
     "proximity": "Proximity AoE",
+    "arrowZXSJ": "Directional Arrow",
     "knockback": "Circular knockback",
     "lineKnockback": "Line knockback",
     "lineKnockAway": "Line knock away",

@@ -101,6 +101,7 @@ import {
     ZxsjWaymark8,
     ZxsjWaymark9,
 } from '../prefabs/zxsj/WaymarksZXSJ';
+import { ZoneArrowZXSJ } from '../prefabs/zxsj/ZoneArrowZXSJ';
 import { ZoneProximityZXSJ } from '../prefabs/zxsj/ZoneProximityZXSJ';
 import { ZoneTowerZXSJ } from '../prefabs/zxsj/ZoneTowerZXSJ';
 import { useControlStyles } from '../useControlStyles';
@@ -145,6 +146,7 @@ const ZonesAndWaymarksSection: React.FC<{ extraZones?: React.ReactNode; type: 'f
                             <StatusShangDeath />
                             <StatusJu />
                             <StatusJian />
+                            <ZoneArrowZXSJ />
                         </>
                     )}
                     <ZoneRotateClockwise />
