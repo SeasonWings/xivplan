@@ -27,6 +27,7 @@ import { MIN_STAGE_WIDTH } from './theme';
 import { TutorialOverlay } from './tutorial/TutorialOverlay';
 import { useIsDirty } from './useIsDirty';
 import { removeFileExtension } from './util';
+import { CraftBuilderDialog } from './CraftBuilderDialog';
 
 export const MainPage: React.FC = () => {
     return (
@@ -50,6 +51,7 @@ const MainPageContent: React.FC = () => {
     const title = usePageTitle();
     const [showCollaborationPanel, setShowCollaborationPanel] = useState(false);
     const [showCommunityPanel, setShowCommunityPanel] = useState(false);
+    const [showCraftBuilderPanel, setShowCraftBuilderPanel] = useState(false);
     const [animationPanelWidth, setAnimationPanelWidth] = useState(400); // 旧版右侧宽度
     const [animationPanelHeight, setAnimationPanelHeight] = useState(300);
     const [isDragging, setIsDragging] = useState(false);
@@ -176,6 +178,8 @@ const MainPageContent: React.FC = () => {
                 onToggleAnimationPanel={setShowAnimationPanel}
                 showCommunityPanel={showCommunityPanel}
                 onToggleCommunityPanel={setShowCommunityPanel}
+                showCraftBuilderPanel={showCraftBuilderPanel}
+                onToggleCraftBuilderPanel={setShowCraftBuilderPanel}
             />
 
             {/* TODO: make panel collapsable */}
@@ -264,6 +268,9 @@ const MainPageContent: React.FC = () => {
             </div>
 
             <CollaborationDialog open={showCollaborationPanel} onClose={() => setShowCollaborationPanel(false)} />
+
+            {/* 生产计算器弹窗 */}
+            <CraftBuilderDialog open={showCraftBuilderPanel} onClose={() => setShowCraftBuilderPanel(false)} />
 
             {/* 社区弹窗 */}
             <CommunityDialog open={showCommunityPanel} onClose={() => setShowCommunityPanel(false)} />

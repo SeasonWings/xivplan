@@ -14,6 +14,7 @@ import {
     ArrowDownloadRegular,
     ArrowRedoRegular,
     ArrowUndoRegular,
+    Calculator24Regular,
     OpenRegular,
     PeopleRegular,
     PeopleTeamRegular,
@@ -76,6 +77,8 @@ interface MainToolbarProps {
     onToggleAnimationPanel?: (show: boolean) => void;
     showCommunityPanel?: boolean;
     onToggleCommunityPanel?: (show: boolean) => void;
+    showCraftBuilderPanel?: boolean;
+    onToggleCraftBuilderPanel?: (show: boolean) => void;
 }
 
 export const MainToolbar: React.FC<MainToolbarProps> = ({
@@ -85,6 +88,8 @@ export const MainToolbar: React.FC<MainToolbarProps> = ({
     onToggleAnimationPanel,
     showCommunityPanel = false,
     onToggleCommunityPanel,
+    showCraftBuilderPanel = false,
+    onToggleCraftBuilderPanel,
 }) => {
     const classes = useStyles();
     const { t } = useTranslation();
@@ -172,6 +177,15 @@ export const MainToolbar: React.FC<MainToolbarProps> = ({
                         className={showCommunityPanel ? 'active' : undefined}
                     >
                         {t('toolbar.community', '社区')}
+                    </CollapsableToolbarButton>
+
+                    <CollapsableToolbarButton
+                        icon={<Calculator24Regular />}
+                        onClick={() => onToggleCraftBuilderPanel?.(!showCraftBuilderPanel)}
+                        className={showCraftBuilderPanel ? 'active' : undefined}
+                        data-tutorial="craftbuilder-open"
+                    >
+                        {t('toolbar.craftBuilder', '生产计算器')}
                     </CollapsableToolbarButton>
                 </Toolbar>
             </InPortal>
