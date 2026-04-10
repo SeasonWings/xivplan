@@ -68,6 +68,13 @@ interface AnnouncementItem {
 // 公告数据
 const announcements: AnnouncementItem[] = [
     {
+        id: '8',
+        date: '2026-04-10',
+        title: 'v2.2.1 更新日志',
+        content:
+            '1. 新增生产计算器入口，可以便捷计算生产目标产物需要分配给各职业的耗材数及生产时副材料的生产/交易路径流转',
+    },
+    {
         id: '7',
         date: '2026-03-16',
         title: 'v2.2.0 更新日志',

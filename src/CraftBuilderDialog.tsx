@@ -193,15 +193,17 @@ export const CraftBuilderDialog: React.FC<CraftBuilderDialogProps> = ({ open, on
                         appearance="subtle"
                         icon={<Dismiss24Regular />}
                         onClick={onClose}
+                        onMouseDown={(e) => e.stopPropagation()}
                         className={classes.closeButton}
                     />
                 </div>
-                <DialogBody className={classes.body}>
+                <DialogBody className={classes.body} style={{ padding: 0, margin: 0 }}>
                     <iframe
                         src="https://craftbuilder.mapleshuzuko.site/"
                         title="CraftBuilder"
                         className={classes.iframe}
                         frameBorder="0"
+                        style={{ display: 'block', margin: '-4px 0 0 -4px' }}
                     />
                     {isDragging && <div className={classes.dragOverlay} />}
                 </DialogBody>
@@ -215,8 +217,8 @@ const useStyles = makeStyles({
         position: 'fixed',
         width: '500px',
         height: '800px',
-        maxWidth: '90vw',
-        maxHeight: '90vh',
+        maxWidth: 'none',
+        maxHeight: 'none',
         ...shorthands.padding(0),
         display: 'flex',
         flexDirection: 'column',
@@ -226,6 +228,8 @@ const useStyles = makeStyles({
         zIndex: 1000,
         transform: 'none',
         margin: 0,
+        minWidth: 'auto',
+        minHeight: 'auto',
     },
     header: {
         height: '44px',
