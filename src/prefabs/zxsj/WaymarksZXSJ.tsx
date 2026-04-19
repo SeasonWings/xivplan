@@ -7,13 +7,35 @@ import { usePanelDrag } from '../../usePanelDrag';
 import { wrapImageUrl } from '../../util/cos';
 import { PrefabIcon } from '../PrefabIcon';
 
-function loadImage(url: string): Promise<HTMLImageElement> {
-    return new Promise((resolve, reject) => {
-        const img = new Image();
-        img.onload = () => resolve(img);
-        img.onerror = (e) => reject(e);
-        img.src = url;
-    });
+async function loadImage(url: string): Promise<HTMLImageElement> {
+    try {
+        const res = await fetch(url, { mode: 'cors' });
+        if (!res.ok) {
+            throw new Error(`Failed to fetch image: ${res.status}`);
+        }
+        const blob = await res.blob();
+        const objectUrl = URL.createObjectURL(blob);
+        return await new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => {
+                URL.revokeObjectURL(objectUrl);
+                resolve(img);
+            };
+            img.onerror = (e) => {
+                URL.revokeObjectURL(objectUrl);
+                reject(e);
+            };
+            img.src = objectUrl;
+        });
+    } catch {
+        return await new Promise((resolve, reject) => {
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.onload = () => resolve(img);
+            img.onerror = (e) => reject(e);
+            img.src = url;
+        });
+    }
 }
 
 function cropByAlpha(img: HTMLImageElement) {
