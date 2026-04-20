@@ -1,4 +1,5 @@
 import { Vector2d } from 'konva/lib/types';
+import { Animation } from '../animation/animationTypes';
 import {
     DrawObject,
     EnemyObject,
@@ -25,7 +26,6 @@ import {
     isStackZone,
     isText,
 } from '../scene';
-import { Animation } from '../animation/animationTypes';
 import { DEFAULT_ENEMY_OPACITY, DEFAULT_IMAGE_OPACITY, DEFAULT_MARKER_OPACITY, DEFAULT_PARTY_OPACITY } from '../theme';
 
 // 旧版本单动画数据结构（兼容性）
@@ -187,13 +187,19 @@ function upgradeImageObject<T extends ImageObject>(object: T): T {
 }
 
 // spacing property was added to ExaflareZone
-type LegacyExaflareZone = Omit<ExaflareZone, 'spacing'> & {
+type LegacyExaflareZone = Omit<ExaflareZone, 'spacing' | 'showLengthDash'> & {
     spacing?: number;
+    showLengthDash?: boolean;
+    stepSize?: number;
+    stepPosition?: number;
 };
 
 function upgradeExaflareZone(object: LegacyExaflareZone): ExaflareZone {
     return {
         spacing: 60,
+        showLengthDash: true,
+        stepSize: 1,
+        stepPosition: 0,
         ...object,
     };
 }

@@ -387,6 +387,9 @@ export interface ExaflareZone extends RadiusObject, RotateableObject, ColoredObj
     readonly type: ObjectType.Exaflare;
     readonly length: number;
     readonly spacing: number;
+    readonly showLengthDash?: boolean;
+    readonly stepSize?: number;
+    readonly stepPosition?: number;
 }
 export const isExaflareZone = makeObjectTest<ExaflareZone>(ObjectType.Exaflare);
 

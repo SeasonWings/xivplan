@@ -16,11 +16,14 @@ import { useHighlightProps } from '../highlight';
 import { PrefabIcon } from '../PrefabIcon';
 import { RadiusObjectContainer } from '../RadiusObjectContainer';
 import { EXAFLARE_SPACING_DEFAULT } from './constants';
+import { normalizeExaflareStep } from './exaflareStep';
 import { ChevronTail } from './shapes';
 import { getArrowStyle, getZoneStyle } from './style';
 
 const DEFAULT_RADIUS = 50;
 const DEFAULT_LENGTH = 6;
+const DEFAULT_STEP_SIZE = 1;
+const DEFAULT_STEP_POSITION = 0;
 
 export const ZoneExaflare: React.FC = () => {
     const [, setDragObject] = usePanelDrag();
@@ -53,6 +56,9 @@ registerDropHandler<ExaflareZone>(ObjectType.Exaflare, (object, position) => {
             radius: DEFAULT_RADIUS,
             length: DEFAULT_LENGTH,
             spacing: EXAFLARE_SPACING_DEFAULT,
+            showLengthDash: true,
+            stepSize: DEFAULT_STEP_SIZE,
+            stepPosition: DEFAULT_STEP_POSITION,
             rotation: 0,
             ...object,
             ...position,
@@ -63,11 +69,17 @@ registerDropHandler<ExaflareZone>(ObjectType.Exaflare, (object, position) => {
 const ARROW_W_FRAC = 0.8;
 const ARROW_H_FRAC = 0.5;
 
-function getTrailPositions(radius: number, length: number, spacing: number): Vector2d[] {
-    return Array.from({ length }).map((_, i) => ({
+function getTrailIndices(length: number): number[] {
+    const len = Number.isFinite(length) && length > 0 ? Math.floor(length) : 0;
+    if (len <= 0) return [];
+    return Array.from({ length: len }).map((_, i) => i);
+}
+
+function getTrailPoint(radius: number, spacing: number, index: number): Vector2d {
+    return {
         x: 0,
-        y: -((radius * 2 * spacing) / 100) * i,
-    }));
+        y: -((radius * 2 * spacing) / 100) * index,
+    };
 }
 
 function getDashSize(radius: number) {
@@ -85,40 +97,90 @@ const ExaflareRenderer: React.FC<ExaflareRendererProps> = ({ object, radius, rot
     const style = getZoneStyle(object.color, object.opacity, radius * 2);
 
     const arrow = getArrowStyle(object.color, object.opacity * 3);
-    const trail = getTrailPositions(radius, object.length, object.spacing);
+    const showLengthDash = object.showLengthDash ?? true;
+    const trailIndices = getTrailIndices(object.length);
     const dashSize = getDashSize(radius);
+    const step = normalizeExaflareStep(object.length, object.stepSize, object.stepPosition);
+    const baseActive = 0 >= step.start && 0 < step.end;
+    const arrowIndex = Math.max(0, step.start);
+    const arrowPoint =
+        object.length > 0 && arrowIndex >= 0 && arrowIndex < object.length
+            ? getTrailPoint(radius, object.spacing, arrowIndex)
+            : null;
+    const hitStrokeWidth = 16;
 
     return (
         <>
             <Group rotation={rotation}>
                 <HideGroup>
-                    {trail.map((point, i) => (
-                        <Circle
-                            key={i}
-                            listening={false}
-                            radius={radius}
-                            {...point}
-                            {...style}
-                            fillEnabled={false}
-                            dash={[dashSize, dashSize]}
-                            dashOffset={dashSize / 2}
-                            opacity={0.5}
-                        />
-                    ))}
+                    {trailIndices.map((index) => {
+                        if (index === 0) return null;
+                        const active = index >= step.start && index < step.end;
+                        if (!active && !showLengthDash) return null;
+
+                        const point = getTrailPoint(radius, object.spacing, index);
+                        if (active) {
+                            return (
+                                <Circle
+                                    key={index}
+                                    radius={radius}
+                                    {...point}
+                                    {...style}
+                                    hitStrokeWidth={hitStrokeWidth}
+                                />
+                            );
+                        }
+
+                        return (
+                            <Circle
+                                key={index}
+                                radius={radius}
+                                {...point}
+                                {...style}
+                                fillEnabled={false}
+                                dash={[dashSize, dashSize]}
+                                dashOffset={dashSize / 2}
+                                opacity={0.5}
+                                hitStrokeWidth={hitStrokeWidth}
+                            />
+                        );
+                    })}
                 </HideGroup>
 
                 {highlightProps && <Circle radius={radius + style.strokeWidth / 2} {...highlightProps} />}
 
                 <HideGroup>
-                    <Circle radius={radius} {...style} />
-                    <ChevronTail
-                        y={-radius * ARROW_H_FRAC * 0.9}
-                        width={radius * ARROW_W_FRAC}
-                        height={radius * ARROW_H_FRAC}
-                        {...arrow}
-                    />
+                    {baseActive ? (
+                        <Circle radius={radius} {...style} hitStrokeWidth={hitStrokeWidth} />
+                    ) : showLengthDash ? (
+                        <Circle
+                            radius={radius}
+                            {...style}
+                            fillEnabled={false}
+                            dash={[dashSize, dashSize]}
+                            dashOffset={dashSize / 2}
+                            opacity={0.5}
+                            hitStrokeWidth={hitStrokeWidth}
+                        />
+                    ) : null}
+                    {arrowPoint && (
+                        <ChevronTail
+                            x={arrowPoint.x}
+                            y={arrowPoint.y - radius * ARROW_H_FRAC * 0.9}
+                            width={radius * ARROW_W_FRAC}
+                            height={radius * ARROW_H_FRAC}
+                            {...arrow}
+                        />
+                    )}
 
-                    {isDragging && <Circle radius={CENTER_DOT_RADIUS} fill={style.stroke} />}
+                    {isDragging && (
+                        <Circle
+                            x={arrowPoint?.x ?? 0}
+                            y={arrowPoint?.y ?? 0}
+                            radius={CENTER_DOT_RADIUS}
+                            fill={style.stroke}
+                        />
+                    )}
                 </HideGroup>
             </Group>
         </>

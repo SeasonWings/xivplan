@@ -46,7 +46,13 @@ import { DrawObjectBrushControl } from './properties/BrushControl';
 import { AnimatedControl } from './properties/AnimatedControl';
 import { ConeAngleControl } from './properties/ConeControls';
 import { EnemyRingControl } from './properties/EnemyControls';
-import { ExaflareLengthControl, ExaflareSpacingControl } from './properties/ExaflareControls';
+import {
+    ExaflareLengthControl,
+    ExaflareLengthDashControl,
+    ExaflareSpacingControl,
+    ExaflareStepPositionControl,
+    ExaflareStepSizeControl,
+} from './properties/ExaflareControls';
 import { EyeInvertControl } from './properties/EyeControls';
 import { GroupControl } from './properties/GroupControl';
 import { HideControl } from './properties/HideControl';
@@ -177,6 +183,7 @@ const Controls: React.FC = () => {
                 <ControlCondition objects={objects} test={isRadiusObject} control={RadiusControl} />
                 <ControlCondition objects={objects} test={isInnerRadiusObject} control={InnerRadiusControl} />
                 <ControlCondition objects={objects} test={isExaflareZone} control={ExaflareLengthControl} />
+                <ControlCondition objects={objects} test={isExaflareZone} control={ExaflareLengthDashControl} />
                 <ControlCondition objects={objects} test={isStarburstZone} control={StarburstSpokeWidthControl} />
             </div>
 
@@ -191,6 +198,11 @@ const Controls: React.FC = () => {
                     test={(x) => isArcZone(x) || isConeZone(x)}
                     control={ConeAngleControl}
                 />
+            </div>
+
+            <div className={mergeClasses(classes.row, classes.rightGap)}>
+                <ControlCondition objects={objects} test={isExaflareZone} control={ExaflareStepSizeControl} />
+                <ControlCondition objects={objects} test={isExaflareZone} control={ExaflareStepPositionControl} />
             </div>
 
             <RotationPivotLockControl objects={objects} />

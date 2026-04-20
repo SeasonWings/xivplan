@@ -125,9 +125,9 @@ const useStyles = makeStyles({
         overflowX: 'auto',
         position: 'relative',
     },
-    playhead: {
+    playheadOverlay: {
         position: 'absolute',
-        top: 0,
+        top: '30px',
         bottom: 0,
         width: '2px',
         backgroundColor: tokens.colorBrandBackground,
@@ -278,15 +278,9 @@ export const TimelineV2: React.FC<TimelineV2Props> = ({
         return Math.max(minZoom, 0.0001);
     }, [duration]);
 
-    // 同步轨道容器的滚动到刻度尺和左侧轨道列表
+    // 同步轨道容器的滚动到左侧轨道列表（刻度尺/播放头不跟随滚动）
     const handleTracksScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
-        const scrollLeft = e.currentTarget.scrollLeft;
         const scrollTop = e.currentTarget.scrollTop;
-
-        // 同步水平滚动到刻度尺
-        if (rulerRef.current) {
-            rulerRef.current.scrollLeft = scrollLeft;
-        }
 
         // 同步垂直滚动到左侧轨道列表
         if (trackListRef.current) {
@@ -298,7 +292,7 @@ export const TimelineV2: React.FC<TimelineV2Props> = ({
         (e: React.MouseEvent<HTMLDivElement>) => {
             const container = e.currentTarget;
             const rect = container.getBoundingClientRect();
-            const x = e.clientX - rect.left + container.scrollLeft;
+            const x = e.clientX - rect.left;
             const time = Math.max(0, x / viewConfig.zoom);
             lastMouseTimeRef.current = time;
         },
@@ -887,11 +881,10 @@ export const TimelineV2: React.FC<TimelineV2Props> = ({
                                 />
                             ))}
                         </div>
+                    </div>
 
-                        {/* 播放头 */}
-                        <div className={classes.playhead} style={{ left: `${playheadPosition}px` }}>
-                            <div className={classes.playheadHandle} onMouseDown={handlePlayheadDragStart} />
-                        </div>
+                    <div className={classes.playheadOverlay} style={{ left: `${playheadPosition}px` }}>
+                        <div className={classes.playheadHandle} onMouseDown={handlePlayheadDragStart} />
                     </div>
                 </div>
             </div>
